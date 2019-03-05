@@ -1,9 +1,9 @@
 Package: com.noahsaso.pusher
 Name: Pusher
-Depends: mobilesubstrate
+Depends: mobilesubstrate, applist
 Version: 0.0.1
 Architecture: iphoneos-arm
-Description: An awesome MobileSubstrate tweak!
+Description: Push notifications to your computer
 Maintainer: Noah Saso <noahsaso@gmail.com>
 Author: Noah Saso <noahsaso@gmail.com>
 Section: Tweaks

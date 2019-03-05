@@ -4,34 +4,71 @@
 #import <SpringBoard/SBApplication.h>
 #import <SpringBoard/SBApplicationController.h>
 
+#define PUSHER_PREFS_FILE @"/var/mobile/Library/Preferences/com.noahsaso.pusher.plist"
+#define PUSHER_PREFS_NOTIFICATION CFSTR("com.noahsaso.pusher/prefs")
+
 @interface BBBulletin (Pusher)
 @property (nonatomic, readonly) bool showsSubtitle;
 - (void)sendBulletinToPusher:(BBBulletin *)bulletin;
 @end
 
-NSArray *pusherExcludedApps = @[@"com.apple.MobileSMS"];
-NSString *pusherToken = @"";
-NSString *pusherUser = @"";
-NSString *pusherDevice = @"";
+static BOOL pusherEnabled = YES;
+static NSArray *pusherExcludedApps = nil;
+static NSString *pusherToken = nil;
+static NSString *pusherUser = nil;
+static NSString *pusherDevice = nil;
+
+static void pusherPrefsChanged() {
+	XLog(@"Reloading prefs");
+	NSDictionary *pusherPrefs = [NSDictionary dictionaryWithContentsOfFile:PUSHER_PREFS_FILE];
+	id val = pusherPrefs[@"enabled"];
+	pusherEnabled = val ? ((NSNumber *) val).boolValue : YES;
+	val = [pusherPrefs[@"pushoverToken"] copy];
+	pusherToken = val ? val : @"";
+	val = [pusherPrefs[@"pushoverUser"] copy];
+	pusherUser = val ? val : @"";
+	val = [pusherPrefs[@"pushoverDevice"] copy];
+	pusherDevice = val ? val : @"";
+	// Extract all excluded app IDs
+	NSMutableArray *tempPusherExcludedApps = [[NSMutableArray alloc] init];
+	for (id key in pusherPrefs.allKeys) {
+		if (![key isKindOfClass:NSString.class]) { continue; }
+		if ([key hasPrefix:@"ExcludedApp-"]) {
+			if (((NSNumber *) pusherPrefs[key]).boolValue) {
+				[tempPusherExcludedApps addObject:[key substringFromIndex:12].lowercaseString];
+			}
+		}
+	}
+	pusherExcludedApps = [tempPusherExcludedApps copy];
+	[tempPusherExcludedApps release];
+}
+
+static BOOL pusherPrefsSayNo() {
+	return !pusherEnabled
+					|| pusherExcludedApps == nil
+					|| pusherToken == nil
+					|| pusherUser == nil
+					|| pusherDevice == nil;
+}
 
 %hook BBServer
 
 %new
 - (void)sendBulletinToPusher:(BBBulletin *)bulletin {
-	if (bulletin == nil) {
+	if (pusherPrefsSayNo() || bulletin == nil) {
 		return;
 	}
 	// Check if notification within last 5 seconds so we don't send uncleared notifications every respring
 	NSDate *fiveSecondsAgo = [[NSDate date] dateByAddingTimeInterval:-5];
 	if ((bulletin.date && [bulletin.date compare:fiveSecondsAgo] == NSOrderedAscending)
-			|| [pusherExcludedApps containsObject:bulletin.sectionID]) {
+			|| [pusherExcludedApps containsObject:bulletin.sectionID.lowercaseString]) {
 		return;
 	}
 	SBApplication *app = [[NSClassFromString(@"SBApplicationController") sharedInstance] applicationWithBundleIdentifier:bulletin.sectionID];
 	NSString *appName = app && app.displayName && app.displayName.length > 0 ? app.displayName : Xstr(@"Unknown App: %@", bulletin.sectionID);
 	NSString *title = Xstr(@"%@%@", appName, (bulletin.title && bulletin.title.length > 0 ? Xstr(@" [%@]", bulletin.title) : @""));
 	NSString *message = @"";
-	if (bulletin.showsSubtitle && bulletin.subtitle && bulletin.subtitle.length > 0) {
+	if (bulletin.subtitle && bulletin.subtitle.length > 0) {
 		message = bulletin.subtitle;
 	}
 	message = Xstr(@"%@%@%@", message, (message.length > 0 && bulletin.message && bulletin.message.length > 0 ? @"\n" : @""), bulletin.message ? bulletin.message : @"");
@@ -78,3 +115,9 @@ NSString *pusherDevice = @"";
 }
 
 %end
+
+%ctor {
+	CFNotificationCenterAddObserver(CFNotificationCenterGetDarwinNotifyCenter(), NULL, (CFNotificationCallback)pusherPrefsChanged, PUSHER_PREFS_NOTIFICATION, NULL, CFNotificationSuspensionBehaviorCoalesce);
+	pusherPrefsChanged();
+	%init;
+}
