@@ -35,7 +35,7 @@ static void pusherPrefsChanged() {
 	NSDictionary *pusherDevices = val ? val : @{};
 	NSMutableArray *enabledDevices = [NSMutableArray new];
 	for (NSString *device in pusherDevices.allKeys) {
-		if (pusherDevices[device]) {
+		if (((NSNumber *) pusherDevices[device]).boolValue) {
 			[enabledDevices addObject:device];
 		}
 	}
@@ -83,7 +83,6 @@ static BOOL prefsSayNo() {
 		message = bulletin.subtitle;
 	}
 	message = Xstr(@"%@%@%@", message, (message.length > 0 && bulletin.message && bulletin.message.length > 0 ? @"\n" : @""), bulletin.message ? bulletin.message : @"");
-	XLog(@"%@ %@ %@ %@ %@", pusherToken, pusherUser, title, message, pusherDevice);
 	NSDictionary *userDictionary = @{
 		@"token": pusherToken,
 		@"user": pusherUser,
