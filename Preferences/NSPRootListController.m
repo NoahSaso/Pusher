@@ -6,12 +6,46 @@
 
 @implementation NSPRootListController
 
+- (id)init {
+	id ret = [super init];
+
+	// Get preferences
+	CFArrayRef keyList = CFPreferencesCopyKeyList(pusherAppID, kCFPreferencesCurrentUser, kCFPreferencesAnyHost);
+	_prefs = @{};
+	if (keyList) {
+		_prefs = (NSDictionary *)CFPreferencesCopyMultiple(keyList, pusherAppID, kCFPreferencesCurrentUser, kCFPreferencesAnyHost);
+		if (!_prefs) { _prefs = @{}; }
+		CFRelease(keyList);
+	}
+	id val = _prefs[@"pushoverDevices"];
+	NSDictionary *pushoverDevices = val ? val : @{};
+	_pushoverHasDevices = pushoverDevices.count > 0;
+
+	return ret;
+}
+
 - (NSArray *)specifiers {
 	if (!_specifiers) {
 		_specifiers = [[self loadSpecifiersFromPlistName:@"Root" target:self] retain];
+		NSMutableArray *allSpecifiers = [[self loadSpecifiersFromPlistName:@"Root" target:self] mutableCopy];
+		// If has devices, add link to devices list specifier
+		if (_pushoverHasDevices) {
+			[allSpecifiers addObject:[self generateDeviceLinkSpecifier]];
+		}
+		_specifiers = [allSpecifiers copy];
 	}
 
 	return _specifiers;
+}
+
+- (PSSpecifier *)generateDeviceLinkSpecifier {
+	return [PSSpecifier preferenceSpecifierNamed:@"Receiving Devices" target:self set:NULL get:NULL detail:NSClassFromString(@"NSPDeviceListController") cell:PSLinkCell edit:nil];
+}
+
+- (PSSpecifier *)addDeviceLinkSpecifier {
+	PSSpecifier *devicesLinkSpecifier = [self generateDeviceLinkSpecifier];
+	[self insertSpecifier:devicesLinkSpecifier atEndOfGroup:2 animated:YES];
+	return devicesLinkSpecifier;
 }
 
 - (void)openPushoverAppBuild {
@@ -22,7 +56,7 @@
 	Xurl(@"https://pushover.net/dashboard");
 }
 
-- (void)validateAndChooseDevices {
+- (void)validateAndLoadDeviceList {
 	// end editing to save token in place
 	[self.table endEditing:YES];
 
@@ -62,16 +96,16 @@
 				XLog(@"JSON Error: %@", jsonError);
 			}
 			// 0 error, 1 success
-			int status = ((NSNumber *) [json objectForKey:@"status"]).intValue;
+			int status = ((NSNumber *) json[@"status"]).intValue;
 			if (status == 0) {
 				XLog(@"Something went wrong");
 				for (id key in json.allKeys) {
-					XLog(@"%@: %@", key, [json objectForKey:key]);
+					XLog(@"%@: %@", key, json[key]);
 				}
 				return;
 			}
 
-			NSArray *pushoverDevices = (NSArray *)[json objectForKey:@"devices"];
+			NSArray *pushoverDevices = (NSArray *)json[@"devices"];
 			NSMutableDictionary *pushoverDevicesDict = [NSMutableDictionary new];
 			for (NSString *device in pushoverDevices) {
 				pushoverDevicesDict[device] = pusherDevices[device] ? [NSNumber numberWithBool:(BOOL)pusherDevices[device]] : @NO;
@@ -82,14 +116,25 @@
 			CFPreferencesSetValue(pushoverDevicesKey, (__bridge CFPropertyListRef)pushoverDevicesDict, pusherAppID, kCFPreferencesCurrentUser, kCFPreferencesAnyHost);
 			CFPreferencesSynchronize(pusherAppID, kCFPreferencesCurrentUser, kCFPreferencesAnyHost);
 			CFRelease(pushoverDevicesKey);
+			// Reload stuff
+			notify_post("com.noahsaso.pusher/prefs");
 
 			XLog(@"Saved devices");
 
-			// dispatch_async(dispatch_get_main_queue(), ^(void){
-			// 	[self reloadSpecifierID:@"pushoverDevice"];
-			// });
-			// Reload stuff
-			notify_post("com.noahsaso.pusher/prefs");
+			// Show alert to open receiving devices
+			dispatch_async(dispatch_get_main_queue(), ^(void) {
+				__block PSSpecifier *spec = [self specifierForID:@"Receiving Devices"];
+				if (!_pushoverHasDevices || !spec) {
+					spec = [self addDeviceLinkSpecifier];
+					_pushoverHasDevices = YES;
+				}
+				UIAlertController *alert = [UIAlertController alertControllerWithTitle:kName message:@"Receiving devices loaded." preferredStyle:UIAlertControllerStyleAlert];
+				[alert addAction:[UIAlertAction actionWithTitle:@"Show" style:UIAlertActionStyleDefault handler:^(UIAlertAction *action) {
+					[self tableView:self.table didSelectRowAtIndexPath:[self indexPathForSpecifier:spec]];
+				}]];
+				[self presentViewController:alert animated:true completion:nil];
+			});
+
 		} else if (data.length && error == nil) {
 			XLog(@"No data");
 		} else if (error != nil) {

@@ -24,7 +24,7 @@
 			<string>Enabled</string>
 		</dict>
 
-		<!--  Excluded Apps -->
+		<!--  Blacklist -->
 		<dict>
 			<key>cell</key>
 			<string>PSGroupCell</string>
@@ -37,7 +37,7 @@
 			<key>isController</key>
 			<string>1</string>
 			<key>label</key>
-			<string>Excluded Apps</string>
+			<string>Blacklisted Apps</string>
 			<key>ALAllowsSelection</key>
 			<string>1</string>
 			<key>ALChangeNotification</key>
@@ -70,7 +70,7 @@
 				</dict>
 			</array>
 			<key>ALSettingsKeyPrefix</key>
-			<string>ExcludedApp-</string>
+			<string>BL-</string>
 			<key>ALSettingsPath</key>
 			<string>/var/mobile/Library/Preferences/com.noahsaso.pusher.plist</string>
 		</dict>
@@ -92,7 +92,15 @@
 5. Copy the API Token/Key into the corresponding box above.
 6. Click 'Open Pushover Dashboard' above or go to https://pushover.net/dashboard.
 7. Copy 'Your User Key' into the corresponding box above.
-8. Click 'Devices' to verify your credentials and choose the receiving devices.</string>
+8. Click 'Validate &amp; Load Device List' to verify your credentials and load the receiving device list.</string>
+		</dict>
+		<dict>
+			<key>cell</key>
+			<string>PSButtonCell</string>
+			<key>label</key>
+			<string>Create Pushover App</string>
+			<key>action</key>
+			<string>openPushoverAppBuild</string>
 		</dict>
 		<dict>
 			<key>cell</key>
@@ -112,6 +120,14 @@
 		</dict>
 		<dict>
 			<key>cell</key>
+			<string>PSButtonCell</string>
+			<key>label</key>
+			<string>Open Pushover Dashboard</string>
+			<key>action</key>
+			<string>openPushoverDashboard</string>
+		</dict>
+		<dict>
+			<key>cell</key>
 			<string>PSEditTextCell</string>
 			<key>detail</key>
 			<string>PSDetailController</string>
@@ -122,41 +138,17 @@
 			<key>key</key>
 			<string>pushoverUser</string>
 			<key>label</key>
-			<string>User:</string>
+			<string>User Key:</string>
 			<key>noAutoCorrect</key>
 			<true/>
 		</dict>
 		<dict>
 			<key>cell</key>
-			<string>PSLinkCell</string>
-			<key>detail</key>
-			<string>NSPDeviceListController</string>
-			<key>label</key>
-			<string>Devices</string>
-		</dict>
-		<dict>
-			<key>cell</key>
 			<string>PSButtonCell</string>
 			<key>label</key>
-			<string>Create Pushover App</string>
+			<string>Validate &amp; Load Receiving Devices</string>
 			<key>action</key>
-			<string>openPushoverAppBuild</string>
-		</dict>
-		<dict>
-			<key>cell</key>
-			<string>PSButtonCell</string>
-			<key>label</key>
-			<string>Open Pushover Dashboard</string>
-			<key>action</key>
-			<string>openPushoverDashboard</string>
-		</dict>
-		<dict>
-			<key>cell</key>
-			<string>PSButtonCell</string>
-			<key>label</key>
-			<string>Validate &amp; Choose Devices</string>
-			<key>action</key>
-			<string>validateAndChooseDevices</string>
+			<string>validateAndLoadDeviceList</string>
 		</dict>
 	</array>
 	<key>title</key>

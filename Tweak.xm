@@ -11,7 +11,7 @@
 @end
 
 static BOOL pusherEnabled = YES;
-static NSArray *pusherExcludedApps = nil;
+static NSArray *pusherBlacklist = nil;
 static NSString *pusherToken = nil;
 static NSString *pusherUser = nil;
 static NSString *pusherDevice = nil;
@@ -31,25 +31,32 @@ static void pusherPrefsChanged() {
 	pusherToken = val ? val : @"";
 	val = [prefs[@"pushoverUser"] copy];
 	pusherUser = val ? val : @"";
-	val = [prefs[@"pushoverDevice"] copy];
-	pusherDevice = val ? val : @"";
-	// Extract all excluded app IDs
-	NSMutableArray *tempPusherExcludedApps = [[NSMutableArray alloc] init];
+	val = [prefs[@"pushoverDevices"] copy];
+	NSDictionary *pusherDevices = val ? val : @{};
+	NSMutableArray *enabledDevices = [NSMutableArray new];
+	for (NSString *device in pusherDevices.allKeys) {
+		if (pusherDevices[device]) {
+			[enabledDevices addObject:device];
+		}
+	}
+	pusherDevice = [enabledDevices componentsJoinedByString:@","];
+	// Extract all blacklisted app IDs
+	NSMutableArray *tempPusherBlacklist = [NSMutableArray new];
 	for (id key in prefs.allKeys) {
 		if (![key isKindOfClass:NSString.class]) { continue; }
-		if ([key hasPrefix:@"ExcludedApp-"]) {
+		if ([key hasPrefix:@"BL-"]) {
 			if (((NSNumber *) prefs[key]).boolValue) {
-				[tempPusherExcludedApps addObject:[key substringFromIndex:12].lowercaseString];
+				[tempPusherBlacklist addObject:[key substringFromIndex:12].lowercaseString];
 			}
 		}
 	}
-	pusherExcludedApps = [tempPusherExcludedApps copy];
-	[tempPusherExcludedApps release];
+	pusherBlacklist = [tempPusherBlacklist copy];
+	[tempPusherBlacklist release];
 }
 
 static BOOL prefsSayNo() {
 	return !pusherEnabled
-					|| pusherExcludedApps == nil
+					|| pusherBlacklist == nil
 					|| pusherToken == nil
 					|| pusherUser == nil
 					|| pusherDevice == nil;
@@ -65,7 +72,7 @@ static BOOL prefsSayNo() {
 	// Check if notification within last 5 seconds so we don't send uncleared notifications every respring
 	NSDate *fiveSecondsAgo = [[NSDate date] dateByAddingTimeInterval:-5];
 	if ((bulletin.date && [bulletin.date compare:fiveSecondsAgo] == NSOrderedAscending)
-			|| [pusherExcludedApps containsObject:bulletin.sectionID.lowercaseString]) {
+			|| [pusherBlacklist containsObject:bulletin.sectionID.lowercaseString]) {
 		return;
 	}
 	SBApplication *app = [[NSClassFromString(@"SBApplicationController") sharedInstance] applicationWithBundleIdentifier:bulletin.sectionID];
