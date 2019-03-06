@@ -81,6 +81,18 @@
 			<string>PSGroupCell</string>
 			<key>label</key>
 			<string>Pushover Settings</string>
+			<key>footerText</key>
+			<string>Setup:
+1. Click 'Create Pushover App' above or go to https://pushover.net/apps/build.
+1b. Sign in to Pushover on this webpage if you are not already.
+2. Enter a name; 'Pusher' will do.
+2b. Description, URL, and Icon are unnecessary.
+3. Check the box (after reading their Terms of Service of course).
+4. Press the 'Create Application' button at the bottom.
+5. Copy the API Token/Key into the corresponding box above.
+6. Click 'Open Pushover Dashboard' above or go to https://pushover.net/dashboard.
+7. Copy 'Your User Key' into the corresponding box above.
+8. Click 'Validate &amp; Choose Devices' to verify your credentials and choose the receiving devices.</string>
 		</dict>
 		<dict>
 			<key>cell</key>
@@ -94,7 +106,7 @@
 			<key>key</key>
 			<string>pushoverToken</string>
 			<key>label</key>
-			<string>App Token:</string>
+			<string>API Token/Key:</string>
 			<key>noAutoCorrect</key>
 			<true/>
 		</dict>
@@ -129,6 +141,32 @@
 			<string>Device:</string>
 			<key>noAutoCorrect</key>
 			<true/>
+			<key>id</key>
+			<string>pushoverDevice</string>
+		</dict>
+		<dict>
+			<key>cell</key>
+			<string>PSButtonCell</string>
+			<key>label</key>
+			<string>Create Pushover App</string>
+			<key>action</key>
+			<string>openPushoverAppBuild</string>
+		</dict>
+		<dict>
+			<key>cell</key>
+			<string>PSButtonCell</string>
+			<key>label</key>
+			<string>Open Pushover Dashboard</string>
+			<key>action</key>
+			<string>openPushoverDashboard</string>
+		</dict>
+		<dict>
+			<key>cell</key>
+			<string>PSButtonCell</string>
+			<key>label</key>
+			<string>Validate &amp; Choose Devices</string>
+			<key>action</key>
+			<string>validateAndChooseDevices</string>
 		</dict>
 	</array>
 	<key>title</key>

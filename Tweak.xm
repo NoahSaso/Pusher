@@ -1,11 +1,9 @@
-#define kName @"Pusher"
+#import "global.h"
 #import <Custom/defines.h>
+
 #import <BulletinBoard/BBBulletin.h>
 #import <SpringBoard/SBApplication.h>
 #import <SpringBoard/SBApplicationController.h>
-
-#define PUSHER_PREFS_FILE @"/var/mobile/Library/Preferences/com.noahsaso.pusher.plist"
-#define PUSHER_PREFS_NOTIFICATION CFSTR("com.noahsaso.pusher/prefs")
 
 @interface BBBulletin (Pusher)
 @property (nonatomic, readonly) bool showsSubtitle;
