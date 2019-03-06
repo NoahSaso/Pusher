@@ -1,45 +1,64 @@
-#include "NSPRootListController.h"
+#include "NSPDeviceListController.h"
 
 #import "../global.h"
 #import <Custom/defines.h>
 #import <notify.h>
 
-@implementation NSPRootListController
+@implementation NSPDeviceListController
+
+- (void)viewDidLoad {
+	[super viewDidLoad];
+
+	CFArrayRef keyList = CFPreferencesCopyKeyList(pusherAppID, kCFPreferencesCurrentUser, kCFPreferencesAnyHost);
+	_prefs = @{};
+	if (keyList) {
+		_prefs = (NSDictionary *)CFPreferencesCopyMultiple(keyList, pusherAppID, kCFPreferencesCurrentUser, kCFPreferencesAnyHost);
+		if (!_prefs) { _prefs = @{}; }
+		CFRelease(keyList);
+	}
+}
 
 - (NSArray *)specifiers {
 	if (!_specifiers) {
-		_specifiers = [[self loadSpecifiersFromPlistName:@"Root" target:self] retain];
+		NSMutableArray *allSpecifiers = [NSMutableArray new];
+
+		id val = _prefs[@"pushoverDevices"];
+		_pushoverDevices = [(val ? val : @{}) mutableCopy];
+
+		for (id key in _prefs.allKeys) {
+			XLog(@"%@: %@", key, _prefs[key]);
+		}
+
+		if (_pushoverDevices.count == 0) {
+			// give error and exit screen
+			XLog(@"devices empty");
+		}
+
+		for (NSString *device in _pushoverDevices.allKeys) {
+			PSSpecifier* switchSpecifier = [PSSpecifier preferenceSpecifierNamed:device target:self set:@selector(setPreferenceValue:specifier:) get:@selector(readPreferenceValue:) detail:nil cell:PSSwitchCell edit:nil];
+			[switchSpecifier setProperty:@"com.noahsaso.pusher/prefs" forKey:@"PostNotification"];
+			[switchSpecifier setProperty:(NSNumber *)[_pushoverDevices objectForKey:device] forKey:@"enabled"];
+			[switchSpecifier setProperty:@"com.noahsaso.pusher" forKey:@"defaults"];
+			[switchSpecifier setProperty:@NO forKey:@"default"];
+			[switchSpecifier setProperty:Xstr(@"pusherDevice-%@", device) forKey:@"key"];
+			[allSpecifiers addObject:switchSpecifier];
+			XLog(@"Added device %@", device);
+		}
+
+		_specifiers = [allSpecifiers copy];
 	}
 
 	return _specifiers;
 }
 
-- (void)openPushoverAppBuild {
-	Xurl(@"https://pushover.net/apps/build");
-}
-
-- (void)openPushoverDashboard {
-	Xurl(@"https://pushover.net/dashboard");
-}
-
 - (void)validateAndChooseDevices {
 	// end editing to save token in place
 	[self.table endEditing:YES];
-
-	CFArrayRef keyList = CFPreferencesCopyKeyList(pusherAppID, kCFPreferencesCurrentUser, kCFPreferencesAnyHost);
-	NSDictionary *prefs = nil;
-	if (keyList) {
-		prefs = (NSDictionary *)CFPreferencesCopyMultiple(keyList, pusherAppID, kCFPreferencesCurrentUser, kCFPreferencesAnyHost);
-		if (!prefs) { prefs = @{}; }
-		CFRelease(keyList);
-	}
-
-	id val = [prefs[@"pushoverToken"] copy];
+	NSDictionary *pusherPrefs = [NSDictionary dictionaryWithContentsOfFile:PUSHER_PREFS_FILE];
+	id val = [pusherPrefs[@"pushoverToken"] copy];
 	NSString *pusherToken = val ? val : @"";
-	val = [prefs[@"pushoverUser"] copy];
+	val = [pusherPrefs[@"pushoverUser"] copy];
 	NSString *pusherUser = val ? val : @"";
-	val = [prefs[@"pushoverDevices"] copy];
-	__block NSDictionary *pusherDevices = val ? val : @{};
 	NSDictionary *userDictionary = @{
 		@"token": pusherToken,
 		@"user": pusherUser
@@ -70,24 +89,18 @@
 				}
 				return;
 			}
-
 			NSArray *pushoverDevices = (NSArray *)[json objectForKey:@"devices"];
-			NSMutableDictionary *pushoverDevicesDict = [NSMutableDictionary new];
-			for (NSString *device in pushoverDevices) {
-				pushoverDevicesDict[device] = pusherDevices[device] ? [NSNumber numberWithBool:(BOOL)pusherDevices[device]] : @NO;
-			}
+			NSString *pushoverDevice = [pushoverDevices componentsJoinedByString:@","];
 
-			CFStringRef pushoverDevicesKey = CFSTR("pushoverDevices");
+			CFStringRef pushoverDeviceKey = CFSTR("pushoverDevice");
 			CFPreferencesSynchronize(pusherAppID, kCFPreferencesCurrentUser, kCFPreferencesAnyHost);
-			CFPreferencesSetValue(pushoverDevicesKey, (__bridge CFPropertyListRef)pushoverDevicesDict, pusherAppID, kCFPreferencesCurrentUser, kCFPreferencesAnyHost);
+			CFPreferencesSetValue(pushoverDeviceKey, (__bridge CFStringRef)pushoverDevice, pusherAppID, kCFPreferencesCurrentUser, kCFPreferencesAnyHost);
 			CFPreferencesSynchronize(pusherAppID, kCFPreferencesCurrentUser, kCFPreferencesAnyHost);
-			CFRelease(pushoverDevicesKey);
+			CFRelease(pushoverDeviceKey);
 
-			XLog(@"Saved devices");
-
-			// dispatch_async(dispatch_get_main_queue(), ^(void){
-			// 	[self reloadSpecifierID:@"pushoverDevice"];
-			// });
+			dispatch_async(dispatch_get_main_queue(), ^(void){
+				[self reloadSpecifierID:@"pushoverDevice"];
+			});
 			// Reload stuff
 			notify_post("com.noahsaso.pusher/prefs");
 		} else if (data.length && error == nil) {

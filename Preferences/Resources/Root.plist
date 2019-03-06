@@ -92,7 +92,7 @@
 5. Copy the API Token/Key into the corresponding box above.
 6. Click 'Open Pushover Dashboard' above or go to https://pushover.net/dashboard.
 7. Copy 'Your User Key' into the corresponding box above.
-8. Click 'Validate &amp; Choose Devices' to verify your credentials and choose the receiving devices.</string>
+8. Click 'Devices' to verify your credentials and choose the receiving devices.</string>
 		</dict>
 		<dict>
 			<key>cell</key>
@@ -128,21 +128,11 @@
 		</dict>
 		<dict>
 			<key>cell</key>
-			<string>PSEditTextCell</string>
+			<string>PSLinkCell</string>
 			<key>detail</key>
-			<string>PSDetailController</string>
-			<key>defaults</key>
-			<string>com.noahsaso.pusher</string>
-			<key>PostNotification</key>
-			<string>com.noahsaso.pusher/prefs</string>
-			<key>key</key>
-			<string>pushoverDevice</string>
+			<string>NSPDeviceListController</string>
 			<key>label</key>
-			<string>Device:</string>
-			<key>noAutoCorrect</key>
-			<true/>
-			<key>id</key>
-			<string>pushoverDevice</string>
+			<string>Devices</string>
 		</dict>
 		<dict>
 			<key>cell</key>

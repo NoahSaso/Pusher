@@ -6,7 +6,7 @@
 #import <SpringBoard/SBApplicationController.h>
 
 @interface BBBulletin (Pusher)
-@property (nonatomic, readonly) bool showsSubtitle;
+@property (nonatomic, readonly) BOOL showsSubtitle;
 - (void)sendBulletinToPusher:(BBBulletin *)bulletin;
 @end
 
@@ -18,21 +18,27 @@ static NSString *pusherDevice = nil;
 
 static void pusherPrefsChanged() {
 	XLog(@"Reloading prefs");
-	NSDictionary *pusherPrefs = [NSDictionary dictionaryWithContentsOfFile:PUSHER_PREFS_FILE];
-	id val = pusherPrefs[@"enabled"];
+	CFArrayRef keyList = CFPreferencesCopyKeyList(pusherAppID, kCFPreferencesCurrentUser, kCFPreferencesAnyHost);
+	NSDictionary *prefs = @{};
+	if (keyList) {
+		prefs = (NSDictionary *)CFPreferencesCopyMultiple(keyList, pusherAppID, kCFPreferencesCurrentUser, kCFPreferencesAnyHost);
+		if (!prefs) { prefs = @{}; }
+		CFRelease(keyList);
+	}
+	id val = prefs[@"enabled"];
 	pusherEnabled = val ? ((NSNumber *) val).boolValue : YES;
-	val = [pusherPrefs[@"pushoverToken"] copy];
+	val = [prefs[@"pushoverToken"] copy];
 	pusherToken = val ? val : @"";
-	val = [pusherPrefs[@"pushoverUser"] copy];
+	val = [prefs[@"pushoverUser"] copy];
 	pusherUser = val ? val : @"";
-	val = [pusherPrefs[@"pushoverDevice"] copy];
+	val = [prefs[@"pushoverDevice"] copy];
 	pusherDevice = val ? val : @"";
 	// Extract all excluded app IDs
 	NSMutableArray *tempPusherExcludedApps = [[NSMutableArray alloc] init];
-	for (id key in pusherPrefs.allKeys) {
+	for (id key in prefs.allKeys) {
 		if (![key isKindOfClass:NSString.class]) { continue; }
 		if ([key hasPrefix:@"ExcludedApp-"]) {
-			if (((NSNumber *) pusherPrefs[key]).boolValue) {
+			if (((NSNumber *) prefs[key]).boolValue) {
 				[tempPusherExcludedApps addObject:[key substringFromIndex:12].lowercaseString];
 			}
 		}
@@ -41,7 +47,7 @@ static void pusherPrefsChanged() {
 	[tempPusherExcludedApps release];
 }
 
-static BOOL pusherPrefsSayNo() {
+static BOOL prefsSayNo() {
 	return !pusherEnabled
 					|| pusherExcludedApps == nil
 					|| pusherToken == nil
@@ -53,7 +59,7 @@ static BOOL pusherPrefsSayNo() {
 
 %new
 - (void)sendBulletinToPusher:(BBBulletin *)bulletin {
-	if (pusherPrefsSayNo() || bulletin == nil) {
+	if (prefsSayNo() || bulletin == nil) {
 		return;
 	}
 	// Check if notification within last 5 seconds so we don't send uncleared notifications every respring
@@ -87,9 +93,9 @@ static BOOL pusherPrefsSayNo() {
 
 	//use async way to connect network
 	[[[NSURLSession sharedSession] dataTaskWithRequest:request completionHandler:^(NSData *data,NSURLResponse *response, NSError *error) {
-		if ([data length] > 0 && error == nil) {
+		if (data.length && error == nil) {
 			XLog(@"Success");
-		} else if ([data length] == 0 && error == nil) {
+		} else if (data.length && error == nil) {
 			XLog(@"No data");
 		} else if (error != nil) {
 			XLog(@"Error: %@", error);
