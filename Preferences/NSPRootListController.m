@@ -44,7 +44,7 @@
 
 - (PSSpecifier *)addDeviceLinkSpecifier {
 	PSSpecifier *devicesLinkSpecifier = [self generateDeviceLinkSpecifier];
-	[self insertSpecifier:devicesLinkSpecifier atEndOfGroup:2 animated:YES];
+	[self insertSpecifier:devicesLinkSpecifier afterSpecifierID:@"validateAndLoadDeviceList" animated:YES];
 	return devicesLinkSpecifier;
 }
 
@@ -69,14 +69,14 @@
 	}
 
 	id val = [prefs[@"pushoverToken"] copy];
-	NSString *pusherToken = val ? val : @"";
+	NSString *pushoverToken = val ? val : @"";
 	val = [prefs[@"pushoverUser"] copy];
-	NSString *pusherUser = val ? val : @"";
+	NSString *pushoverUser = val ? val : @"";
 	val = [prefs[@"pushoverDevices"] copy];
-	__block NSDictionary *pusherDevices = val ? val : @{};
+	__block NSDictionary *currPushoverDevices = val ? val : @{};
 	NSDictionary *userDictionary = @{
-		@"token": pusherToken,
-		@"user": pusherUser
+		@"token": pushoverToken,
+		@"user": pushoverUser
 	};
 	NSData *jsonData = [NSJSONSerialization dataWithJSONObject:userDictionary options:NSJSONWritingPrettyPrinted error:nil];
 	NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:@"https://api.pushover.net/1/users/validate.json"] cachePolicy:NSURLRequestUseProtocolCachePolicy timeoutInterval:10];
@@ -108,7 +108,7 @@
 			NSArray *pushoverDevices = (NSArray *)json[@"devices"];
 			NSMutableDictionary *pushoverDevicesDict = [NSMutableDictionary new];
 			for (NSString *device in pushoverDevices) {
-				pushoverDevicesDict[device] = pusherDevices[device] ? pusherDevices[device] : @NO;
+				pushoverDevicesDict[device] = currPushoverDevices[device] ? currPushoverDevices[device] : @NO;
 			}
 
 			CFStringRef pushoverDevicesKey = CFSTR("pushoverDevices");

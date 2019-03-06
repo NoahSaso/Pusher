@@ -10,11 +10,28 @@
 - (void)sendBulletinToPusher:(BBBulletin *)bulletin;
 @end
 
-static BOOL pusherEnabled = YES;
-static NSArray *pusherBlacklist = nil;
-static NSString *pusherToken = nil;
-static NSString *pusherUser = nil;
-static NSString *pusherDevice = nil;
+static BOOL pusherEnabled = NO;
+static NSArray *globalBlacklist = nil;
+static NSArray *pushoverBlacklist = nil;
+static NSString *pushoverToken = nil;
+static NSString *pushoverUser = nil;
+static NSString *pushoverDevice = nil;
+
+static NSArray *getPusherBlacklist(NSDictionary *prefs, NSString *prefix) {
+	// Extract all blacklisted app IDs
+	NSMutableArray *blacklist = [NSMutableArray new];
+	for (id key in prefs.allKeys) {
+		if (![key isKindOfClass:NSString.class]) { continue; }
+		if ([key hasPrefix:prefix]) {
+			if (((NSNumber *) prefs[key]).boolValue) {
+				[blacklist addObject:[key substringFromIndex:prefix.length].lowercaseString];
+			}
+		}
+	}
+	NSArray *ret = [blacklist copy];
+	[blacklist release];
+	return ret;
+}
 
 static void pusherPrefsChanged() {
 	XLog(@"Reloading prefs");
@@ -28,38 +45,29 @@ static void pusherPrefsChanged() {
 	id val = prefs[@"enabled"];
 	pusherEnabled = val ? ((NSNumber *) val).boolValue : YES;
 	val = [prefs[@"pushoverToken"] copy];
-	pusherToken = val ? val : @"";
+	pushoverToken = val ? val : @"";
 	val = [prefs[@"pushoverUser"] copy];
-	pusherUser = val ? val : @"";
+	pushoverUser = val ? val : @"";
 	val = [prefs[@"pushoverDevices"] copy];
-	NSDictionary *pusherDevices = val ? val : @{};
+	NSDictionary *pushoverDevices = val ? val : @{};
 	NSMutableArray *enabledDevices = [NSMutableArray new];
-	for (NSString *device in pusherDevices.allKeys) {
-		if (((NSNumber *) pusherDevices[device]).boolValue) {
+	for (NSString *device in pushoverDevices.allKeys) {
+		if (((NSNumber *) pushoverDevices[device]).boolValue) {
 			[enabledDevices addObject:device];
 		}
 	}
-	pusherDevice = [[enabledDevices componentsJoinedByString:@","] copy];
-	// Extract all blacklisted app IDs
-	NSMutableArray *tempPusherBlacklist = [NSMutableArray new];
-	for (id key in prefs.allKeys) {
-		if (![key isKindOfClass:NSString.class]) { continue; }
-		if ([key hasPrefix:@"BL-"]) {
-			if (((NSNumber *) prefs[key]).boolValue) {
-				[tempPusherBlacklist addObject:[key substringFromIndex:3].lowercaseString];
-			}
-		}
-	}
-	pusherBlacklist = [tempPusherBlacklist copy];
-	[tempPusherBlacklist release];
+	pushoverDevice = [[enabledDevices componentsJoinedByString:@","] copy];
+	globalBlacklist = getPusherBlacklist(prefs, @"globalBL-");
+	pushoverBlacklist = getPusherBlacklist(prefs, @"pushoverBL-");
 }
 
 static BOOL prefsSayNo() {
 	return !pusherEnabled
-					|| pusherBlacklist == nil
-					|| pusherToken == nil
-					|| pusherUser == nil
-					|| pusherDevice == nil;
+					|| globalBlacklist == nil || ![globalBlacklist isKindOfClass:NSArray.class]
+					|| pushoverBlacklist == nil || ![pushoverBlacklist isKindOfClass:NSArray.class]
+					|| pushoverToken == nil || ![pushoverToken isKindOfClass:NSString.class] || pushoverToken.length == 0
+					|| pushoverUser == nil || ![pushoverUser isKindOfClass:NSString.class] || pushoverUser.length == 0
+					|| pushoverDevice == nil || ![pushoverDevice isKindOfClass:NSString.class];
 }
 
 %hook BBServer
@@ -67,12 +75,24 @@ static BOOL prefsSayNo() {
 %new
 - (void)sendBulletinToPusher:(BBBulletin *)bulletin {
 	if (prefsSayNo() || bulletin == nil) {
+		XLog(@"Prefs said no");
+		if (pusherEnabled) {
+			XLog(@"globalBlacklist: %@", globalBlacklist);
+			XLog(@"pushoverBlacklist: %@", pushoverBlacklist);
+			XLog(@"pushoverToken: %@", pushoverToken);
+			XLog(@"pushoverUser: %@", pushoverUser);
+			XLog(@"pushoverDevice: %@", pushoverDevice);
+		}
 		return;
 	}
 	// Check if notification within last 5 seconds so we don't send uncleared notifications every respring
 	NSDate *fiveSecondsAgo = [[NSDate date] dateByAddingTimeInterval:-5];
-	if ((bulletin.date && [bulletin.date compare:fiveSecondsAgo] == NSOrderedAscending)
-			|| [pusherBlacklist containsObject:bulletin.sectionID.lowercaseString]) {
+	if (bulletin.date && [bulletin.date compare:fiveSecondsAgo] == NSOrderedAscending) {
+		return;
+	}
+	if ([globalBlacklist containsObject:bulletin.sectionID.lowercaseString]
+				|| [pushoverBlacklist containsObject:bulletin.sectionID.lowercaseString]) {
+		XLog(@"Blacklisted");
 		return;
 	}
 	SBApplication *app = [[NSClassFromString(@"SBApplicationController") sharedInstance] applicationWithBundleIdentifier:bulletin.sectionID];
@@ -84,11 +104,11 @@ static BOOL prefsSayNo() {
 	}
 	message = Xstr(@"%@%@%@", message, (message.length > 0 && bulletin.message && bulletin.message.length > 0 ? @"\n" : @""), bulletin.message ? bulletin.message : @"");
 	NSDictionary *userDictionary = @{
-		@"token": pusherToken,
-		@"user": pusherUser,
+		@"token": pushoverToken,
+		@"user": pushoverUser,
 		@"title": title,
 		@"message": message,
-		@"device": pusherDevice
+		@"device": pushoverDevice
 	};
 	NSData *jsonData = [NSJSONSerialization dataWithJSONObject:userDictionary options:NSJSONWritingPrettyPrinted error:nil];
 	NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:@"https://api.pushover.net/1/messages.json"] cachePolicy:NSURLRequestUseProtocolCachePolicy timeoutInterval:10];

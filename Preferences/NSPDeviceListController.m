@@ -20,6 +20,11 @@ static void setPreference(CFStringRef keyRef, CFPropertyListRef val, BOOL should
 - (id)init {
 	id ret = [super init];
 
+	// Create buttons
+	_updateBn = [[UIBarButtonItem alloc] initWithTitle:@"Update" style:UIBarButtonItemStylePlain target:self action:@selector(updateDevices)];
+	_activityIndicator = [[UIActivityIndicatorView alloc] initWithActivityIndicatorStyle:UIActivityIndicatorViewStyleWhite];
+	_activityIndicatorBn = [[UIBarButtonItem alloc] initWithCustomView:_activityIndicator];
+
 	// Get preferences
 	CFArrayRef keyList = CFPreferencesCopyKeyList(pusherAppID, kCFPreferencesCurrentUser, kCFPreferencesAnyHost);
 	_prefs = @{};
@@ -45,18 +50,29 @@ static void setPreference(CFStringRef keyRef, CFPropertyListRef val, BOOL should
 - (void)viewWillAppear:(BOOL)animated {
 	[super viewWillAppear:animated];
 	// Add reload button
-	UIBarButtonItem *updateButton = [[UIBarButtonItem alloc] initWithTitle:@"Update" style:UIBarButtonItemStylePlain target:self action:@selector(updateDevices)];
-	self.navigationItem.rightBarButtonItem = updateButton;
+	self.navigationItem.rightBarButtonItem = _updateBn;
+}
+
+- (void)showActivityIndicator {
+	self.navigationItem.rightBarButtonItem = _activityIndicatorBn;
+	[_activityIndicator startAnimating];
+}
+
+- (void)hideActivityIndicator {
+	[_activityIndicator stopAnimating];
+	self.navigationItem.rightBarButtonItem = _updateBn;
 }
 
 - (void)updateDevices {
+	[self showActivityIndicator];
+
 	id val = [_prefs[@"pushoverToken"] copy];
-	NSString *pusherToken = val ? val : @"";
+	NSString *pushoverToken = val ? val : @"";
 	val = [_prefs[@"pushoverUser"] copy];
-	NSString *pusherUser = val ? val : @"";
+	NSString *pushoverUser = val ? val : @"";
 	NSDictionary *userDictionary = @{
-		@"token": pusherToken,
-		@"user": pusherUser
+		@"token": pushoverToken,
+		@"user": pushoverUser
 	};
 	NSData *jsonData = [NSJSONSerialization dataWithJSONObject:userDictionary options:NSJSONWritingPrettyPrinted error:nil];
 	NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:@"https://api.pushover.net/1/users/validate.json"] cachePolicy:NSURLRequestUseProtocolCachePolicy timeoutInterval:10];
@@ -82,6 +98,7 @@ static void setPreference(CFStringRef keyRef, CFPropertyListRef val, BOOL should
 				for (id key in json.allKeys) {
 					XLog(@"%@: %@", key, json[key]);
 				}
+				[self hideActivityIndicator];
 				return;
 			}
 
@@ -111,6 +128,8 @@ static void setPreference(CFStringRef keyRef, CFPropertyListRef val, BOOL should
 		} else {
 			XLog(@"idk what happened");
 		}
+
+		[self hideActivityIndicator];
 	}] resume];
 }
 
@@ -147,14 +166,6 @@ static void setPreference(CFStringRef keyRef, CFPropertyListRef val, BOOL should
 			[enabledDevices addObject:device];
 		}
 	}
-	// if none selected, all devices will be sent
-	if (enabledDevices.count == 0) {
-		for (NSString *device in _pushoverDevices.allKeys) {
-			_pushoverDevices[device] = @YES;
-			[enabledDevices addObject:device];
-		}
-	}
-	[self reloadSpecifiers];
 	setPreference(CFSTR("pushoverDevices"), (__bridge CFPropertyListRef)_pushoverDevices, NO);
 }
 

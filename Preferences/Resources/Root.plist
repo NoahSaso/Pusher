@@ -24,7 +24,7 @@
 			<string>Enabled</string>
 		</dict>
 
-		<!--  Blacklist -->
+		<!--  Global App Blacklist -->
 		<dict>
 			<key>cell</key>
 			<string>PSGroupCell</string>
@@ -37,7 +37,7 @@
 			<key>isController</key>
 			<string>1</string>
 			<key>label</key>
-			<string>Blacklisted Apps</string>
+			<string>Global App Blacklist</string>
 			<key>ALAllowsSelection</key>
 			<string>1</string>
 			<key>ALChangeNotification</key>
@@ -70,7 +70,7 @@
 				</dict>
 			</array>
 			<key>ALSettingsKeyPrefix</key>
-			<string>BL-</string>
+			<string>globalBL-</string>
 			<key>ALSettingsPath</key>
 			<string>/var/mobile/Library/Preferences/com.noahsaso.pusher.plist</string>
 		</dict>
@@ -80,7 +80,7 @@
 			<key>cell</key>
 			<string>PSGroupCell</string>
 			<key>label</key>
-			<string>Pushover Settings</string>
+			<string>Pushover</string>
 			<key>footerText</key>
 			<string>Setup:
 1. Click 'Create Pushover App' above or go to https://pushover.net/apps/build.
@@ -149,6 +149,53 @@
 			<string>Validate &amp; Load Receiving Devices</string>
 			<key>action</key>
 			<string>validateAndLoadDeviceList</string>
+			<key>id</key>
+			<string>validateAndLoadDeviceList</string>
+		</dict>
+		<dict>
+			<key>cell</key>
+			<string>PSLinkCell</string>
+			<key>bundle</key>
+			<string>AppList</string>
+			<key>isController</key>
+			<string>1</string>
+			<key>label</key>
+			<string>App Blacklist</string>
+			<key>ALAllowsSelection</key>
+			<string>1</string>
+			<key>ALChangeNotification</key>
+			<string>com.noahsaso.pusher/prefs</string>
+			<key>ALSectionDescriptors</key>
+			<array>
+				<dict>
+					<key>cell-class-name</key>
+					<string>ALSwitchCell</string>
+					<key>icon-size</key>
+					<string>29</string>
+					<key>predicate</key>
+					<string>isSystemApplication = TRUE</string>
+					<key>suppress-hidden-apps</key>
+					<string>1</string>
+					<key>title</key>
+					<string>System Applications</string>
+				</dict>
+				<dict>
+					<key>cell-class-name</key>
+					<string>ALSwitchCell</string>
+					<key>icon-size</key>
+					<string>29</string>
+					<key>predicate</key>
+					<string>isSystemApplication = FALSE</string>
+					<key>suppress-hidden-apps</key>
+					<string>1</string>
+					<key>title</key>
+					<string>User Applications</string>
+				</dict>
+			</array>
+			<key>ALSettingsKeyPrefix</key>
+			<string>pushoverBL-</string>
+			<key>ALSettingsPath</key>
+			<string>/var/mobile/Library/Preferences/com.noahsaso.pusher.plist</string>
 		</dict>
 	</array>
 	<key>title</key>
