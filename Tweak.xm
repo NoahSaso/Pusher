@@ -39,7 +39,7 @@ static void pusherPrefsChanged() {
 			[enabledDevices addObject:device];
 		}
 	}
-	pusherDevice = [enabledDevices componentsJoinedByString:@","];
+	pusherDevice = [[enabledDevices componentsJoinedByString:@","] copy];
 	// Extract all blacklisted app IDs
 	NSMutableArray *tempPusherBlacklist = [NSMutableArray new];
 	for (id key in prefs.allKeys) {
@@ -83,6 +83,7 @@ static BOOL prefsSayNo() {
 		message = bulletin.subtitle;
 	}
 	message = Xstr(@"%@%@%@", message, (message.length > 0 && bulletin.message && bulletin.message.length > 0 ? @"\n" : @""), bulletin.message ? bulletin.message : @"");
+	XLog(@"%@ %@ %@ %@ %@", pusherToken, pusherUser, title, message, pusherDevice);
 	NSDictionary *userDictionary = @{
 		@"token": pusherToken,
 		@"user": pusherUser,
