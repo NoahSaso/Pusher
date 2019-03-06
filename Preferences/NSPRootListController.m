@@ -108,7 +108,7 @@
 			NSArray *pushoverDevices = (NSArray *)json[@"devices"];
 			NSMutableDictionary *pushoverDevicesDict = [NSMutableDictionary new];
 			for (NSString *device in pushoverDevices) {
-				pushoverDevicesDict[device] = pusherDevices[device] ? [NSNumber numberWithBool:(BOOL)pusherDevices[device]] : @NO;
+				pushoverDevicesDict[device] = pusherDevices[device] ? pusherDevices[device] : @NO;
 			}
 
 			CFStringRef pushoverDevicesKey = CFSTR("pushoverDevices");
