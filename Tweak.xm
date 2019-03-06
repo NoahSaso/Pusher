@@ -46,7 +46,7 @@ static void pusherPrefsChanged() {
 		if (![key isKindOfClass:NSString.class]) { continue; }
 		if ([key hasPrefix:@"BL-"]) {
 			if (((NSNumber *) prefs[key]).boolValue) {
-				[tempPusherBlacklist addObject:[key substringFromIndex:12].lowercaseString];
+				[tempPusherBlacklist addObject:[key substringFromIndex:3].lowercaseString];
 			}
 		}
 	}
