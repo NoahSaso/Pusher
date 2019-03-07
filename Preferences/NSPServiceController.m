@@ -17,9 +17,7 @@
 	if (!_specifiers) {
 		NSMutableArray *allSpecifiers = [[self loadSpecifiersFromPlistName:_service target:self] mutableCopy];
 
-		if (Xeq(_service, @"Pushover")) {
-			[allSpecifiers addObjectsFromArray:[NSPSharedSpecifiers pushover]];
-		}
+		[allSpecifiers addObjectsFromArray:[NSPSharedSpecifiers get:_service withAppID:nil]];
 
 		_specifiers = [allSpecifiers copy];
 	}

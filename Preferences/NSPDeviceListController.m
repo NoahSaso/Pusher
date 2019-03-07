@@ -7,7 +7,6 @@
 static void setPreference(CFStringRef keyRef, CFPropertyListRef val, BOOL shouldNotify) {
 	CFPreferencesSetValue(keyRef, val, pusherAppID, kCFPreferencesCurrentUser, kCFPreferencesAnyHost);
 	CFPreferencesSynchronize(pusherAppID, kCFPreferencesCurrentUser, kCFPreferencesAnyHost);
-	CFRelease(keyRef);
   if (shouldNotify) {
     // Reload stuff
     notify_post("com.noahsaso.pusher/prefs");
@@ -16,8 +15,8 @@ static void setPreference(CFStringRef keyRef, CFPropertyListRef val, BOOL should
 
 @implementation NSPDeviceListController
 
-- (id)init {
-	id ret = [super init];
+- (void)viewWillAppear:(BOOL)animated {
+	[super viewWillAppear:animated];
 
 	// Create buttons
 	_updateBn = [[UIBarButtonItem alloc] initWithTitle:@"Update" style:UIBarButtonItemStylePlain target:self action:@selector(updateDevices)];
@@ -32,22 +31,32 @@ static void setPreference(CFStringRef keyRef, CFPropertyListRef val, BOOL should
 		if (!_prefs) { _prefs = @{}; }
 		CFRelease(keyList);
 	}
-	id val = _prefs[@"pushoverDevices"];
-	_pushoverDevices = [(val ?: @{}) mutableCopy];
 
-	// If no devices, tell them
-	if (_pushoverDevices.count == 0) {
-		// give error and exit screen
-		XLog(@"devices empty");
-		[((UIViewController *) ret).navigationController popViewControllerAnimated:YES];
-		Xalert(@"There are no devices loaded. Please validate and load the receiving devices.");
+	_prefsKey = [[self.specifier propertyForKey:@"prefsKey"] retain];
+	_service = [[self.specifier propertyForKey:@"service"] retain];
+	_isCustomApp = ((NSNumber *) [self.specifier propertyForKey:@"isCustomApp"]).boolValue;
+	if (_isCustomApp) {
+		_customAppIDKey = [[self.specifier propertyForKey:@"customAppIDKey"] retain];
 	}
 
-	return ret;
-}
+	id val = _prefs[_prefsKey];
+	NSDictionary *dict = val ?: @{};
+	if (_isCustomApp) {
+		val = dict[_customAppIDKey] ?: @{};
+		val = val[@"devices"] ?: @{};
+	}
+	_serviceDevices = [(val ?: @{}) mutableCopy];
 
-- (void)viewWillAppear:(BOOL)animated {
-	[super viewWillAppear:animated];
+	// // If no devices, tell them
+	// if (_serviceDevices.count == 0) {
+	// 	// give error and exit screen
+	// 	XLog(@"devices empty");
+	// 	[((UIViewController *) ret).navigationController popViewControllerAnimated:YES];
+	// 	Xalert(@"There are no devices loaded. Please verify your credentials are .");
+	// }
+
+	[self reloadSpecifiers];
+
 	// Update in background
 	[self updateDevices];
 }
@@ -64,9 +73,61 @@ static void setPreference(CFStringRef keyRef, CFPropertyListRef val, BOOL should
 	});
 }
 
+- (void)saveServiceDevices {
+	if (_isCustomApp) {
+		NSMutableDictionary *customApps = [_prefs[_prefsKey] ?: @{} mutableCopy];
+		NSMutableDictionary *customApp = [(customApps[_customAppIDKey] ?: @{}) mutableCopy];
+		customApp[@"devices"] = _serviceDevices;
+		customApps[_customAppIDKey] = customApp;
+		setPreference((__bridge CFStringRef) _prefsKey, (__bridge CFPropertyListRef) customApps, YES);
+	} else {
+		setPreference((__bridge CFStringRef) _prefsKey, (__bridge CFPropertyListRef) _serviceDevices, YES);
+	}
+}
+
 - (void)updateDevices {
 	[self showActivityIndicator];
 
+	if (Xeq(_service, @"Pushover")) {
+		[self updatePushoverDevices];
+	}
+}
+
+- (NSArray *)specifiers {
+	if (!_specifiers) {
+		NSMutableArray *allSpecifiers = [NSMutableArray new];
+
+		if (_serviceDevices.count) {
+			PSSpecifier *groupSpecifier = [PSSpecifier emptyGroupSpecifier];
+			[groupSpecifier setProperty:@"Selecting none will forward push notifications to all devices." forKey:@"footerText"];
+			[allSpecifiers addObject:groupSpecifier];
+		}
+
+		for (NSString *device in [_serviceDevices.allKeys sortedArrayUsingSelector:@selector(localizedCaseInsensitiveCompare:)]) {
+			PSSpecifier *switchSpecifier = [PSSpecifier preferenceSpecifierNamed:device target:self set:@selector(setPreferenceValue:forDeviceSpecifier:) get:@selector(readDevicePreferenceValue:) detail:nil cell:PSSwitchCell edit:nil];
+			[switchSpecifier setProperty:@"com.noahsaso.pusher/prefs" forKey:@"PostNotification"];
+			[switchSpecifier setProperty:@YES forKey:@"enabled"];
+			[switchSpecifier setProperty:@"com.noahsaso.pusher" forKey:@"defaults"];
+			[switchSpecifier setProperty:@NO forKey:@"default"];
+			[allSpecifiers addObject:switchSpecifier];
+		}
+
+		_specifiers = [allSpecifiers copy];
+	}
+
+	return _specifiers;
+}
+
+- (void)setPreferenceValue:(id)value forDeviceSpecifier:(PSSpecifier *)specifier {
+	_serviceDevices[specifier.identifier] = value;
+	[self saveServiceDevices];
+}
+
+- (id)readDevicePreferenceValue:(PSSpecifier *)specifier {
+	return _serviceDevices[specifier.identifier];
+}
+
+- (void)updatePushoverDevices {
 	id val = [_prefs[@"pushoverToken"] copy];
 	NSString *pushoverToken = val ?: @"";
 	val = [_prefs[@"pushoverUser"] copy];
@@ -103,17 +164,17 @@ static void setPreference(CFStringRef keyRef, CFPropertyListRef val, BOOL should
 				return;
 			}
 
-			NSArray *pushoverDevices = (NSArray *)json[@"devices"];
-			for (NSString *device in pushoverDevices) {
-				_pushoverDevices[device] = _pushoverDevices[device] ?: @NO;
+			NSArray *serviceDevices = (NSArray *)json[@"devices"];
+			for (NSString *device in serviceDevices) {
+				_serviceDevices[device] = _serviceDevices[device] ?: @NO;
 			}
-			for (NSString *device in _pushoverDevices.allKeys) {
-				if (![pushoverDevices containsObject:device]) {
-					[_pushoverDevices removeObjectForKey:device];
+			for (NSString *device in _serviceDevices.allKeys) {
+				if (![serviceDevices containsObject:device]) {
+					[_serviceDevices removeObjectForKey:device];
 				}
 			}
 
-			setPreference(CFSTR("pushoverDevices"), (__bridge CFPropertyListRef)_pushoverDevices, YES);
+			[self saveServiceDevices];
 
 			XLog(@"Saved devices");
 
@@ -132,46 +193,6 @@ static void setPreference(CFStringRef keyRef, CFPropertyListRef val, BOOL should
 
 		[self hideActivityIndicator];
 	}] resume];
-}
-
-- (NSArray *)specifiers {
-	if (!_specifiers) {
-		NSMutableArray *allSpecifiers = [NSMutableArray new];
-
-		if (_pushoverDevices.count) {
-			PSSpecifier *groupSpecifier = [PSSpecifier emptyGroupSpecifier];
-			[groupSpecifier setProperty:@"Selecting none will forward push notifications to all devices." forKey:@"footerText"];
-			[allSpecifiers addObject:groupSpecifier];
-		}
-
-		for (NSString *device in [_pushoverDevices.allKeys sortedArrayUsingSelector:@selector(localizedCaseInsensitiveCompare:)]) {
-			PSSpecifier *switchSpecifier = [PSSpecifier preferenceSpecifierNamed:device target:self set:@selector(setPreferenceValue:forDeviceSpecifier:) get:@selector(readDevicePreferenceValue:) detail:nil cell:PSSwitchCell edit:nil];
-			[switchSpecifier setProperty:@"com.noahsaso.pusher/prefs" forKey:@"PostNotification"];
-			[switchSpecifier setProperty:@YES forKey:@"enabled"];
-			[switchSpecifier setProperty:@"com.noahsaso.pusher" forKey:@"defaults"];
-			[switchSpecifier setProperty:@NO forKey:@"default"];
-			[allSpecifiers addObject:switchSpecifier];
-		}
-
-		_specifiers = [allSpecifiers copy];
-	}
-
-	return _specifiers;
-}
-
-- (void)setPreferenceValue:(id)value forDeviceSpecifier:(PSSpecifier *)specifier {
-	_pushoverDevices[specifier.identifier] = value;
-	NSMutableArray *enabledDevices = [NSMutableArray new];
-	for (NSString *device in _pushoverDevices.allKeys) {
-		if (((NSNumber *) _pushoverDevices[device]).boolValue) {
-			[enabledDevices addObject:device];
-		}
-	}
-	setPreference(CFSTR("pushoverDevices"), (__bridge CFPropertyListRef)_pushoverDevices, NO);
-}
-
-- (id)readDevicePreferenceValue:(PSSpecifier *)specifier {
-	return _pushoverDevices[specifier.identifier];
 }
 
 @end

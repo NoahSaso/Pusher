@@ -53,12 +53,6 @@ static void setPreference(CFStringRef keyRef, CFPropertyListRef val, BOOL should
 	setPreference((__bridge CFStringRef) _prefsKey, (__bridge CFPropertyListRef) customApps, YES);
 }
 
-- (id)initWithService:(NSString *)service {
-	NSPCustomizeAppsController *ret = [self init];
-	ret->_service = service;
-	return ret;
-}
-
 - (void)dealloc {
 	[_table release];
 	[_sections release];
@@ -66,8 +60,8 @@ static void setPreference(CFStringRef keyRef, CFPropertyListRef val, BOOL should
 	[super dealloc];
 }
 
-- (void)viewDidLoad {
-	[super viewDidLoad];
+- (void)viewWillAppear:(BOOL)animated {
+	[super viewWillAppear:animated];
 
 	_appList = [ALApplicationList sharedApplicationList];
 
@@ -80,8 +74,12 @@ static void setPreference(CFStringRef keyRef, CFPropertyListRef val, BOOL should
 		CFRelease(keyList);
 	}
 
-	_prefsKey = [Xstr(@"%@CustomApps", [self.specifier propertyForKey:@"keyPrefix"]) retain];
+	_service = [[self.specifier propertyForKey:@"service"] retain];
+	_prefsKey = [Xstr(@"%@CustomApps", _service) retain];
 	_customApps = [(prefs[_prefsKey] ?: @{}) mutableCopy];
+
+	NSString *defaultDevicesKey = [self.specifier propertyForKey:@"defaultDevicesKey"];
+	_defaultDevices = [(prefs[defaultDevicesKey] ?: @{}) copy];
 
 	_sections = [@[@"", @"Enabled", @"Disabled"] retain];
 	_data = [@{
@@ -132,7 +130,13 @@ static void setPreference(CFStringRef keyRef, CFPropertyListRef val, BOOL should
 }
 
 - (void)addAppIDs:(NSArray *)appIDs {
-	[_data[@"Enabled"] addObjectsFromArray:appIDs];
+	NSMutableArray *nonOverlappingAppIDs = [NSMutableArray new];
+	for (NSString *appID in appIDs) {
+		if (![_data[@"Enabled"] containsObject:appID] && ![_data[@"Disabled"] containsObject:appID]) {
+			[nonOverlappingAppIDs addObject:appID];
+		}
+	}
+	[_data[@"Enabled"] addObjectsFromArray:nonOverlappingAppIDs];
 	[self sortAppIDArray:_data[@"Enabled"]];
 	[self saveAppState];
 	[_table reloadData];
@@ -149,7 +153,7 @@ static void setPreference(CFStringRef keyRef, CFPropertyListRef val, BOOL should
 		return;
 	}
 	NSString *appID = _data[_sections[indexPath.section]][indexPath.row];
-	PSViewController *controller = [[NSPCustomAppController alloc] initWithService:_service appID:appID];
+	NSPCustomAppController *controller = [[NSPCustomAppController alloc] initWithService:_service appID:appID];
 	[self pushController:controller];
 }
 

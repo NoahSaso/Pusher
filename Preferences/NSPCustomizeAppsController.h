@@ -11,8 +11,8 @@
   NSString *_prefsKey;
   NSString *_lastTargetAppID;
   NSIndexPath *_lastTargetIndexPath;
+  NSDictionary *_defaultDevices;
 }
-- (id)initWithService:(NSString *)service;
 - (void)addAppIDs:(NSArray *)appIDs;
 - (void)saveAppState;
 - (void)sortAppIDArray:(NSMutableArray *)array;

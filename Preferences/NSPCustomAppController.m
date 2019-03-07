@@ -9,8 +9,8 @@
 
 - (id)initWithService:(NSString *)service appID:(NSString *)appID {
 	NSPCustomAppController *ret = [self init];
-	ret->_service = service;
-	ret->_appID = appID;
+	_service = service;
+	_appID = appID;
 	return ret;
 }
 
@@ -19,7 +19,9 @@
 		NSMutableArray *allSpecifiers = [NSMutableArray new];
 
 		[allSpecifiers addObject:[PSSpecifier groupSpecifierWithName:@"Customize"]];
-		[allSpecifiers addObjectsFromArray:[NSPSharedSpecifiers pushover]];
+		XLog(@"_service: %@", _service);
+		XLog(@"_appID: %@", _appID);
+		[allSpecifiers addObjectsFromArray:[NSPSharedSpecifiers get:_service withAppID:_appID]];
 
 		_specifiers = [allSpecifiers copy];
 	}

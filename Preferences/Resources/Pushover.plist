@@ -84,8 +84,10 @@
 			<string>App Customization</string>
 			<key>detail</key>
 			<string>NSPCustomizeAppsController</string>
-			<key>keyPrefix</key>
+			<key>service</key>
 			<string>Pushover</string>
+			<key>defaultDevicesKey</key>
+			<string>pushoverDevices</string>
 		</dict>
 		<dict>
 			<key>cell</key>
