@@ -4,3 +4,5 @@
 #define PUSHER_PREFS_NOTIFICATION CFSTR("com.noahsaso.pusher/prefs")
 
 #define pusherAppID CFSTR("com.noahsaso.pusher")
+
+#define PUSHER_SERVICES @[ @"Pushover" ]

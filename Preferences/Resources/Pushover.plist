@@ -1,0 +1,137 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>items</key>
+	<array>
+		<!-- Credentials -->
+		<dict>
+			<key>cell</key>
+			<string>PSGroupCell</string>
+			<key>label</key>
+			<string>Credentials</string>
+		</dict>
+		<dict>
+			<key>cell</key>
+			<string>PSButtonCell</string>
+			<key>label</key>
+			<string>Create Pushover App</string>
+			<key>action</key>
+			<string>openPushoverAppBuild</string>
+		</dict>
+		<dict>
+			<key>cell</key>
+			<string>PSEditTextCell</string>
+			<key>detail</key>
+			<string>PSDetailController</string>
+			<key>defaults</key>
+			<string>com.noahsaso.pusher</string>
+			<key>PostNotification</key>
+			<string>com.noahsaso.pusher/prefs</string>
+			<key>key</key>
+			<string>pushoverToken</string>
+			<key>label</key>
+			<string>API Token/Key:</string>
+			<key>noAutoCorrect</key>
+			<true/>
+		</dict>
+		<dict>
+			<key>cell</key>
+			<string>PSButtonCell</string>
+			<key>label</key>
+			<string>Open Pushover Dashboard</string>
+			<key>action</key>
+			<string>openPushoverDashboard</string>
+		</dict>
+		<dict>
+			<key>cell</key>
+			<string>PSEditTextCell</string>
+			<key>detail</key>
+			<string>PSDetailController</string>
+			<key>defaults</key>
+			<string>com.noahsaso.pusher</string>
+			<key>PostNotification</key>
+			<string>com.noahsaso.pusher/prefs</string>
+			<key>key</key>
+			<string>pushoverUser</string>
+			<key>label</key>
+			<string>User Key:</string>
+			<key>noAutoCorrect</key>
+			<true/>
+		</dict>
+
+		<!-- Options -->
+		<dict>
+			<key>cell</key>
+			<string>PSGroupCell</string>
+			<key>label</key>
+			<string>Options</string>
+			<key>footerText</key>
+			<string>Setup:
+1. Click 'Create Pushover App' above (https://pushover.net/apps/build).
+2. Enter a name (e.g. 'Pusher'). Other fields are optional.
+3. Check the box (after reading their Terms of Service).
+4. Press 'Create Application' at the bottom.
+5. Copy the API Token/Key into the associated field above.
+6. Click 'Open Pushover Dashboard' above (https://pushover.net/dashboard).
+7. Copy 'Your User Key' into the associated field above.
+8. Click 'Receiving Devices' to validate your credentials and load the receiving device list.</string>
+		</dict>
+		<dict>
+			<key>cell</key>
+			<string>PSLinkCell</string>
+			<key>label</key>
+			<string>Receiving Devices</string>
+			<key>detail</key>
+			<string>NSPDeviceListController</string>
+		</dict>
+		<dict>
+			<key>cell</key>
+			<string>PSLinkCell</string>
+			<key>bundle</key>
+			<string>AppList</string>
+			<key>isController</key>
+			<string>1</string>
+			<key>label</key>
+			<string>App Blacklist</string>
+			<key>ALAllowsSelection</key>
+			<string>1</string>
+			<key>ALChangeNotification</key>
+			<string>com.noahsaso.pusher/prefs</string>
+			<key>ALSectionDescriptors</key>
+			<array>
+				<dict>
+					<key>cell-class-name</key>
+					<string>ALDisclosureIndicatedCell</string>
+					<key>icon-size</key>
+					<string>29</string>
+					<key>predicate</key>
+					<string>isSystemApplication = TRUE</string>
+					<key>suppress-hidden-apps</key>
+					<string>1</string>
+					<key>title</key>
+					<string>System Applications</string>
+				</dict>
+				<dict>
+					<key>cell-class-name</key>
+					<string>ALDisclosureIndicatedCell</string>
+					<key>icon-size</key>
+					<string>29</string>
+					<key>predicate</key>
+					<string>isSystemApplication = FALSE</string>
+					<key>suppress-hidden-apps</key>
+					<string>1</string>
+					<key>title</key>
+					<string>User Applications</string>
+				</dict>
+			</array>
+			<key>ALSettingsKeyPrefix</key>
+			<string>pushoverBL-</string>
+			<key>ALSettingsPath</key>
+			<string>/var/mobile/Library/Preferences/com.noahsaso.pusher.plist</string>
+		</dict>
+	</array>
+	<key>title</key>
+	<string>Pushover</string>
+</dict>
+</plist>

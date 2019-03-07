@@ -5,7 +5,6 @@
 #import <notify.h>
 
 static void setPreference(CFStringRef keyRef, CFPropertyListRef val, BOOL shouldNotify) {
-	CFPreferencesSynchronize(pusherAppID, kCFPreferencesCurrentUser, kCFPreferencesAnyHost);
 	CFPreferencesSetValue(keyRef, val, pusherAppID, kCFPreferencesCurrentUser, kCFPreferencesAnyHost);
 	CFPreferencesSynchronize(pusherAppID, kCFPreferencesCurrentUser, kCFPreferencesAnyHost);
 	CFRelease(keyRef);
@@ -34,7 +33,7 @@ static void setPreference(CFStringRef keyRef, CFPropertyListRef val, BOOL should
 		CFRelease(keyList);
 	}
 	id val = _prefs[@"pushoverDevices"];
-	_pushoverDevices = [(val ? val : @{}) mutableCopy];
+	_pushoverDevices = [(val ?: @{}) mutableCopy];
 
 	// If no devices, tell them
 	if (_pushoverDevices.count == 0) {
@@ -49,8 +48,8 @@ static void setPreference(CFStringRef keyRef, CFPropertyListRef val, BOOL should
 
 - (void)viewWillAppear:(BOOL)animated {
 	[super viewWillAppear:animated];
-	// Add reload button
-	self.navigationItem.rightBarButtonItem = _updateBn;
+	// Update in background
+	[self updateDevices];
 }
 
 - (void)showActivityIndicator {
@@ -59,17 +58,19 @@ static void setPreference(CFStringRef keyRef, CFPropertyListRef val, BOOL should
 }
 
 - (void)hideActivityIndicator {
-	[_activityIndicator stopAnimating];
-	self.navigationItem.rightBarButtonItem = _updateBn;
+	dispatch_async(dispatch_get_main_queue(), ^(void) {
+		[_activityIndicator stopAnimating];
+		self.navigationItem.rightBarButtonItem = _updateBn;
+	});
 }
 
 - (void)updateDevices {
 	[self showActivityIndicator];
 
 	id val = [_prefs[@"pushoverToken"] copy];
-	NSString *pushoverToken = val ? val : @"";
+	NSString *pushoverToken = val ?: @"";
 	val = [_prefs[@"pushoverUser"] copy];
-	NSString *pushoverUser = val ? val : @"";
+	NSString *pushoverUser = val ?: @"";
 	NSDictionary *userDictionary = @{
 		@"token": pushoverToken,
 		@"user": pushoverUser
@@ -104,7 +105,7 @@ static void setPreference(CFStringRef keyRef, CFPropertyListRef val, BOOL should
 
 			NSArray *pushoverDevices = (NSArray *)json[@"devices"];
 			for (NSString *device in pushoverDevices) {
-				_pushoverDevices[device] = _pushoverDevices[device] ? _pushoverDevices[device] : @NO;
+				_pushoverDevices[device] = _pushoverDevices[device] ?: @NO;
 			}
 			for (NSString *device in _pushoverDevices.allKeys) {
 				if (![pushoverDevices containsObject:device]) {
