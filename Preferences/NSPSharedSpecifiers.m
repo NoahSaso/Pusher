@@ -7,7 +7,7 @@
 @implementation NSPSharedSpecifiers
 
 + (NSArray *)get:(NSString *)service withAppID:(NSString *)appID {
-  if (Xeq(service, @"Pushover")) {
+  if (Xeq(service, PUSHER_SERVICE_PUSHOVER)) {
     return [NSPSharedSpecifiers pushover:appID];
   }
   return @[];
@@ -15,9 +15,9 @@
 
 + (NSArray *)pushover:(NSString *)appID {
   PSSpecifier *devices = [PSSpecifier preferenceSpecifierNamed:@"Receiving Devices" target:nil set:nil get:nil detail:NSPDeviceListController.class cell:PSLinkCell edit:nil];
-  [devices setProperty:@"Pushover" forKey:@"service"];
+  [devices setProperty:PUSHER_SERVICE_PUSHOVER forKey:@"service"];
   BOOL isCustomApp = appID != nil;
-  [devices setProperty:(isCustomApp ? @"PushoverCustomApps" : @"pushoverDevices") forKey:@"prefsKey"];
+  [devices setProperty:(isCustomApp ? @"PushoverCustomApps" : NSPPreferencePushoverDevicesKey) forKey:@"prefsKey"];
   [devices setProperty:[NSNumber numberWithBool:isCustomApp] forKey:@"isCustomApp"];
   if (isCustomApp) {
     [devices setProperty:appID forKey:@"customAppIDKey"];

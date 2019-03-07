@@ -8,7 +8,6 @@
 
 - (id)init {
 	id ret = [super init];
-
 	return ret;
 }
 

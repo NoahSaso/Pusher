@@ -25,20 +25,18 @@ static void setPreference(CFStringRef keyRef, CFPropertyListRef val, BOOL should
 		if ([_customApps.allKeys containsObject:appID]) {
 			NSMutableDictionary *appDict = [(NSDictionary *)_customApps[appID] mutableCopy];
 			appDict[@"enabled"] = @YES;
-			_customApps[appID] = [appDict copy];
-			[appDict release];
+			_customApps[appID] = appDict;
 		} else {
-			_customApps[appID] = @{ @"enabled": @YES };
+			_customApps[appID] = @{ @"enabled": @YES, @"devices": _defaultDevices };
 		}
 	}
 	for (NSString *appID in disabledApps) {
 		if ([_customApps.allKeys containsObject:appID]) {
 			NSMutableDictionary *appDict = [(NSDictionary *)_customApps[appID] mutableCopy];
 			appDict[@"enabled"] = @NO;
-			_customApps[appID] = [appDict copy];
-			[appDict release];
+			_customApps[appID] = appDict;
 		} else {
-			_customApps[appID] = @{ @"enabled": @NO };
+			_customApps[appID] = @{ @"enabled": @NO, @"devices": _defaultDevices };
 		}
 	}
 	for (NSString *appID in _customApps.allKeys) {
@@ -46,11 +44,7 @@ static void setPreference(CFStringRef keyRef, CFPropertyListRef val, BOOL should
 			[_customApps removeObjectForKey:appID];
 		}
 	}
-	NSMutableDictionary *customApps = [NSMutableDictionary new];
-	for (NSString *appID in _customApps.allKeys) {
-		customApps[appID] = (__bridge CFPropertyListRef)_customApps[appID];
-	}
-	setPreference((__bridge CFStringRef) _prefsKey, (__bridge CFPropertyListRef) customApps, YES);
+	setPreference((__bridge CFStringRef) _prefsKey, (__bridge CFPropertyListRef) _customApps, YES);
 }
 
 - (void)dealloc {
@@ -189,6 +183,8 @@ static void setPreference(CFStringRef keyRef, CFPropertyListRef val, BOOL should
 }
 
 - (void)tableView:(UITableView *)table moveRowAtIndexPath:(NSIndexPath *)sourceIndexPath toIndexPath:(NSIndexPath *)destinationIndexPath {
+	_lastTargetAppID = @"";
+	_lastTargetIndexPath = [NSIndexPath indexPathForRow:0 inSection:0];
 	NSString *appID = _data[_sections[sourceIndexPath.section]][sourceIndexPath.row];
 	[_data[_sections[sourceIndexPath.section]] removeObjectAtIndex:sourceIndexPath.row];
 	// sorted because target index path forces to be in right place

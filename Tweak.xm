@@ -44,11 +44,11 @@ static void pusherPrefsChanged() {
 	}
 	id val = prefs[@"enabled"];
 	pusherEnabled = val ? ((NSNumber *) val).boolValue : YES;
-	val = [prefs[@"pushoverToken"] copy];
+	val = [prefs[NSPPreferencePushoverTokenKey] copy];
 	pushoverToken = val ?: @"";
-	val = [prefs[@"pushoverUser"] copy];
+	val = [prefs[NSPPreferencePushoverUserKey] copy];
 	pushoverUser = val ?: @"";
-	val = [prefs[@"pushoverDevices"] copy];
+	val = [prefs[NSPPreferencePushoverDevicesKey] copy];
 	NSDictionary *pushoverDevices = val ?: @{};
 	NSMutableArray *enabledDevices = [NSMutableArray new];
 	for (NSString *device in pushoverDevices.allKeys) {
@@ -57,8 +57,8 @@ static void pusherPrefsChanged() {
 		}
 	}
 	pushoverDevice = [[enabledDevices componentsJoinedByString:@","] copy];
-	globalBlacklist = getPusherBlacklist(prefs, @"globalBL-");
-	pushoverBlacklist = getPusherBlacklist(prefs, @"pushoverBL-");
+	globalBlacklist = getPusherBlacklist(prefs, NSPPreferenceGlobalBLPrefix);
+	pushoverBlacklist = getPusherBlacklist(prefs, NSPPreferencePushoverBLPrefix);
 	XLog(@"Reloaded");
 }
 

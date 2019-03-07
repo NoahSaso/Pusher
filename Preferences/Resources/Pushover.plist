@@ -29,7 +29,7 @@
 			<key>PostNotification</key>
 			<string>com.noahsaso.pusher/prefs</string>
 			<key>key</key>
-			<string>pushoverToken</string>
+			<string>PushoverToken</string>
 			<key>label</key>
 			<string>API Token/Key:</string>
 			<key>noAutoCorrect</key>
@@ -53,7 +53,7 @@
 			<key>PostNotification</key>
 			<string>com.noahsaso.pusher/prefs</string>
 			<key>key</key>
-			<string>pushoverUser</string>
+			<string>PushoverUser</string>
 			<key>label</key>
 			<string>User Key:</string>
 			<key>noAutoCorrect</key>
@@ -87,7 +87,7 @@
 			<key>service</key>
 			<string>Pushover</string>
 			<key>defaultDevicesKey</key>
-			<string>pushoverDevices</string>
+			<string>PushoverDevices</string>
 		</dict>
 		<dict>
 			<key>cell</key>
@@ -130,7 +130,7 @@
 				</dict>
 			</array>
 			<key>ALSettingsKeyPrefix</key>
-			<string>pushoverBL-</string>
+			<string>PushoverBL-</string>
 			<key>ALSettingsPath</key>
 			<string>/var/mobile/Library/Preferences/com.noahsaso.pusher.plist</string>
 		</dict>

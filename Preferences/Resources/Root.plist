@@ -19,7 +19,7 @@
 			<key>defaults</key>
 			<string>com.noahsaso.pusher</string>
 			<key>key</key>
-			<string>enabled</string>
+			<string>Enabled</string>
 			<key>label</key>
 			<string>Enabled</string>
 		</dict>
@@ -70,7 +70,7 @@
 				</dict>
 			</array>
 			<key>ALSettingsKeyPrefix</key>
-			<string>globalBL-</string>
+			<string>GlobalBL-</string>
 			<key>ALSettingsPath</key>
 			<string>/var/mobile/Library/Preferences/com.noahsaso.pusher.plist</string>
 		</dict>

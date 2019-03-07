@@ -88,7 +88,7 @@ static void setPreference(CFStringRef keyRef, CFPropertyListRef val, BOOL should
 - (void)updateDevices {
 	[self showActivityIndicator];
 
-	if (Xeq(_service, @"Pushover")) {
+	if (Xeq(_service, PUSHER_SERVICE_PUSHOVER)) {
 		[self updatePushoverDevices];
 	}
 }
@@ -128,9 +128,9 @@ static void setPreference(CFStringRef keyRef, CFPropertyListRef val, BOOL should
 }
 
 - (void)updatePushoverDevices {
-	id val = [_prefs[@"pushoverToken"] copy];
+	id val = [_prefs[NSPPreferencePushoverTokenKey] copy];
 	NSString *pushoverToken = val ?: @"";
-	val = [_prefs[@"pushoverUser"] copy];
+	val = [_prefs[NSPPreferencePushoverUserKey] copy];
 	NSString *pushoverUser = val ?: @"";
 	NSDictionary *userDictionary = @{
 		@"token": pushoverToken,

@@ -5,4 +5,12 @@
 
 #define pusherAppID CFSTR("com.noahsaso.pusher")
 
-#define PUSHER_SERVICES @[ @"Pushover" ]
+#define NSPPreferenceGlobalBLPrefix @"GlobalBL-"
+
+#define PUSHER_SERVICE_PUSHOVER @"Pushover"
+#define NSPPreferencePushoverTokenKey @"PushoverToken"
+#define NSPPreferencePushoverUserKey @"PushoverUser"
+#define NSPPreferencePushoverDevicesKey @"PushoverDevices"
+#define NSPPreferencePushoverBLPrefix @"PushoverBL-"
+
+#define PUSHER_SERVICES @[ PUSHER_SERVICE_PUSHOVER ]
