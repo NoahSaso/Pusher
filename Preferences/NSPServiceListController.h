@@ -1,4 +1,4 @@
-#import <Preferences/PSListController.h>
+#import <Preferences/PSViewController.h>
 
 @interface NSPServiceListController : PSViewController <UITableViewDelegate, UITableViewDataSource> {
   NSDictionary *_prefs;

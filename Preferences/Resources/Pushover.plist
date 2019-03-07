@@ -81,9 +81,11 @@
 			<key>cell</key>
 			<string>PSLinkCell</string>
 			<key>label</key>
-			<string>Receiving Devices</string>
+			<string>App Customization</string>
 			<key>detail</key>
-			<string>NSPDeviceListController</string>
+			<string>NSPCustomizeAppsController</string>
+			<key>keyPrefix</key>
+			<string>Pushover</string>
 		</dict>
 		<dict>
 			<key>cell</key>
@@ -102,7 +104,7 @@
 			<array>
 				<dict>
 					<key>cell-class-name</key>
-					<string>ALDisclosureIndicatedCell</string>
+					<string>ALSwitchCell</string>
 					<key>icon-size</key>
 					<string>29</string>
 					<key>predicate</key>
@@ -114,7 +116,7 @@
 				</dict>
 				<dict>
 					<key>cell-class-name</key>
-					<string>ALDisclosureIndicatedCell</string>
+					<string>ALSwitchCell</string>
 					<key>icon-size</key>
 					<string>29</string>
 					<key>predicate</key>

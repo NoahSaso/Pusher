@@ -1,4 +1,4 @@
-#include "NSPServiceListController.h"
+#import "NSPServiceListController.h"
 #import "NSPServiceController.h"
 
 #import "../global.h"
@@ -58,6 +58,7 @@ static void setPreference(CFStringRef keyRef, CFPropertyListRef val, BOOL should
 	_table.delegate = self;
 	[self.view addSubview:_table];
 
+	self.navigationItem.title = @"Services";
 	self.navigationItem.rightBarButtonItem = [[UIBarButtonItem alloc] initWithTitle:@"Edit" style:UIBarButtonItemStylePlain target:self action:@selector(toggleEditing:)];
 
 	[_table reloadData];

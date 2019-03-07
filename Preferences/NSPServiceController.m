@@ -1,4 +1,5 @@
-#include "NSPServiceController.h"
+#import "NSPServiceController.h"
+#import "NSPSharedSpecifiers.h"
 
 #import "../global.h"
 #import <Custom/defines.h>
@@ -14,7 +15,13 @@
 
 - (NSArray *)specifiers {
 	if (!_specifiers) {
-		_specifiers = [[self loadSpecifiersFromPlistName:_service target:self] retain];
+		NSMutableArray *allSpecifiers = [[self loadSpecifiersFromPlistName:_service target:self] mutableCopy];
+
+		if (Xeq(_service, @"Pushover")) {
+			[allSpecifiers addObjectsFromArray:[NSPSharedSpecifiers pushover]];
+		}
+
+		_specifiers = [allSpecifiers copy];
 	}
 
 	return _specifiers;

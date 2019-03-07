@@ -1,4 +1,4 @@
-#include "NSPDeviceListController.h"
+#import "NSPDeviceListController.h"
 
 #import "../global.h"
 #import <Custom/defines.h>
