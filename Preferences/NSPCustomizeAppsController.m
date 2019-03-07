@@ -100,6 +100,9 @@ static void setPreference(CFStringRef keyRef, CFPropertyListRef val, BOOL should
 		}
 	}
 
+	_lastTargetAppID = @"";
+	_lastTargetIndexPath = [NSIndexPath indexPathForRow:0 inSection:0];
+
 	[self sortAppIDArray:_data[@"Enabled"]];
 	[self sortAppIDArray:_data[@"Disabled"]];
 
@@ -218,9 +221,14 @@ static void setPreference(CFStringRef keyRef, CFPropertyListRef val, BOOL should
 		return sourceIndexPath;
 	}
 	NSString *appID = _data[_sections[sourceIndexPath.section]][sourceIndexPath.row];
+	if (Xeq(appID, _lastTargetAppID)) {
+		return _lastTargetIndexPath;
+	}
+	_lastTargetAppID = appID;
 	NSMutableArray *tempArray = [[_data[_sections[proposedDestinationIndexPath.section]] arrayByAddingObject:appID] mutableCopy];
 	[self sortAppIDArray:tempArray];
-	return [NSIndexPath indexPathForRow:[tempArray indexOfObject:appID] inSection:proposedDestinationIndexPath.section];
+	_lastTargetIndexPath = [NSIndexPath indexPathForRow:[tempArray indexOfObject:appID] inSection:proposedDestinationIndexPath.section];
+	return _lastTargetIndexPath;
 }
 
 @end

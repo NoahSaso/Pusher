@@ -9,6 +9,8 @@
   NSMutableDictionary *_customApps;
   ALApplicationList *_appList;
   NSString *_prefsKey;
+  NSString *_lastTargetAppID;
+  NSIndexPath *_lastTargetIndexPath;
 }
 - (id)initWithService:(NSString *)service;
 - (void)addAppIDs:(NSArray *)appIDs;
