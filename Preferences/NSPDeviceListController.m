@@ -172,7 +172,7 @@ static void setPreference(CFStringRef keyRef, CFPropertyListRef val, BOOL should
 					title = @"Unknown Error";
 					msg = Xstr(@"Server response: %@", json);
 				} else {
-					title = @"Server Error:";
+					title = @"Server Error";
 					msg = Xstr(@"%@", [errors componentsJoinedByString:@"\n"]);
 				}
 				UIAlertController *alert = XalertWTitle(title, msg);
@@ -206,12 +206,23 @@ static void setPreference(CFStringRef keyRef, CFPropertyListRef val, BOOL should
 				[self reloadSpecifiers];
 			});
 
-		} else if (data.length && error == nil) {
-			XLog(@"No data");
-		} else if (error != nil) {
-			XLog(@"Error: %@", error);
 		} else {
-			XLog(@"idk what happened");
+			id handler = ^(UIAlertAction *action) {
+				[self.navigationController popViewControllerAnimated:YES];
+			};
+			NSString *msg;
+			if (data.length == 0 && error == nil) {
+				msg = @"Server did not respond. Please check your internet connection or try again later.";
+			} else if (error) {
+				msg = error.localizedDescription;
+			} else {
+				msg = @"Unknown Error. Contact Developer.";
+			}
+			UIAlertController *alert = XalertWTitle(@"Network Error", msg);
+			[alert addAction:XalertBtnWHandler(@"Ok", handler)];
+			dispatch_async(dispatch_get_main_queue(), ^(void) {
+				[self presentViewController:alert animated:YES completion:nil];
+			});
 		}
 
 		[self hideActivityIndicator];
