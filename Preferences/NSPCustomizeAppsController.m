@@ -8,8 +8,8 @@
 #import <notify.h>
 
 static void setPreference(CFStringRef keyRef, CFPropertyListRef val, BOOL shouldNotify) {
-	CFPreferencesSetValue(keyRef, val, pusherAppID, kCFPreferencesCurrentUser, kCFPreferencesAnyHost);
-	CFPreferencesSynchronize(pusherAppID, kCFPreferencesCurrentUser, kCFPreferencesAnyHost);
+	CFPreferencesSetValue(keyRef, val, PUSHER_APP_ID, kCFPreferencesCurrentUser, kCFPreferencesAnyHost);
+	CFPreferencesSynchronize(PUSHER_APP_ID, kCFPreferencesCurrentUser, kCFPreferencesAnyHost);
   if (shouldNotify) {
     // Reload stuff
     notify_post("com.noahsaso.pusher/prefs");
@@ -68,10 +68,10 @@ static void setPreference(CFStringRef keyRef, CFPropertyListRef val, BOOL should
 	_appList = [ALApplicationList sharedApplicationList];
 
 	// Get preferences
-	CFArrayRef keyList = CFPreferencesCopyKeyList(pusherAppID, kCFPreferencesCurrentUser, kCFPreferencesAnyHost);
+	CFArrayRef keyList = CFPreferencesCopyKeyList(PUSHER_APP_ID, kCFPreferencesCurrentUser, kCFPreferencesAnyHost);
 	NSDictionary *prefs = @{};
 	if (keyList) {
-		prefs = (NSDictionary *)CFPreferencesCopyMultiple(keyList, pusherAppID, kCFPreferencesCurrentUser, kCFPreferencesAnyHost);
+		prefs = (NSDictionary *)CFPreferencesCopyMultiple(keyList, PUSHER_APP_ID, kCFPreferencesCurrentUser, kCFPreferencesAnyHost);
 		if (!prefs) { prefs = @{}; }
 		CFRelease(keyList);
 	}

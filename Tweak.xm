@@ -12,10 +12,7 @@
 
 static BOOL pusherEnabled = NO;
 static NSArray *globalBlacklist = nil;
-static NSArray *pushoverBlacklist = nil;
-static NSString *pushoverToken = nil;
-static NSString *pushoverUser = nil;
-static NSString *pushoverDevice = nil;
+static NSMutableDictionary *pusherServices = nil;
 
 static NSArray *getPusherBlacklist(NSDictionary *prefs, NSString *prefix) {
 	// Extract all blacklisted app IDs
@@ -35,32 +32,47 @@ static NSArray *getPusherBlacklist(NSDictionary *prefs, NSString *prefix) {
 
 static void pusherPrefsChanged() {
 	XLog(@"Reloading prefs");
-	CFArrayRef keyList = CFPreferencesCopyKeyList(pusherAppID, kCFPreferencesCurrentUser, kCFPreferencesAnyHost);
+
+	CFArrayRef keyList = CFPreferencesCopyKeyList(PUSHER_APP_ID, kCFPreferencesCurrentUser, kCFPreferencesAnyHost);
 	NSDictionary *prefs = @{};
 	if (keyList) {
-		prefs = (NSDictionary *)CFPreferencesCopyMultiple(keyList, pusherAppID, kCFPreferencesCurrentUser, kCFPreferencesAnyHost);
+		prefs = (NSDictionary *)CFPreferencesCopyMultiple(keyList, PUSHER_APP_ID, kCFPreferencesCurrentUser, kCFPreferencesAnyHost);
 		if (!prefs) { prefs = @{}; }
 		CFRelease(keyList);
 	}
+
 	id val = prefs[@"enabled"];
 	pusherEnabled = val ? ((NSNumber *) val).boolValue : YES;
-	val = [prefs[NSPPreferencePushoverTokenKey] copy];
-	pushoverToken = val ?: @"";
-	val = [prefs[NSPPreferencePushoverUserKey] copy];
-	pushoverUser = val ?: @"";
-	val = [prefs[NSPPreferencePushoverDevicesKey] copy];
-	
-	NSDictionary *pushoverDevices = val ?: @{};
-	NSMutableArray *enabledDevices = [NSMutableArray new];
-	for (NSString *device in pushoverDevices.allKeys) {
-		if (((NSNumber *) pushoverDevices[device]).boolValue) {
-			[enabledDevices addObject:device];
-		}
-	}
-	pushoverDevice = [[enabledDevices componentsJoinedByString:@","] copy];
-
 	globalBlacklist = getPusherBlacklist(prefs, NSPPreferenceGlobalBLPrefix);
-	pushoverBlacklist = getPusherBlacklist(prefs, NSPPreferencePushoverBLPrefix);
+
+	for (NSString *service in PUSHER_SERVICES) {
+		NSMutableDictionary *servicePrefs = [NSMutableDictionary new];
+
+		NSString *tokenKey = Xstr(@"%@Token", service);
+		NSString *userKey = Xstr(@"%@User", service);
+		NSString *devicesKey = Xstr(@"%@Devices", service);
+		NSString *blacklistPrefix = Xstr(@"%@BL-", service);
+		NSString *customAppsKey = Xstr(@"%@CustomApps", service);
+
+		servicePrefs[@"blacklist"] = getPusherBlacklist(prefs, blacklistPrefix);
+		val = [prefs[tokenKey] copy];
+		servicePrefs[@"token"] = val ?: @"";
+		val = [prefs[userKey] copy];
+		servicePrefs[@"user"] = val ?: @"";
+
+		val = [prefs[devicesKey] copy];
+		NSDictionary *devices = val ?: @{};
+		NSMutableArray *enabledDevices = [NSMutableArray new];
+		for (NSString *device in devices.allKeys) {
+			if (((NSNumber *) devices[device]).boolValue) {
+				[enabledDevices addObject:device];
+			}
+		}
+		servicePrefs[@"devices"] = [[enabledDevices componentsJoinedByString:@","] copy];
+
+		pusherServices[service] = [servicePrefs copy];
+	}
+
 	XLog(@"Reloaded");
 }
 

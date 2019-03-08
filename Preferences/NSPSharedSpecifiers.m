@@ -21,7 +21,7 @@
   PSSpecifier *devices = [PSSpecifier preferenceSpecifierNamed:@"Receiving Devices" target:nil set:nil get:nil detail:NSPDeviceListController.class cell:PSLinkCell edit:nil];
   [devices setProperty:PUSHER_SERVICE_PUSHOVER forKey:@"service"];
   BOOL isCustomApp = appID != nil;
-  [devices setProperty:(isCustomApp ? @"PushoverCustomApps" : NSPPreferencePushoverDevicesKey) forKey:@"prefsKey"];
+  [devices setProperty:(isCustomApp ? NSPPreferencePushoverCustomAppsKey : NSPPreferencePushoverDevicesKey) forKey:@"prefsKey"];
   [devices setProperty:[NSNumber numberWithBool:isCustomApp] forKey:@"isCustomApp"];
   if (isCustomApp) {
     [devices setProperty:appID forKey:@"customAppIDKey"];
