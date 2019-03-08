@@ -8,12 +8,14 @@
 @interface BBBulletin (Pusher)
 @property (nonatomic, readonly) BOOL showsSubtitle;
 - (void)sendBulletinToPusher:(BBBulletin *)bulletin;
+- (void)makePusherRequest:(NSString *)urlString userData:(NSDictionary *)userData;
 @end
 
 static BOOL pusherEnabled = NO;
 static NSArray *globalBlacklist = nil;
-static NSMutableDictionary *pusherServices = nil;
+static NSMutableDictionary *pusherEnabledServices = nil;
 
+// Make all app IDs lowercase in case some library I use starts messing with the case
 static NSArray *getPusherBlacklist(NSDictionary *prefs, NSString *prefix) {
 	// Extract all blacklisted app IDs
 	NSMutableArray *blacklist = [NSMutableArray new];
@@ -28,6 +30,13 @@ static NSArray *getPusherBlacklist(NSDictionary *prefs, NSString *prefix) {
 	NSArray *ret = [blacklist copy];
 	[blacklist release];
 	return ret;
+}
+
+static NSString *getServiceURL(NSString *service) {
+	if (Xeq(service, PUSHER_SERVICE_PUSHOVER)) {
+		return PUSHER_SERVICE_PUSHOVER_URL;
+	}
+	return @"";
 }
 
 static void pusherPrefsChanged() {
@@ -45,22 +54,36 @@ static void pusherPrefsChanged() {
 	pusherEnabled = val ? ((NSNumber *) val).boolValue : YES;
 	globalBlacklist = getPusherBlacklist(prefs, NSPPreferenceGlobalBLPrefix);
 
+	if (pusherEnabledServices == nil) {
+		pusherEnabledServices = [NSMutableDictionary new];
+	}
+
 	for (NSString *service in PUSHER_SERVICES) {
 		NSMutableDictionary *servicePrefs = [NSMutableDictionary new];
 
+		NSString *enabledKey = Xstr(@"%@Enabled", service);
+		// default is service disabled
+		if (prefs[enabledKey] == nil || !((NSNumber *) prefs[enabledKey]).boolValue) {
+			// skip if disabled
+			[pusherEnabledServices removeObjectForKey:service];
+			continue;
+		}
+
+		NSString *blacklistPrefix = Xstr(@"%@BL-", service);
 		NSString *tokenKey = Xstr(@"%@Token", service);
 		NSString *userKey = Xstr(@"%@User", service);
 		NSString *devicesKey = Xstr(@"%@Devices", service);
-		NSString *blacklistPrefix = Xstr(@"%@BL-", service);
 		NSString *customAppsKey = Xstr(@"%@CustomApps", service);
 
 		servicePrefs[@"blacklist"] = getPusherBlacklist(prefs, blacklistPrefix);
-		val = [prefs[tokenKey] copy];
-		servicePrefs[@"token"] = val ?: @"";
-		val = [prefs[userKey] copy];
-		servicePrefs[@"user"] = val ?: @"";
+		val = prefs[tokenKey];
+		servicePrefs[@"token"] = [val copy] ?: @"";
+		val = prefs[userKey];
+		servicePrefs[@"user"] = [val copy] ?: @"";
+		servicePrefs[@"url"] = getServiceURL(service);
 
-		val = [prefs[devicesKey] copy];
+		// devices
+		val = prefs[devicesKey];
 		NSDictionary *devices = val ?: @{};
 		NSMutableArray *enabledDevices = [NSMutableArray new];
 		for (NSString *device in devices.allKeys) {
@@ -68,36 +91,63 @@ static void pusherPrefsChanged() {
 				[enabledDevices addObject:device];
 			}
 		}
-		servicePrefs[@"devices"] = [[enabledDevices componentsJoinedByString:@","] copy];
+		servicePrefs[@"device"] = [[enabledDevices componentsJoinedByString:@","] copy];
+		// [enabledDevices release];
+		// [devices release];
 
-		pusherServices[service] = [servicePrefs copy];
+		// custom apps & devices
+		NSDictionary *prefCustomApps = (NSDictionary *)prefs[customAppsKey] ?: @{};
+		NSMutableDictionary *customApps = [NSMutableDictionary new];
+		for (NSString *customAppID in prefCustomApps.allKeys) {
+			NSDictionary *customAppPrefs = prefCustomApps[customAppID];
+			NSDictionary *customAppDevices = customAppPrefs[@"devices"] ?: @{};
+
+			NSMutableArray *customAppEnabledDevices = [NSMutableArray new];
+			for (NSString *customAppDevice in customAppDevices.allKeys) {
+				if (((NSNumber *) customAppDevices[customAppDevice]).boolValue) {
+					[customAppEnabledDevices addObject:customAppDevice];
+				}
+			}
+			customApps[customAppID] = [[customAppEnabledDevices componentsJoinedByString:@","] copy];
+			// [customAppEnabledDevices release];
+			// [customAppDevices release];
+			// [customAppPrefs release];
+		}
+		servicePrefs[@"customApps"] = [customApps copy];
+		// [customApps release];
+
+		pusherEnabledServices[service] = [servicePrefs copy];
 	}
 
 	XLog(@"Reloaded");
 }
 
 static BOOL prefsSayNo() {
-	return !pusherEnabled
-					|| globalBlacklist == nil || ![globalBlacklist isKindOfClass:NSArray.class]
-					|| pushoverBlacklist == nil || ![pushoverBlacklist isKindOfClass:NSArray.class]
-					|| pushoverToken == nil || ![pushoverToken isKindOfClass:NSString.class] || pushoverToken.length == 0
-					|| pushoverUser == nil || ![pushoverUser isKindOfClass:NSString.class] || pushoverUser.length == 0
-					|| pushoverDevice == nil || ![pushoverDevice isKindOfClass:NSString.class];
+	if (!pusherEnabled
+				|| globalBlacklist == nil || ![globalBlacklist isKindOfClass:NSArray.class]) {
+		return NO;
+	}
+	for (NSString *service in pusherEnabledServices.allKeys) {
+		NSDictionary *servicePrefs = pusherEnabledServices[service];
+		if (servicePrefs == nil
+					|| servicePrefs[@"blacklist"] == nil || ![servicePrefs[@"blacklist"] isKindOfClass:NSArray.class]
+					|| servicePrefs[@"token"] == nil || ![servicePrefs[@"token"] isKindOfClass:NSString.class] || ((NSString *) servicePrefs[@"token"]).length == 0
+					|| servicePrefs[@"user"] == nil || ![servicePrefs[@"user"] isKindOfClass:NSString.class] || ((NSString *) servicePrefs[@"user"]).length == 0
+					|| servicePrefs[@"device"] == nil || ![servicePrefs[@"device"] isKindOfClass:NSString.class] // device can be empty depending on API
+					|| servicePrefs[@"url"] == nil || ![servicePrefs[@"url"] isKindOfClass:NSString.class] || ((NSString *) servicePrefs[@"url"]).length == 0
+					|| servicePrefs[@"customApps"] == nil || ![servicePrefs[@"customApps"] isKindOfClass:NSDictionary.class]) {
+			return NO;
+		}
+	}
+	return YES;
 }
 
 %hook BBServer
 
 %new
 - (void)sendBulletinToPusher:(BBBulletin *)bulletin {
-	if (prefsSayNo() || bulletin == nil) {
-		XLog(@"Prefs said no");
-		if (pusherEnabled) {
-			XLog(@"globalBlacklist: %@", globalBlacklist);
-			XLog(@"pushoverBlacklist: %@", pushoverBlacklist);
-			XLog(@"pushoverToken: %@", pushoverToken);
-			XLog(@"pushoverUser: %@", pushoverUser);
-			XLog(@"pushoverDevice: %@", pushoverDevice);
-		}
+	if (bulletin == nil || prefsSayNo()) {
+		XLog(@"Prefs said no / bulletin nil: %d", bulletin == nil);
 		return;
 	}
 	// Check if notification within last 5 seconds so we don't send uncleared notifications every respring
@@ -105,28 +155,48 @@ static BOOL prefsSayNo() {
 	if (bulletin.date && [bulletin.date compare:fiveSecondsAgo] == NSOrderedAscending) {
 		return;
 	}
-	if ([globalBlacklist containsObject:bulletin.sectionID.lowercaseString]
-				|| [pushoverBlacklist containsObject:bulletin.sectionID.lowercaseString]) {
+	NSString *appID = bulletin.sectionID;
+	// Blacklist array contains lowercase app IDs
+	if ([globalBlacklist containsObject:appID.lowercaseString]) {
 		XLog(@"Blacklisted");
 		return;
 	}
-	SBApplication *app = [[NSClassFromString(@"SBApplicationController") sharedInstance] applicationWithBundleIdentifier:bulletin.sectionID];
-	NSString *appName = app && app.displayName && app.displayName.length > 0 ? app.displayName : Xstr(@"Unknown App: %@", bulletin.sectionID);
+
+	SBApplication *app = [[NSClassFromString(@"SBApplicationController") sharedInstance] applicationWithBundleIdentifier:appID];
+	NSString *appName = app && app.displayName && app.displayName.length > 0 ? app.displayName : Xstr(@"Unknown App: %@", appID);
 	NSString *title = Xstr(@"%@%@", appName, (bulletin.title && bulletin.title.length > 0 ? Xstr(@" [%@]", bulletin.title) : @""));
 	NSString *message = @"";
 	if (bulletin.subtitle && bulletin.subtitle.length > 0) {
 		message = bulletin.subtitle;
 	}
 	message = Xstr(@"%@%@%@", message, (message.length > 0 && bulletin.message && bulletin.message.length > 0 ? @"\n" : @""), bulletin.message ? bulletin.message : @"");
-	NSDictionary *userDictionary = @{
-		@"token": pushoverToken,
-		@"user": pushoverUser,
-		@"title": title,
-		@"message": message,
-		@"device": pushoverDevice
-	};
-	NSData *jsonData = [NSJSONSerialization dataWithJSONObject:userDictionary options:NSJSONWritingPrettyPrinted error:nil];
-	NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:@"https://api.pushover.net/1/messages.json"] cachePolicy:NSURLRequestUseProtocolCachePolicy timeoutInterval:10];
+
+	for (NSString *service in pusherEnabledServices.allKeys) {
+		NSDictionary *servicePrefs = pusherEnabledServices[service];
+		NSArray *serviceBlacklist = servicePrefs[@"blacklist"];
+		// Blacklist array contains lowercase app IDs
+		if ([serviceBlacklist containsObject:appID.lowercaseString]) {
+			continue;
+		}
+
+		// Send
+		NSDictionary *userData = @{
+			@"token": servicePrefs[@"token"],
+			@"user": servicePrefs[@"user"],
+			@"title": title,
+			@"message": message,
+			@"device": servicePrefs[@"device"]
+		};
+		[self makePusherRequest:servicePrefs[@"url"] userData:userData];
+	}
+
+	XLog(@"Pushed %@", appName);
+}
+
+%new
+- (void)makePusherRequest:(NSString *)urlString userData:(NSDictionary *)userData {
+	NSData *jsonData = [NSJSONSerialization dataWithJSONObject:userData options:NSJSONWritingPrettyPrinted error:nil];
+	NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:urlString] cachePolicy:NSURLRequestUseProtocolCachePolicy timeoutInterval:10];
 	[request setHTTPMethod:@"POST"];
 	[request setValue:@"application/json" forHTTPHeaderField:@"Accept"];
 	[request setValue:@"application/json" forHTTPHeaderField:@"Content-Type"];
@@ -134,18 +204,15 @@ static BOOL prefsSayNo() {
 	[request setHTTPBody:jsonData];
 
 	//use async way to connect network
-	[[[NSURLSession sharedSession] dataTaskWithRequest:request completionHandler:^(NSData *data,NSURLResponse *response, NSError *error) {
+	[[[NSURLSession sharedSession] dataTaskWithRequest:request completionHandler:^(NSData *data, NSURLResponse *response, NSError *error) {
 		if (data.length && error == nil) {
 			XLog(@"Success");
-		} else if (data.length && error == nil) {
-			XLog(@"No data");
-		} else if (error != nil) {
+		} else if (error) {
 			XLog(@"Error: %@", error);
 		} else {
-			XLog(@"idk what happened");
+			XLog(@"No data");
 		}
 	}] resume];
-	XLog(@"Pushed %@", appName);
 }
 
 // iOS 11?

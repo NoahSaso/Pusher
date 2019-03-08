@@ -24,8 +24,8 @@ static void setPreference(CFStringRef keyRef, CFPropertyListRef val, BOOL should
 	[super dealloc];
 }
 
-- (void)viewWillAppear:(BOOL)animated {
-	[super viewWillAppear:animated];
+- (void)viewDidLoad {
+	[super viewDidLoad];
 
 	// Get preferences
 	CFArrayRef keyList = CFPreferencesCopyKeyList(PUSHER_APP_ID, kCFPreferencesCurrentUser, kCFPreferencesAnyHost);
@@ -51,6 +51,12 @@ static void setPreference(CFStringRef keyRef, CFPropertyListRef val, BOOL should
 			[_data[@"Disabled"] addObject:service];
 		}
 	}
+
+	_lastTargetService = nil;
+	_lastTargetIndexPath = nil;
+
+	[_data[@"Enabled"] sortUsingSelector:@selector(localizedCaseInsensitiveCompare:)];
+	[_data[@"Disabled"] sortUsingSelector:@selector(localizedCaseInsensitiveCompare:)];
 
 	_table = [[UITableView alloc] initWithFrame:self.view.bounds style:UITableViewStyleGrouped];
 	[_table registerClass:UITableViewCell.class forCellReuseIdentifier:@"ServiceCell"];
@@ -112,6 +118,8 @@ static void setPreference(CFStringRef keyRef, CFPropertyListRef val, BOOL should
 }
 
 - (void)tableView:(UITableView *)tableView moveRowAtIndexPath:(NSIndexPath *)sourceIndexPath toIndexPath:(NSIndexPath *)destinationIndexPath {
+	_lastTargetService = nil;
+	_lastTargetIndexPath = nil;
 	NSString *service = _data[_sections[sourceIndexPath.section]][sourceIndexPath.row];
 	[_data[_sections[sourceIndexPath.section]] removeObjectAtIndex:sourceIndexPath.row];
 	[_data[_sections[destinationIndexPath.section]] insertObject:service atIndex:destinationIndexPath.row];
@@ -119,6 +127,20 @@ static void setPreference(CFStringRef keyRef, CFPropertyListRef val, BOOL should
 
 - (UITableViewCellEditingStyle)tableView:(UITableView *)table editingStyleForRowAtIndexPath:(NSIndexPath *)indexPath {
 	return UITableViewCellEditingStyleNone;
+}
+
+- (NSIndexPath *)tableView:(UITableView *)tableView targetIndexPathForMoveFromRowAtIndexPath:(NSIndexPath *)sourceIndexPath toProposedIndexPath:(NSIndexPath *)proposedDestinationIndexPath {
+	if (sourceIndexPath.section == proposedDestinationIndexPath.section) {
+		return sourceIndexPath;
+	}
+	NSString *service = _data[_sections[sourceIndexPath.section]][sourceIndexPath.row];
+	if (_lastTargetService && Xeq(service, _lastTargetService)) {
+		return _lastTargetIndexPath;
+	}
+	_lastTargetService = service;
+	NSArray *tempArray = [[_data[_sections[proposedDestinationIndexPath.section]] arrayByAddingObject:service] sortedArrayUsingSelector:@selector(localizedCaseInsensitiveCompare:)];
+	_lastTargetIndexPath = [NSIndexPath indexPathForRow:[tempArray indexOfObject:service] inSection:proposedDestinationIndexPath.section];
+	return _lastTargetIndexPath;
 }
 
 @end

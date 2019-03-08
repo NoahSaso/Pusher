@@ -24,8 +24,8 @@
 	[super dealloc];
 }
 
-- (void)viewWillAppear:(BOOL)animated {
-	[super viewWillAppear:animated];
+- (void)viewDidLoad {
+	[super viewDidLoad];
 
 	_appList = [ALApplicationList sharedApplicationList];
 	_appListDataSource = [NSPALApplicationTableDataSource new];

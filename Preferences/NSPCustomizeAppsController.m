@@ -54,8 +54,8 @@ static void setPreference(CFStringRef keyRef, CFPropertyListRef val, BOOL should
 	[super dealloc];
 }
 
-- (void)viewWillAppear:(BOOL)animated {
-	[super viewWillAppear:animated];
+- (void)viewDidLoad {
+	[super viewDidLoad];
 
 	// End editing of previous view controller so updates prefs if editing text field
 	if (self.navigationController.viewControllers && self.navigationController.viewControllers.count > 1) {
@@ -100,8 +100,8 @@ static void setPreference(CFStringRef keyRef, CFPropertyListRef val, BOOL should
 		}
 	}
 
-	_lastTargetAppID = @"";
-	_lastTargetIndexPath = [NSIndexPath indexPathForRow:0 inSection:0];
+	_lastTargetAppID = nil;
+	_lastTargetIndexPath = nil;
 
 	[self sortAppIDArray:_data[@"Enabled"]];
 	[self sortAppIDArray:_data[@"Disabled"]];
@@ -191,8 +191,8 @@ static void setPreference(CFStringRef keyRef, CFPropertyListRef val, BOOL should
 }
 
 - (void)tableView:(UITableView *)table moveRowAtIndexPath:(NSIndexPath *)sourceIndexPath toIndexPath:(NSIndexPath *)destinationIndexPath {
-	_lastTargetAppID = @"";
-	_lastTargetIndexPath = [NSIndexPath indexPathForRow:0 inSection:0];
+	_lastTargetAppID = nil;
+	_lastTargetIndexPath = nil;
 	NSString *appID = _data[_sections[sourceIndexPath.section]][sourceIndexPath.row];
 	[_data[_sections[sourceIndexPath.section]] removeObjectAtIndex:sourceIndexPath.row];
 	// sorted because target index path forces to be in right place
@@ -229,7 +229,7 @@ static void setPreference(CFStringRef keyRef, CFPropertyListRef val, BOOL should
 		return sourceIndexPath;
 	}
 	NSString *appID = _data[_sections[sourceIndexPath.section]][sourceIndexPath.row];
-	if (Xeq(appID, _lastTargetAppID)) {
+	if (_lastTargetAppID && Xeq(appID, _lastTargetAppID)) {
 		return _lastTargetIndexPath;
 	}
 	_lastTargetAppID = appID;

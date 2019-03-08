@@ -15,8 +15,8 @@ static void setPreference(CFStringRef keyRef, CFPropertyListRef val, BOOL should
 
 @implementation NSPDeviceListController
 
-- (void)viewWillAppear:(BOOL)animated {
-	[super viewWillAppear:animated];
+- (void)viewDidLoad {
+	[super viewDidLoad];
 
 	// End editing of previous view controller so updates prefs if editing text field
 	if (self.navigationController.viewControllers && self.navigationController.viewControllers.count > 1) {

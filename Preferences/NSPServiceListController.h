@@ -6,5 +6,7 @@
   NSArray *_sections;
   NSMutableDictionary *_data;
   NSArray *_services;
+  NSString *_lastTargetService;
+  NSIndexPath *_lastTargetIndexPath;
 }
 @end

@@ -9,6 +9,7 @@
 
 // All keys MUST HAVE the prefix equal to the name of the service
 #define PUSHER_SERVICE_PUSHOVER @"Pushover"
+#define PUSHER_SERVICE_PUSHOVER_URL @"https://api.pushover.net/1/messages.json"
 #define NSPPreferencePushoverTokenKey @"PushoverToken"
 #define NSPPreferencePushoverUserKey @"PushoverUser"
 #define NSPPreferencePushoverDevicesKey @"PushoverDevices"
