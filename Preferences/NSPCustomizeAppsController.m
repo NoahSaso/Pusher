@@ -57,6 +57,14 @@ static void setPreference(CFStringRef keyRef, CFPropertyListRef val, BOOL should
 - (void)viewWillAppear:(BOOL)animated {
 	[super viewWillAppear:animated];
 
+	// End editing of previous view controller so updates prefs if editing text field
+	if (self.navigationController.viewControllers && self.navigationController.viewControllers.count > 1) {
+		UIViewController *viewController = self.navigationController.viewControllers[self.navigationController.viewControllers.count - 2];
+		if (viewController) {
+			[viewController.view endEditing:YES];
+		}
+	}
+
 	_appList = [ALApplicationList sharedApplicationList];
 
 	// Get preferences

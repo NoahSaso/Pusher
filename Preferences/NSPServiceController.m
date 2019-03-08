@@ -1,5 +1,6 @@
 #import "NSPServiceController.h"
 #import "NSPSharedSpecifiers.h"
+#import "NSPCustomizeAppsController.h"
 
 #import "../global.h"
 #import <Custom/defines.h>
@@ -17,7 +18,7 @@
 	if (!_specifiers) {
 		NSMutableArray *allSpecifiers = [[self loadSpecifiersFromPlistName:_service target:self] mutableCopy];
 
-		[allSpecifiers addObjectsFromArray:[NSPSharedSpecifiers get:_service withAppID:nil]];
+		[allSpecifiers addObjectsFromArray:[NSPSharedSpecifiers get:_service]];
 
 		_specifiers = [allSpecifiers copy];
 	}

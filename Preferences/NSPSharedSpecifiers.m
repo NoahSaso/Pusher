@@ -13,6 +13,10 @@
   return @[];
 }
 
++ (NSArray *)get:(NSString *)service {
+  return [NSPSharedSpecifiers get:service withAppID:nil];
+}
+
 + (NSArray *)pushover:(NSString *)appID {
   PSSpecifier *devices = [PSSpecifier preferenceSpecifierNamed:@"Receiving Devices" target:nil set:nil get:nil detail:NSPDeviceListController.class cell:PSLinkCell edit:nil];
   [devices setProperty:PUSHER_SERVICE_PUSHOVER forKey:@"service"];

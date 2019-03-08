@@ -18,6 +18,14 @@ static void setPreference(CFStringRef keyRef, CFPropertyListRef val, BOOL should
 - (void)viewWillAppear:(BOOL)animated {
 	[super viewWillAppear:animated];
 
+	// End editing of previous view controller so updates prefs if editing text field
+	if (self.navigationController.viewControllers && self.navigationController.viewControllers.count > 1) {
+		UIViewController *viewController = self.navigationController.viewControllers[self.navigationController.viewControllers.count - 2];
+		if (viewController) {
+			[viewController.view endEditing:YES];
+		}
+	}
+
 	// Create buttons
 	_updateBn = [[UIBarButtonItem alloc] initWithTitle:@"Update" style:UIBarButtonItemStylePlain target:self action:@selector(updateDevices)];
 	_activityIndicator = [[UIActivityIndicatorView alloc] initWithActivityIndicatorStyle:UIActivityIndicatorViewStyleWhite];
@@ -51,7 +59,7 @@ static void setPreference(CFStringRef keyRef, CFPropertyListRef val, BOOL should
 	// if (_serviceDevices.count == 0) {
 	// 	// give error and exit screen
 	// 	XLog(@"devices empty");
-	// 	[((UIViewController *) ret).navigationController popViewControllerAnimated:YES];
+	// 	[((UIViewController *) ret).navigationController popViewControllerAnimated:YES];u3f633wd6vo7ksmcy1hvgvkswpqkj6
 	// 	Xalert(@"There are no devices loaded. Please verify your credentials are .");
 	// }
 
@@ -157,9 +165,24 @@ static void setPreference(CFStringRef keyRef, CFPropertyListRef val, BOOL should
 			int status = ((NSNumber *) json[@"status"]).intValue;
 			if (status == 0) {
 				XLog(@"Something went wrong");
-				for (id key in json.allKeys) {
-					XLog(@"%@: %@", key, json[key]);
+				NSArray *errors = (NSArray *) json[@"errors"];
+				NSString *title;
+				NSString *msg = @"";
+				if (errors == nil || errors.count == 0) {
+					title = @"Unknown Error";
+					msg = Xstr(@"Server response: %@", json);
+				} else {
+					title = @"Server Error:";
+					msg = Xstr(@"%@", [errors componentsJoinedByString:@"\n"]);
 				}
+				UIAlertController *alert = XalertWTitle(title, msg);
+				id handler = ^(UIAlertAction *action) {
+					[self.navigationController popViewControllerAnimated:YES];
+				};
+				[alert addAction:XalertBtnWHandler(@"Ok", handler)];
+				dispatch_async(dispatch_get_main_queue(), ^(void) {
+					[self presentViewController:alert animated:YES completion:nil];
+				});
 				[self hideActivityIndicator];
 				return;
 			}
