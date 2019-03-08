@@ -18,6 +18,22 @@ static void setPreference(CFStringRef keyRef, CFPropertyListRef val, BOOL should
 - (void)viewDidLoad {
 	[super viewDidLoad];
 
+	// Create buttons
+	_updateBn = [[UIBarButtonItem alloc] initWithTitle:@"Update" style:UIBarButtonItemStylePlain target:self action:@selector(updateDevices)];
+	_activityIndicator = [[UIActivityIndicatorView alloc] initWithActivityIndicatorStyle:UIActivityIndicatorViewStyleWhite];
+	_activityIndicatorBn = [[UIBarButtonItem alloc] initWithCustomView:_activityIndicator];
+
+	_prefsKey = [[self.specifier propertyForKey:@"prefsKey"] retain];
+	_service = [[self.specifier propertyForKey:@"service"] retain];
+	_isCustomApp = ((NSNumber *) [self.specifier propertyForKey:@"isCustomApp"]).boolValue;
+	if (_isCustomApp) {
+		_customAppIDKey = [[self.specifier propertyForKey:@"customAppIDKey"] retain];
+	}
+}
+
+- (void)viewWillAppear:(BOOL)animated {
+	[super viewWillAppear:animated];
+
 	// End editing of previous view controller so updates prefs if editing text field
 	if (self.navigationController.viewControllers && self.navigationController.viewControllers.count > 1) {
 		UIViewController *viewController = self.navigationController.viewControllers[self.navigationController.viewControllers.count - 2];
@@ -25,11 +41,6 @@ static void setPreference(CFStringRef keyRef, CFPropertyListRef val, BOOL should
 			[viewController.view endEditing:YES];
 		}
 	}
-
-	// Create buttons
-	_updateBn = [[UIBarButtonItem alloc] initWithTitle:@"Update" style:UIBarButtonItemStylePlain target:self action:@selector(updateDevices)];
-	_activityIndicator = [[UIActivityIndicatorView alloc] initWithActivityIndicatorStyle:UIActivityIndicatorViewStyleWhite];
-	_activityIndicatorBn = [[UIBarButtonItem alloc] initWithCustomView:_activityIndicator];
 
 	// Get preferences
 	CFArrayRef keyList = CFPreferencesCopyKeyList(PUSHER_APP_ID, kCFPreferencesCurrentUser, kCFPreferencesAnyHost);
@@ -40,28 +51,12 @@ static void setPreference(CFStringRef keyRef, CFPropertyListRef val, BOOL should
 		CFRelease(keyList);
 	}
 
-	_prefsKey = [[self.specifier propertyForKey:@"prefsKey"] retain];
-	_service = [[self.specifier propertyForKey:@"service"] retain];
-	_isCustomApp = ((NSNumber *) [self.specifier propertyForKey:@"isCustomApp"]).boolValue;
+	NSDictionary *val = _prefs[_prefsKey] ?: @{};
 	if (_isCustomApp) {
-		_customAppIDKey = [[self.specifier propertyForKey:@"customAppIDKey"] retain];
-	}
-
-	id val = _prefs[_prefsKey];
-	NSDictionary *dict = val ?: @{};
-	if (_isCustomApp) {
-		val = dict[_customAppIDKey] ?: @{};
+		val = val[_customAppIDKey] ?: @{};
 		val = val[@"devices"] ?: @{};
 	}
 	_serviceDevices = [(val ?: @{}) mutableCopy];
-
-	// // If no devices, tell them
-	// if (_serviceDevices.count == 0) {
-	// 	// give error and exit screen
-	// 	XLog(@"devices empty");
-	// 	[((UIViewController *) ret).navigationController popViewControllerAnimated:YES];u3f633wd6vo7ksmcy1hvgvkswpqkj6
-	// 	Xalert(@"There are no devices loaded. Please verify your credentials are .");
-	// }
 
 	[self reloadSpecifiers];
 

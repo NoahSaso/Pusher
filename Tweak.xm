@@ -91,7 +91,7 @@ static void pusherPrefsChanged() {
 				[enabledDevices addObject:device];
 			}
 		}
-		servicePrefs[@"device"] = [[enabledDevices componentsJoinedByString:@","] copy];
+		servicePrefs[@"device"] = [[enabledDevices componentsJoinedByString:@","] retain];
 		// [enabledDevices release];
 		// [devices release];
 
@@ -100,6 +100,10 @@ static void pusherPrefsChanged() {
 		NSMutableDictionary *customApps = [NSMutableDictionary new];
 		for (NSString *customAppID in prefCustomApps.allKeys) {
 			NSDictionary *customAppPrefs = prefCustomApps[customAppID];
+			// skip if custom app is disabled, default enabled so ignore bool check if key doesn't exist
+			if (customAppPrefs[@"enabled"] && !((NSNumber *) customAppPrefs[@"enabled"]).boolValue) {
+				continue;
+			}
 			NSDictionary *customAppDevices = customAppPrefs[@"devices"] ?: @{};
 
 			NSMutableArray *customAppEnabledDevices = [NSMutableArray new];
@@ -108,7 +112,9 @@ static void pusherPrefsChanged() {
 					[customAppEnabledDevices addObject:customAppDevice];
 				}
 			}
-			customApps[customAppID] = [[customAppEnabledDevices componentsJoinedByString:@","] copy];
+			customApps[customAppID] = @{
+				@"device": [[customAppEnabledDevices componentsJoinedByString:@","] retain]
+			};
 			// [customAppEnabledDevices release];
 			// [customAppDevices release];
 			// [customAppPrefs release];
@@ -125,7 +131,7 @@ static void pusherPrefsChanged() {
 static BOOL prefsSayNo() {
 	if (!pusherEnabled
 				|| globalBlacklist == nil || ![globalBlacklist isKindOfClass:NSArray.class]) {
-		return NO;
+		return YES;
 	}
 	for (NSString *service in pusherEnabledServices.allKeys) {
 		NSDictionary *servicePrefs = pusherEnabledServices[service];
@@ -136,10 +142,10 @@ static BOOL prefsSayNo() {
 					|| servicePrefs[@"device"] == nil || ![servicePrefs[@"device"] isKindOfClass:NSString.class] // device can be empty depending on API
 					|| servicePrefs[@"url"] == nil || ![servicePrefs[@"url"] isKindOfClass:NSString.class] || ((NSString *) servicePrefs[@"url"]).length == 0
 					|| servicePrefs[@"customApps"] == nil || ![servicePrefs[@"customApps"] isKindOfClass:NSDictionary.class]) {
-			return NO;
+			return YES;
 		}
 	}
-	return YES;
+	return NO;
 }
 
 %hook BBServer
@@ -178,14 +184,19 @@ static BOOL prefsSayNo() {
 		if ([serviceBlacklist containsObject:appID.lowercaseString]) {
 			continue;
 		}
-
+		// Custom app prefs?
+		NSString *device = servicePrefs[@"device"];
+		NSDictionary *customApps = servicePrefs[@"customApps"];
+		if ([customApps.allKeys containsObject:appID] && customApps[appID][@"device"]) {
+			device = customApps[appID][@"device"];
+		}
 		// Send
 		NSDictionary *userData = @{
 			@"token": servicePrefs[@"token"],
 			@"user": servicePrefs[@"user"],
 			@"title": title,
 			@"message": message,
-			@"device": servicePrefs[@"device"]
+			@"device": device
 		};
 		[self makePusherRequest:servicePrefs[@"url"] userData:userData];
 	}

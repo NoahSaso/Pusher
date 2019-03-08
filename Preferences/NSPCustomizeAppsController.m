@@ -57,6 +57,30 @@ static void setPreference(CFStringRef keyRef, CFPropertyListRef val, BOOL should
 - (void)viewDidLoad {
 	[super viewDidLoad];
 
+	_appList = [ALApplicationList sharedApplicationList];
+
+	_service = [[self.specifier propertyForKey:@"service"] retain];
+	_prefsKey = [Xstr(@"%@CustomApps", _service) retain];
+	_defaultDevicesKey = [self.specifier propertyForKey:@"defaultDevicesKey"];
+
+	_lastTargetAppID = nil;
+	_lastTargetIndexPath = nil;
+
+	_loadedAppControllers = [NSMutableDictionary new];
+
+	_table = [[UITableView alloc] initWithFrame:self.view.bounds style:UITableViewStyleGrouped];
+	[_table registerClass:UITableViewCell.class forCellReuseIdentifier:@"CustomAppCell"];
+	_table.dataSource = self;
+	_table.delegate = self;
+	[self.view addSubview:_table];
+
+	self.navigationItem.title = @"App Customization";
+	self.navigationItem.rightBarButtonItem = [[UIBarButtonItem alloc] initWithTitle:@"Edit" style:UIBarButtonItemStylePlain target:self action:@selector(toggleEditing:)];
+}
+
+- (void)viewWillAppear:(BOOL)animated {
+	[super viewWillAppear:animated];
+
 	// End editing of previous view controller so updates prefs if editing text field
 	if (self.navigationController.viewControllers && self.navigationController.viewControllers.count > 1) {
 		UIViewController *viewController = self.navigationController.viewControllers[self.navigationController.viewControllers.count - 2];
@@ -64,8 +88,6 @@ static void setPreference(CFStringRef keyRef, CFPropertyListRef val, BOOL should
 			[viewController.view endEditing:YES];
 		}
 	}
-
-	_appList = [ALApplicationList sharedApplicationList];
 
 	// Get preferences
 	CFArrayRef keyList = CFPreferencesCopyKeyList(PUSHER_APP_ID, kCFPreferencesCurrentUser, kCFPreferencesAnyHost);
@@ -76,12 +98,8 @@ static void setPreference(CFStringRef keyRef, CFPropertyListRef val, BOOL should
 		CFRelease(keyList);
 	}
 
-	_service = [[self.specifier propertyForKey:@"service"] retain];
-	_prefsKey = [Xstr(@"%@CustomApps", _service) retain];
 	_customApps = [(prefs[_prefsKey] ?: @{}) mutableCopy];
-
-	NSString *defaultDevicesKey = [self.specifier propertyForKey:@"defaultDevicesKey"];
-	_defaultDevices = [(prefs[defaultDevicesKey] ?: @{}) copy];
+	_defaultDevices = [(prefs[_defaultDevicesKey] ?: @{}) copy];
 
 	_sections = [@[@"", @"Enabled", @"Disabled"] retain];
 	_data = [@{
@@ -100,20 +118,8 @@ static void setPreference(CFStringRef keyRef, CFPropertyListRef val, BOOL should
 		}
 	}
 
-	_lastTargetAppID = nil;
-	_lastTargetIndexPath = nil;
-
 	[self sortAppIDArray:_data[@"Enabled"]];
 	[self sortAppIDArray:_data[@"Disabled"]];
-
-	_table = [[UITableView alloc] initWithFrame:self.view.bounds style:UITableViewStyleGrouped];
-	[_table registerClass:UITableViewCell.class forCellReuseIdentifier:@"CustomAppCell"];
-	_table.dataSource = self;
-	_table.delegate = self;
-	[self.view addSubview:_table];
-
-	self.navigationItem.title = @"App Customization";
-	self.navigationItem.rightBarButtonItem = [[UIBarButtonItem alloc] initWithTitle:@"Edit" style:UIBarButtonItemStylePlain target:self action:@selector(toggleEditing:)];
 
 	[_table reloadData];
 }
@@ -155,7 +161,13 @@ static void setPreference(CFStringRef keyRef, CFPropertyListRef val, BOOL should
 		return;
 	}
 	NSString *appID = _data[_sections[indexPath.section]][indexPath.row];
-	NSPCustomAppController *controller = [[NSPCustomAppController alloc] initWithService:_service appID:appID];
+	NSPCustomAppController *controller;
+	if ([_loadedAppControllers.allKeys containsObject:appID]) {
+		controller = _loadedAppControllers[appID];
+	} else {
+		controller = [[NSPCustomAppController alloc] initWithService:_service appID:appID];
+		_loadedAppControllers[appID] = controller;
+	}
 	[self pushController:controller];
 }
 

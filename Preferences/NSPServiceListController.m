@@ -27,6 +27,24 @@ static void setPreference(CFStringRef keyRef, CFPropertyListRef val, BOOL should
 - (void)viewDidLoad {
 	[super viewDidLoad];
 
+	_lastTargetService = nil;
+	_lastTargetIndexPath = nil;
+
+	_loadedServiceControllers = [NSMutableDictionary new];
+
+	_table = [[UITableView alloc] initWithFrame:self.view.bounds style:UITableViewStyleGrouped];
+	[_table registerClass:UITableViewCell.class forCellReuseIdentifier:@"ServiceCell"];
+	_table.dataSource = self;
+	_table.delegate = self;
+	[self.view addSubview:_table];
+
+	self.navigationItem.title = @"Services";
+	self.navigationItem.rightBarButtonItem = [[UIBarButtonItem alloc] initWithTitle:@"Edit" style:UIBarButtonItemStylePlain target:self action:@selector(toggleEditing:)];
+}
+
+- (void)viewWillAppear:(BOOL)animated {
+	[super viewWillAppear:animated];
+
 	// Get preferences
 	CFArrayRef keyList = CFPreferencesCopyKeyList(PUSHER_APP_ID, kCFPreferencesCurrentUser, kCFPreferencesAnyHost);
 	_prefs = @{};
@@ -52,20 +70,8 @@ static void setPreference(CFStringRef keyRef, CFPropertyListRef val, BOOL should
 		}
 	}
 
-	_lastTargetService = nil;
-	_lastTargetIndexPath = nil;
-
 	[_data[@"Enabled"] sortUsingSelector:@selector(localizedCaseInsensitiveCompare:)];
 	[_data[@"Disabled"] sortUsingSelector:@selector(localizedCaseInsensitiveCompare:)];
-
-	_table = [[UITableView alloc] initWithFrame:self.view.bounds style:UITableViewStyleGrouped];
-	[_table registerClass:UITableViewCell.class forCellReuseIdentifier:@"ServiceCell"];
-	_table.dataSource = self;
-	_table.delegate = self;
-	[self.view addSubview:_table];
-
-	self.navigationItem.title = @"Services";
-	self.navigationItem.rightBarButtonItem = [[UIBarButtonItem alloc] initWithTitle:@"Edit" style:UIBarButtonItemStylePlain target:self action:@selector(toggleEditing:)];
 
 	[_table reloadData];
 }
@@ -86,8 +92,14 @@ static void setPreference(CFStringRef keyRef, CFPropertyListRef val, BOOL should
 - (void)tableView:(UITableView *)table didSelectRowAtIndexPath:(NSIndexPath *)indexPath {
 	[table deselectRowAtIndexPath:indexPath animated:YES];
 	NSString *service = _data[_sections[indexPath.section]][indexPath.row];
-	NSPServiceController *listController = [[NSPServiceController alloc] initWithService:service];
-	[self pushController:listController];
+	NSPServiceController *controller;
+	if ([_loadedServiceControllers.allKeys containsObject:service]) {
+		controller = _loadedServiceControllers[service];
+	} else {
+		controller = [[NSPServiceController alloc] initWithService:service];
+		_loadedServiceControllers[service] = controller;
+	}
+	[self pushController:controller];
 }
 
 - (NSInteger)tableView:(UITableView *)table numberOfRowsInSection:(NSInteger)section {

@@ -12,6 +12,8 @@
   NSString *_lastTargetAppID;
   NSIndexPath *_lastTargetIndexPath;
   NSDictionary *_defaultDevices;
+  NSString *_defaultDevicesKey;
+  NSMutableDictionary *_loadedAppControllers;
 }
 - (void)addAppIDs:(NSArray *)appIDs;
 - (void)saveAppState;

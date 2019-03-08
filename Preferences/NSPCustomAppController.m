@@ -19,8 +19,6 @@
 		NSMutableArray *allSpecifiers = [NSMutableArray new];
 
 		[allSpecifiers addObject:[PSSpecifier groupSpecifierWithName:@"Customize"]];
-		XLog(@"_service: %@", _service);
-		XLog(@"_appID: %@", _appID);
 		[allSpecifiers addObjectsFromArray:[NSPSharedSpecifiers get:_service withAppID:_appID]];
 
 		_specifiers = [allSpecifiers copy];

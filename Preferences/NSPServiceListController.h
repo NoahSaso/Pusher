@@ -8,5 +8,6 @@
   NSArray *_services;
   NSString *_lastTargetService;
   NSIndexPath *_lastTargetIndexPath;
+  NSMutableDictionary *_loadedServiceControllers;
 }
 @end
