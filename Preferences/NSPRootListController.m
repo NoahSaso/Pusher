@@ -6,10 +6,6 @@
 
 @implementation NSPRootListController
 
-- (id)init {
-	id ret = [super init];
-	return ret;
-}
 
 - (NSArray *)specifiers {
 	if (!_specifiers) {
