@@ -22,5 +22,6 @@
 - (void)showActivityIndicator;
 - (void)hideActivityIndicator;
 - (void)updatePushoverDevices;
+- (void)updatePushbulletDevices;
 - (void)saveServiceDevices;
 @end
