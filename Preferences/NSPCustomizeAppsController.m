@@ -99,7 +99,7 @@ static void setPreference(CFStringRef keyRef, CFPropertyListRef val, BOOL should
 	}
 
 	_customApps = [(prefs[_prefsKey] ?: @{}) mutableCopy];
-	_defaultDevices = [(prefs[_defaultDevicesKey] ?: @{}) copy];
+	_defaultDevices = [(prefs[_defaultDevicesKey] ?: @[]) copy];
 
 	_sections = [@[@"", @"Enabled", @"Disabled"] retain];
 	_data = [@{

@@ -84,14 +84,14 @@ static void pusherPrefsChanged() {
 
 		// devices
 		val = prefs[devicesKey];
-		NSDictionary *devices = val ?: @{};
+		NSArray *devices = val ?: @{};
 		NSMutableArray *enabledDevices = [NSMutableArray new];
-		for (NSString *device in devices.allKeys) {
-			if (((NSNumber *) devices[device]).boolValue) {
+		for (NSDictionary *device in devices) {
+			if (((NSNumber *) device[@"enabled"]).boolValue) {
 				[enabledDevices addObject:device];
 			}
 		}
-		servicePrefs[@"device"] = [[enabledDevices componentsJoinedByString:@","] retain];
+		servicePrefs[@"devices"] = [enabledDevices retain];
 		// [enabledDevices release];
 		// [devices release];
 
@@ -104,16 +104,16 @@ static void pusherPrefsChanged() {
 			if (customAppPrefs[@"enabled"] && !((NSNumber *) customAppPrefs[@"enabled"]).boolValue) {
 				continue;
 			}
-			NSDictionary *customAppDevices = customAppPrefs[@"devices"] ?: @{};
+			NSArray *customAppDevices = customAppPrefs[@"devices"] ?: @{};
 
 			NSMutableArray *customAppEnabledDevices = [NSMutableArray new];
-			for (NSString *customAppDevice in customAppDevices.allKeys) {
-				if (((NSNumber *) customAppDevices[customAppDevice]).boolValue) {
+			for (NSDictionary *customAppDevice in customAppDevices) {
+				if (((NSNumber *) customAppDevice[@"enabled"]).boolValue) {
 					[customAppEnabledDevices addObject:customAppDevice];
 				}
 			}
 			customApps[customAppID] = @{
-				@"device": [[customAppEnabledDevices componentsJoinedByString:@","] retain]
+				@"devices": [customAppEnabledDevices retain]
 			};
 			// [customAppEnabledDevices release];
 			// [customAppDevices release];
@@ -139,7 +139,7 @@ static BOOL prefsSayNo() {
 					|| servicePrefs[@"blacklist"] == nil || ![servicePrefs[@"blacklist"] isKindOfClass:NSArray.class]
 					|| servicePrefs[@"token"] == nil || ![servicePrefs[@"token"] isKindOfClass:NSString.class] || ((NSString *) servicePrefs[@"token"]).length == 0
 					|| servicePrefs[@"user"] == nil || ![servicePrefs[@"user"] isKindOfClass:NSString.class] || ((NSString *) servicePrefs[@"user"]).length == 0
-					|| servicePrefs[@"device"] == nil || ![servicePrefs[@"device"] isKindOfClass:NSString.class] // device can be empty depending on API
+					|| servicePrefs[@"devices"] == nil || ![servicePrefs[@"devices"] isKindOfClass:NSArray.class] // devices can be empty depending on API
 					|| servicePrefs[@"url"] == nil || ![servicePrefs[@"url"] isKindOfClass:NSString.class] || ((NSString *) servicePrefs[@"url"]).length == 0
 					|| servicePrefs[@"customApps"] == nil || ![servicePrefs[@"customApps"] isKindOfClass:NSDictionary.class]) {
 			return YES;
@@ -185,11 +185,17 @@ static BOOL prefsSayNo() {
 			continue;
 		}
 		// Custom app prefs?
-		NSString *device = servicePrefs[@"device"];
+		NSArray *devices = servicePrefs[@"devices"];
 		NSDictionary *customApps = servicePrefs[@"customApps"];
-		if ([customApps.allKeys containsObject:appID] && customApps[appID][@"device"]) {
-			device = customApps[appID][@"device"];
+		if ([customApps.allKeys containsObject:appID] && customApps[appID][@"devices"]) {
+			devices = customApps[appID][@"devices"];
 		}
+		NSMutableArray *deviceIDs = [NSMutableArray new];
+		for (NSDictionary *device in devices) {
+			[deviceIDs addObject:device[@"id"]];
+		}
+		// PUSHOVER SPECIFIC
+		NSString *device = [deviceIDs componentsJoinedByString:@","];
 		// Send
 		NSDictionary *userData = @{
 			@"token": servicePrefs[@"token"],
@@ -241,6 +247,9 @@ static BOOL prefsSayNo() {
 %end
 
 %ctor {
+	CFPreferencesSetValue(CFSTR("PushoverDevices"), (__bridge CFArrayRef) @[], PUSHER_APP_ID, kCFPreferencesCurrentUser, kCFPreferencesAnyHost);
+	CFPreferencesSetValue(CFSTR("PushoverCustomApps"), (__bridge CFPropertyListRef) @{}, PUSHER_APP_ID, kCFPreferencesCurrentUser, kCFPreferencesAnyHost);
+	CFPreferencesSynchronize(PUSHER_APP_ID, kCFPreferencesCurrentUser, kCFPreferencesAnyHost);
 	CFNotificationCenterAddObserver(CFNotificationCenterGetDarwinNotifyCenter(), NULL, (CFNotificationCallback)pusherPrefsChanged, PUSHER_PREFS_NOTIFICATION, NULL, CFNotificationSuspensionBehaviorCoalesce);
 	pusherPrefsChanged();
 	%init;

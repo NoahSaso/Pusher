@@ -54,9 +54,16 @@ static void setPreference(CFStringRef keyRef, CFPropertyListRef val, BOOL should
 	NSDictionary *val = _prefs[_prefsKey] ?: @{};
 	if (_isCustomApp) {
 		val = val[_customAppIDKey] ?: @{};
-		val = val[@"devices"] ?: @{};
+		val = val[@"devices"] ?: @[];
 	}
-	_serviceDevices = [(val ?: @{}) mutableCopy];
+	_serviceDevices = [(val ?: @[]) mutableCopy];
+	NSMutableDictionary *indexesToReplace = [NSMutableDictionary new];
+	for (NSDictionary *device in _serviceDevices) {
+		indexesToReplace[[NSNumber numberWithInt:(int)[_serviceDevices indexOfObject:device]]] = [device mutableCopy];
+	}
+	for (NSNumber *index in indexesToReplace.allKeys) {
+		[_serviceDevices replaceObjectAtIndex:(int)index withObject:indexesToReplace[index]];
+	}
 
 	[self reloadSpecifiers];
 
@@ -84,7 +91,7 @@ static void setPreference(CFStringRef keyRef, CFPropertyListRef val, BOOL should
 		customApps[_customAppIDKey] = customApp;
 		setPreference((__bridge CFStringRef) _prefsKey, (__bridge CFPropertyListRef) customApps, YES);
 	} else {
-		setPreference((__bridge CFStringRef) _prefsKey, (__bridge CFPropertyListRef) _serviceDevices, YES);
+		setPreference((__bridge CFStringRef) _prefsKey, (__bridge CFArrayRef) _serviceDevices, YES);
 	}
 }
 
@@ -93,9 +100,9 @@ static void setPreference(CFStringRef keyRef, CFPropertyListRef val, BOOL should
 
 	if (Xeq(_service, PUSHER_SERVICE_PUSHOVER)) {
 		[self updatePushoverDevices];
-	} else if (Xeq(_service, PUSHER_SERVICE_PUSHBULLET)) {
+	}/* else if (Xeq(_service, PUSHER_SERVICE_PUSHBULLET)) {
 		[self updatePushbulletDevices];
-	}
+	}*/
 }
 
 - (NSArray *)specifiers {
@@ -108,8 +115,9 @@ static void setPreference(CFStringRef keyRef, CFPropertyListRef val, BOOL should
 			[allSpecifiers addObject:groupSpecifier];
 		}
 
-		for (NSString *device in [_serviceDevices.allKeys sortedArrayUsingSelector:@selector(localizedCaseInsensitiveCompare:)]) {
-			PSSpecifier *switchSpecifier = [PSSpecifier preferenceSpecifierNamed:device target:self set:@selector(setPreferenceValue:forDeviceSpecifier:) get:@selector(readDevicePreferenceValue:) detail:nil cell:PSSwitchCell edit:nil];
+		for (NSDictionary *device in [self sortedDeviceList:_serviceDevices]) {
+			PSSpecifier *switchSpecifier = [PSSpecifier preferenceSpecifierNamed:device[@"name"] target:self set:@selector(setPreferenceValue:forDeviceSpecifier:) get:@selector(readDevicePreferenceValue:) detail:nil cell:PSSwitchCell edit:nil];
+			switchSpecifier.identifier = device[@"id"];
 			[switchSpecifier setProperty:@"com.noahsaso.pusher/prefs" forKey:@"PostNotification"];
 			[switchSpecifier setProperty:@YES forKey:@"enabled"];
 			[switchSpecifier setProperty:@"com.noahsaso.pusher" forKey:@"defaults"];
@@ -123,13 +131,28 @@ static void setPreference(CFStringRef keyRef, CFPropertyListRef val, BOOL should
 	return _specifiers;
 }
 
+- (NSArray *)sortedDeviceList:(NSArray *)devices {
+	return [devices sortedArrayUsingComparator:^NSComparisonResult(NSDictionary *device1, NSDictionary *device2) {
+    return [device1[@"name"] localizedCaseInsensitiveCompare:device2[@"name"]];
+	}];
+}
+
 - (void)setPreferenceValue:(id)value forDeviceSpecifier:(PSSpecifier *)specifier {
-	_serviceDevices[specifier.identifier] = value;
+	for (NSMutableDictionary *device in _serviceDevices) {
+		if (Xeq(device[@"id"], specifier.identifier)) {
+			device[@"enabled"] = value;
+		}
+	}
 	[self saveServiceDevices];
 }
 
 - (id)readDevicePreferenceValue:(PSSpecifier *)specifier {
-	return _serviceDevices[specifier.identifier];
+	for (NSDictionary *device in _serviceDevices) {
+		if (Xeq(device[@"id"], specifier.identifier)) {
+			return device[@"enabled"];
+		}
+	}
+	return @NO;
 }
 
 - (void)updatePushoverDevices {
@@ -184,100 +207,22 @@ static void setPreference(CFStringRef keyRef, CFPropertyListRef val, BOOL should
 				return;
 			}
 
-			NSArray *serviceDevices = (NSArray *)json[@"devices"];
-			for (NSString *device in serviceDevices) {
-				_serviceDevices[device] = _serviceDevices[device] ?: @NO;
-			}
-			for (NSString *device in _serviceDevices.allKeys) {
-				if (![serviceDevices containsObject:device]) {
-					[_serviceDevices removeObjectForKey:device];
-				}
-			}
-
-			[self saveServiceDevices];
-
-			XLog(@"Saved devices");
-
-			// Reload specifiers on current screen
-			dispatch_async(dispatch_get_main_queue(), ^(void) {
-				[self reloadSpecifiers];
-			});
-
-		} else {
-			id handler = ^(UIAlertAction *action) {
-				[self.navigationController popViewControllerAnimated:YES];
-			};
-			NSString *msg;
-			if (data.length == 0 && error == nil) {
-				msg = @"Server did not respond. Please check your internet connection or try again later.";
-			} else if (error) {
-				msg = error.localizedDescription;
-			} else {
-				msg = @"Unknown Error. Contact Developer.";
-			}
-			UIAlertController *alert = XalertWTitle(@"Network Error", msg);
-			[alert addAction:XalertBtnWHandler(@"Ok", handler)];
-			dispatch_async(dispatch_get_main_queue(), ^(void) {
-				[self presentViewController:alert animated:YES completion:nil];
-			});
-		}
-
-		[self hideActivityIndicator];
-	}] resume];
-}
-
-- (void)updatePushbulletDevices {
-	id val = [_prefs[NSPPreferencePushbulletTokenKey] copy];
-	NSString *pushbulletToken = val ?: @"";
-	NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:@"https://api.pushbullet.com/v2/devices"] cachePolicy:NSURLRequestUseProtocolCachePolicy timeoutInterval:10];
-	[request setHTTPMethod:@"GET"];
-	[request setValue:@"application/json" forHTTPHeaderField:@"Accept"];
-	[request setValue:pushbulletToken forHTTPHeaderField:@"Authorization"];
-
-	//use async way to connect network
-	[[[NSURLSession sharedSession] dataTaskWithRequest:request completionHandler:^(NSData *data,NSURLResponse *response, NSError *error) {
-		if (data.length && error == nil) {
-			XLog(@"Success");
-			NSError *jsonError = nil;
-			NSDictionary *json = [NSJSONSerialization JSONObjectWithData:data options:kNilOptions error:&jsonError];
-			if (jsonError) {
-				XLog(@"JSON Error: %@", jsonError);
-			}
-			// 0 error, 1 success
-			int status = ((NSNumber *) json[@"status"]).intValue;
-			if (status == 0) {
-				XLog(@"Something went wrong");
-				NSArray *errors = (NSArray *) json[@"errors"];
-				NSString *title;
-				NSString *msg = @"";
-				if (errors == nil || errors.count == 0) {
-					title = @"Unknown Error";
-					msg = Xstr(@"Server response: %@", json);
+			NSMutableArray *serviceDevices = [(NSArray *)json[@"devices"] mutableCopy];
+			NSMutableArray *serviceDevicesToRemove = [NSMutableArray new];
+			for (NSDictionary *device in _serviceDevices) {
+				if (![serviceDevices containsObject:device[@"id"]]) {
+					[serviceDevicesToRemove addObject:device];
 				} else {
-					title = @"Server Error";
-					msg = Xstr(@"%@", [errors componentsJoinedByString:@"\n"]);
+					[serviceDevices removeObject:device[@"id"]];
 				}
-				UIAlertController *alert = XalertWTitle(title, msg);
-				id handler = ^(UIAlertAction *action) {
-					[self.navigationController popViewControllerAnimated:YES];
-				};
-				[alert addAction:XalertBtnWHandler(@"Ok", handler)];
-				dispatch_async(dispatch_get_main_queue(), ^(void) {
-					[self presentViewController:alert animated:YES completion:nil];
-				});
-				[self hideActivityIndicator];
-				return;
 			}
-
-			NSArray *serviceDevices = (NSArray *)json[@"devices"];
 			for (NSString *device in serviceDevices) {
-				_serviceDevices[device] = _serviceDevices[device] ?: @NO;
+				[_serviceDevices addObject:@{ @"name": device, @"id": device, @"enabled": @NO }];
 			}
-			for (NSString *device in _serviceDevices.allKeys) {
-				if (![serviceDevices containsObject:device]) {
-					[_serviceDevices removeObjectForKey:device];
-				}
+			for (NSDictionary *device in serviceDevicesToRemove) {
+				[_serviceDevices removeObject:device];
 			}
+			[serviceDevicesToRemove release];
 
 			[self saveServiceDevices];
 
@@ -310,5 +255,90 @@ static void setPreference(CFStringRef keyRef, CFPropertyListRef val, BOOL should
 		[self hideActivityIndicator];
 	}] resume];
 }
+
+// - (void)updatePushbulletDevices {
+// 	id val = [_prefs[NSPPreferencePushbulletTokenKey] copy];
+// 	NSString *pushbulletToken = val ?: @"";
+// 	NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:@"https://api.pushbullet.com/v2/devices"] cachePolicy:NSURLRequestUseProtocolCachePolicy timeoutInterval:10];
+// 	[request setHTTPMethod:@"GET"];
+// 	[request setValue:@"application/json" forHTTPHeaderField:@"Accept"];
+// 	[request setValue:pushbulletToken forHTTPHeaderField:@"Authorization"];
+
+// 	//use async way to connect network
+// 	[[[NSURLSession sharedSession] dataTaskWithRequest:request completionHandler:^(NSData *data,NSURLResponse *response, NSError *error) {
+// 		if (data.length && error == nil) {
+// 			XLog(@"Success");
+// 			NSError *jsonError = nil;
+// 			NSDictionary *json = [NSJSONSerialization JSONObjectWithData:data options:kNilOptions error:&jsonError];
+// 			if (jsonError) {
+// 				XLog(@"JSON Error: %@", jsonError);
+// 			}
+// 			// 0 error, 1 success
+// 			int status = ((NSNumber *) json[@"status"]).intValue;
+// 			if (status == 0) {
+// 				XLog(@"Something went wrong");
+// 				NSArray *errors = (NSArray *) json[@"errors"];
+// 				NSString *title;
+// 				NSString *msg = @"";
+// 				if (errors == nil || errors.count == 0) {
+// 					title = @"Unknown Error";
+// 					msg = Xstr(@"Server response: %@", json);
+// 				} else {
+// 					title = @"Server Error";
+// 					msg = Xstr(@"%@", [errors componentsJoinedByString:@"\n"]);
+// 				}
+// 				UIAlertController *alert = XalertWTitle(title, msg);
+// 				id handler = ^(UIAlertAction *action) {
+// 					[self.navigationController popViewControllerAnimated:YES];
+// 				};
+// 				[alert addAction:XalertBtnWHandler(@"Ok", handler)];
+// 				dispatch_async(dispatch_get_main_queue(), ^(void) {
+// 					[self presentViewController:alert animated:YES completion:nil];
+// 				});
+// 				[self hideActivityIndicator];
+// 				return;
+// 			}
+
+// 			NSArray *serviceDevices = (NSArray *)json[@"devices"];
+// 			for (NSString *device in serviceDevices) {
+// 				_serviceDevices[device] = _serviceDevices[device] ?: @NO;
+// 			}
+// 			for (NSString *device in _serviceDevices.allKeys) {
+// 				if (![serviceDevices containsObject:device]) {
+// 					[_serviceDevices removeObjectForKey:device];
+// 				}
+// 			}
+
+// 			[self saveServiceDevices];
+
+// 			XLog(@"Saved devices");
+
+// 			// Reload specifiers on current screen
+// 			dispatch_async(dispatch_get_main_queue(), ^(void) {
+// 				[self reloadSpecifiers];
+// 			});
+
+// 		} else {
+// 			id handler = ^(UIAlertAction *action) {
+// 				[self.navigationController popViewControllerAnimated:YES];
+// 			};
+// 			NSString *msg;
+// 			if (data.length == 0 && error == nil) {
+// 				msg = @"Server did not respond. Please check your internet connection or try again later.";
+// 			} else if (error) {
+// 				msg = error.localizedDescription;
+// 			} else {
+// 				msg = @"Unknown Error. Contact Developer.";
+// 			}
+// 			UIAlertController *alert = XalertWTitle(@"Network Error", msg);
+// 			[alert addAction:XalertBtnWHandler(@"Ok", handler)];
+// 			dispatch_async(dispatch_get_main_queue(), ^(void) {
+// 				[self presentViewController:alert animated:YES completion:nil];
+// 			});
+// 		}
+
+// 		[self hideActivityIndicator];
+// 	}] resume];
+// }
 
 @end

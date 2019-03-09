@@ -11,7 +11,7 @@
   NSString *_prefsKey;
   NSString *_lastTargetAppID;
   NSIndexPath *_lastTargetIndexPath;
-  NSDictionary *_defaultDevices;
+  NSArray *_defaultDevices;
   NSString *_defaultDevicesKey;
   NSMutableDictionary *_loadedAppControllers;
 }
