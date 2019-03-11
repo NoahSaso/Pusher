@@ -5,6 +5,11 @@
 #import <SpringBoard/SBApplication.h>
 #import <SpringBoard/SBApplicationController.h>
 
+@interface SBLockScreenManager
++ (id)sharedInstance;
+@property(readonly) BOOL isUILocked;
+@end
+
 @interface BBBulletin (Pusher)
 @property (nonatomic, readonly) BOOL showsSubtitle;
 - (void)sendBulletinToPusher:(BBBulletin *)bulletin;
@@ -14,6 +19,7 @@
 @end
 
 static BOOL pusherEnabled = NO;
+static BOOL pusherDeviceLockOnly = NO;
 static NSArray *globalBlacklist = nil;
 static NSMutableDictionary *pusherEnabledServices = nil;
 
@@ -56,8 +62,10 @@ static void pusherPrefsChanged() {
 		CFRelease(keyList);
 	}
 
-	id val = prefs[@"enabled"];
+	id val = prefs[@"Enabled"];
 	pusherEnabled = val ? ((NSNumber *) val).boolValue : YES;
+	val = prefs[@"DeviceLockOnly"];
+	pusherDeviceLockOnly = val ? ((NSNumber *) val).boolValue : NO;
 	globalBlacklist = getPusherBlacklist(prefs, NSPPreferenceGlobalBLPrefix);
 
 	if (pusherEnabledServices == nil) {
@@ -134,7 +142,7 @@ static void pusherPrefsChanged() {
 }
 
 static BOOL prefsSayNo() {
-	if (!pusherEnabled
+	if (!pusherEnabled || (pusherDeviceLockOnly && !((SBLockScreenManager *) [%c(SBLockScreenManager) sharedInstance]).isUILocked)
 				|| globalBlacklist == nil || ![globalBlacklist isKindOfClass:NSArray.class]) {
 		return YES;
 	}
