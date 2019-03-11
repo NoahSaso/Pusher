@@ -3,7 +3,7 @@ Name: Pusher
 Depends: mobilesubstrate, applist
 Version: 0.0.1
 Architecture: iphoneos-arm
-Description: Push notifications to your computer
+Description: Push notifications to other devices
 Maintainer: Noah Saso <noahsaso@gmail.com>
 Author: Noah Saso <noahsaso@gmail.com>
 Section: Tweaks

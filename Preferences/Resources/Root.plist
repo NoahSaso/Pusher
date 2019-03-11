@@ -102,6 +102,24 @@
 			<key>label</key>
 			<string>Services</string>
 		</dict>
+
+		<!--  Services -->
+		<dict>
+			<key>cell</key>
+			<string>PSGroupCell</string>
+			<key>label</key>
+			<string>Support</string>
+		</dict>
+		<dict>
+			<key>cell</key>
+			<string>PSButtonCell</string>
+			<key>label</key>
+			<string>@NoahSaso</string>
+			<key>icon</key>
+			<string>twitter.png</string>
+			<key>action</key>
+			<string>openTwitter</string>
+		</dict>
 	</array>
 	<key>title</key>
 	<string>Pusher</string>
