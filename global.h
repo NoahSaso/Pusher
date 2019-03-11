@@ -7,6 +7,11 @@
 
 #define NSPPreferenceGlobalBLPrefix @"GlobalBL-"
 
+typedef enum {
+	PusherAuthorizationTypeCredentials,
+	PusherAuthorizationTypeHeader
+} PusherAuthorizationType;
+
 // All keys MUST HAVE the prefix equal to the name of the service
 #define PUSHER_SERVICE_PUSHOVER @"Pushover"
 #define PUSHER_SERVICE_PUSHOVER_ID @"net.superblock.Pushover"

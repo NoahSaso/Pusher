@@ -8,7 +8,7 @@
 @interface BBBulletin (Pusher)
 @property (nonatomic, readonly) BOOL showsSubtitle;
 - (void)sendBulletinToPusher:(BBBulletin *)bulletin;
-- (void)makePusherRequest:(NSString *)urlString userData:(NSDictionary *)userData;
+- (void)makePusherRequest:(NSString *)urlString infoDict:(NSDictionary *)infoDict credentials:(NSDictionary *)credentials authType:(PusherAuthorizationType)authType;
 @end
 
 static BOOL pusherEnabled = NO;
@@ -212,26 +212,45 @@ static BOOL prefsSayNo() {
 		// PUSHOVER SPECIFIC
 		NSString *device = [deviceIDs componentsJoinedByString:@","];
 		// Send
-		NSDictionary *userData = @{
-			@"token": servicePrefs[@"token"],
-			@"user": servicePrefs[@"user"],
+		NSDictionary *infoDict = @{
 			@"title": title,
 			@"message": message,
 			@"device": device
 		};
-		[self makePusherRequest:servicePrefs[@"url"] userData:userData];
+		NSDictionary *credentials = nil;
+		PusherAuthorizationType authType = PusherAuthorizationTypeCredentials;
+		if (Xeq(service, PUSHER_SERVICE_PUSHOVER)) {
+			// authType = PusherAuthorizationTypeCredentials;
+			credentials = @{
+				@"token": servicePrefs[@"token"],
+				@"user": servicePrefs[@"user"]
+			};
+		}/* else if (Xeq(service, PUSHER_SERVICE_PUSHBULLET)) {
+			authType = PusherAuthorizationTypeHeader;
+			credentials = @{
+				@"token": servicePrefs[@"token"]
+			};
+		}*/
+		[self makePusherRequest:servicePrefs[@"url"] infoDict:infoDict credentials:credentials authType:authType];
 	}
 
 	XLog(@"Pushed %@", appName);
 }
 
 %new
-- (void)makePusherRequest:(NSString *)urlString userData:(NSDictionary *)userData {
-	NSData *jsonData = [NSJSONSerialization dataWithJSONObject:userData options:NSJSONWritingPrettyPrinted error:nil];
+- (void)makePusherRequest:(NSString *)urlString infoDict:(NSDictionary *)infoDict credentials:(NSDictionary *)credentials authType:(PusherAuthorizationType)authType {
+	NSMutableDictionary *infoDictForJSON = [infoDict mutableCopy];
+	if (authType == PusherAuthorizationTypeCredentials) {
+		[infoDictForJSON addEntriesFromDictionary:credentials];
+	}
+	NSData *jsonData = [NSJSONSerialization dataWithJSONObject:infoDictForJSON options:NSJSONWritingPrettyPrinted error:nil];
 	NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:urlString] cachePolicy:NSURLRequestUseProtocolCachePolicy timeoutInterval:10];
 	[request setHTTPMethod:@"POST"];
 	[request setValue:@"application/json" forHTTPHeaderField:@"Accept"];
 	[request setValue:@"application/json" forHTTPHeaderField:@"Content-Type"];
+	if (authType == PusherAuthorizationTypeHeader) {
+		[request setValue:credentials[@"token"] forHTTPHeaderField:@"Access-Token"];
+	}
 	[request setValue:Xstr(@"%lu", jsonData.length) forHTTPHeaderField:@"Content-length"];
 	[request setHTTPBody:jsonData];
 
