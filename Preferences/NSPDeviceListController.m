@@ -51,18 +51,18 @@ static void setPreference(CFStringRef keyRef, CFPropertyListRef val, BOOL should
 		CFRelease(keyList);
 	}
 
-	NSDictionary *val = _prefs[_prefsKey] ?: @{};
+	NSDictionary *val = _prefs[_prefsKey] ?: (_isCustomApp ? @{} : @[]);
 	if (_isCustomApp) {
 		val = val[_customAppIDKey] ?: @{};
 		val = val[@"devices"] ?: @[];
 	}
-	_serviceDevices = [(val ?: @[]) mutableCopy];
+	_serviceDevices = [val mutableCopy];
 	NSMutableDictionary *indexesToReplace = [NSMutableDictionary new];
-	for (NSDictionary *device in _serviceDevices) {
-		indexesToReplace[[NSNumber numberWithInt:(int)[_serviceDevices indexOfObject:device]]] = [device mutableCopy];
+	for (int i = 0; i < _serviceDevices.count; i++) {
+		indexesToReplace[[NSNumber numberWithInt:i]] = [_serviceDevices[i] mutableCopy];
 	}
 	for (NSNumber *index in indexesToReplace.allKeys) {
-		[_serviceDevices replaceObjectAtIndex:(int)index withObject:indexesToReplace[index]];
+		[_serviceDevices replaceObjectAtIndex:index.intValue withObject:indexesToReplace[index]];
 	}
 
 	[self reloadSpecifiers];
@@ -156,9 +156,9 @@ static void setPreference(CFStringRef keyRef, CFPropertyListRef val, BOOL should
 }
 
 - (void)updatePushoverDevices {
-	id val = [_prefs[NSPPreferencePushoverTokenKey] copy];
+	id val = _prefs[NSPPreferencePushoverTokenKey];
 	NSString *pushoverToken = val ?: @"";
-	val = [_prefs[NSPPreferencePushoverUserKey] copy];
+	val = _prefs[NSPPreferencePushoverUserKey];
 	NSString *pushoverUser = val ?: @"";
 	NSDictionary *userDictionary = @{
 		@"token": pushoverToken,

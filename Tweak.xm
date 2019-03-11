@@ -15,6 +15,8 @@ static BOOL pusherEnabled = NO;
 static NSArray *globalBlacklist = nil;
 static NSMutableDictionary *pusherEnabledServices = nil;
 
+static NSMutableArray *recentNotificationTitles = [NSMutableArray new];
+
 // Make all app IDs lowercase in case some library I use starts messing with the case
 static NSArray *getPusherBlacklist(NSDictionary *prefs, NSString *prefix) {
 	// Extract all blacklisted app IDs
@@ -176,6 +178,18 @@ static BOOL prefsSayNo() {
 		message = bulletin.subtitle;
 	}
 	message = Xstr(@"%@%@%@", message, (message.length > 0 && bulletin.message && bulletin.message.length > 0 ? @"\n" : @""), bulletin.message ? bulletin.message : @"");
+
+	for (NSString *recentNotificationTitle in recentNotificationTitles) {
+		// prevent looping by checking if this title contains any recent titles in format of "App [Previous Title]"
+		if (Xeq(title, Xstr(@"%@ [%@]", appName, recentNotificationTitle))) {
+			return;
+		}
+	}
+	// keep array small, looping shouldn't happen after 100 notifications have already passed
+	if (recentNotificationTitles.count >= 100) {
+		[recentNotificationTitles removeAllObjects];
+	}
+	[recentNotificationTitles addObject:title];
 
 	for (NSString *service in pusherEnabledServices.allKeys) {
 		NSDictionary *servicePrefs = pusherEnabledServices[service];
