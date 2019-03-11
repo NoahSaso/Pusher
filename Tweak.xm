@@ -205,6 +205,7 @@ static BOOL prefsSayNo() {
 		NSArray *serviceBlacklist = servicePrefs[@"blacklist"];
 		// Blacklist array contains lowercase app IDs
 		if ([serviceBlacklist containsObject:appID.lowercaseString]) {
+			XLog(@"%@ Specific Blacklist", service);
 			continue;
 		}
 		// Custom app prefs?
