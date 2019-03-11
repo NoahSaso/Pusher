@@ -85,8 +85,7 @@ static void pusherPrefsChanged() {
 		servicePrefs[@"url"] = getServiceURL(service);
 
 		// devices
-		val = prefs[devicesKey];
-		NSArray *devices = val ?: @{};
+		NSArray *devices = prefs[devicesKey] ?: @[];
 		NSMutableArray *enabledDevices = [NSMutableArray new];
 		for (NSDictionary *device in devices) {
 			if (((NSNumber *) device[@"enabled"]).boolValue) {
@@ -206,10 +205,9 @@ static BOOL prefsSayNo() {
 			devices = customApps[appID][@"devices"];
 		}
 		NSMutableArray *deviceIDs = [NSMutableArray new];
+		// filters for enabled in prefs changed
 		for (NSDictionary *device in devices) {
-			if (device[@"enabled"] && ((NSNumber *) device[@"enabled"]).boolValue) {
-				[deviceIDs addObject:device[@"id"]];
-			}
+			[deviceIDs addObject:device[@"id"]];
 		}
 		// PUSHOVER SPECIFIC
 		NSString *device = [deviceIDs componentsJoinedByString:@","];

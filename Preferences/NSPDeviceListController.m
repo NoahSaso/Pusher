@@ -85,7 +85,7 @@ static void setPreference(CFStringRef keyRef, CFPropertyListRef val, BOOL should
 
 - (void)saveServiceDevices {
 	if (_isCustomApp) {
-		NSMutableDictionary *customApps = [_prefs[_prefsKey] ?: @{} mutableCopy];
+		NSMutableDictionary *customApps = [(_prefs[_prefsKey] ?: @{}) mutableCopy];
 		NSMutableDictionary *customApp = [(customApps[_customAppIDKey] ?: @{}) mutableCopy];
 		customApp[@"devices"] = _serviceDevices;
 		customApps[_customAppIDKey] = customApp;
