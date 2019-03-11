@@ -174,7 +174,7 @@ static BOOL prefsSayNo() {
 	NSString *appID = bulletin.sectionID;
 	// Blacklist array contains lowercase app IDs
 	if ([globalBlacklist containsObject:appID.lowercaseString]) {
-		XLog(@"Blacklisted");
+		XLog(@"[Global] Blacklisted");
 		return;
 	}
 
@@ -205,7 +205,7 @@ static BOOL prefsSayNo() {
 		NSArray *serviceBlacklist = servicePrefs[@"blacklist"];
 		// Blacklist array contains lowercase app IDs
 		if ([serviceBlacklist containsObject:appID.lowercaseString]) {
-			XLog(@"%@ Specific Blacklist", service);
+			XLog(@"[S:%@] Blacklisted", service);
 			continue;
 		}
 		// Custom app prefs?
@@ -231,9 +231,8 @@ static BOOL prefsSayNo() {
 			authType = PusherAuthorizationTypeHeader;
 		}
 		[self makePusherRequest:servicePrefs[@"url"] infoDict:infoDict credentials:credentials authType:authType];
+		XLog(@"[S:%@] Pushed %@", service, appName);
 	}
-
-	XLog(@"Pushed %@", appName);
 }
 
 %new
