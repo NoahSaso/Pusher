@@ -182,6 +182,7 @@ static BOOL prefsSayNo() {
 	for (NSString *recentNotificationTitle in recentNotificationTitles) {
 		// prevent looping by checking if this title contains any recent titles in format of "App [Previous Title]"
 		if (Xeq(title, Xstr(@"%@ [%@]", appName, recentNotificationTitle))) {
+			XLog(@"Prevented loop");
 			return;
 		}
 	}
@@ -206,7 +207,9 @@ static BOOL prefsSayNo() {
 		}
 		NSMutableArray *deviceIDs = [NSMutableArray new];
 		for (NSDictionary *device in devices) {
-			[deviceIDs addObject:device[@"id"]];
+			if (device[@"enabled"] && ((NSNumber *) device[@"enabled"]).boolValue) {
+				[deviceIDs addObject:device[@"id"]];
+			}
 		}
 		// PUSHOVER SPECIFIC
 		NSString *device = [deviceIDs componentsJoinedByString:@","];
@@ -261,8 +264,6 @@ static BOOL prefsSayNo() {
 %end
 
 %ctor {
-	CFPreferencesSetValue(CFSTR("PushoverDevices"), (__bridge CFArrayRef) @[], PUSHER_APP_ID, kCFPreferencesCurrentUser, kCFPreferencesAnyHost);
-	CFPreferencesSetValue(CFSTR("PushoverCustomApps"), (__bridge CFPropertyListRef) @{}, PUSHER_APP_ID, kCFPreferencesCurrentUser, kCFPreferencesAnyHost);
 	CFPreferencesSynchronize(PUSHER_APP_ID, kCFPreferencesCurrentUser, kCFPreferencesAnyHost);
 	CFNotificationCenterAddObserver(CFNotificationCenterGetDarwinNotifyCenter(), NULL, (CFNotificationCallback)pusherPrefsChanged, PUSHER_PREFS_NOTIFICATION, NULL, CFNotificationSuspensionBehaviorCoalesce);
 	pusherPrefsChanged();
