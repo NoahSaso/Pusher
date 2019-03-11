@@ -22,7 +22,7 @@
 - (void)showActivityIndicator;
 - (void)hideActivityIndicator;
 - (void)updatePushoverDevices;
-// - (void)updatePushbulletDevices;
+- (void)updatePushbulletDevices;
 - (void)saveServiceDevices;
 - (NSArray *)sortedDeviceList:(NSArray *)devices;
 @end

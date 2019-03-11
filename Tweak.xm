@@ -9,6 +9,8 @@
 @property (nonatomic, readonly) BOOL showsSubtitle;
 - (void)sendBulletinToPusher:(BBBulletin *)bulletin;
 - (void)makePusherRequest:(NSString *)urlString infoDict:(NSDictionary *)infoDict credentials:(NSDictionary *)credentials authType:(PusherAuthorizationType)authType;
+- (NSDictionary *)getPusherInfoDictionaryForService:(NSString *)service withDictionary:(NSDictionary *)dictionary;
+- (NSDictionary *)getPusherCredentialsForService:(NSString *)service withDictionary:(NSDictionary *)dictionary;
 @end
 
 static BOOL pusherEnabled = NO;
@@ -136,14 +138,19 @@ static BOOL prefsSayNo() {
 	}
 	for (NSString *service in pusherEnabledServices.allKeys) {
 		NSDictionary *servicePrefs = pusherEnabledServices[service];
-		if (servicePrefs == nil
+		if (servicePrefs == nil/*
 					|| servicePrefs[@"blacklist"] == nil || ![servicePrefs[@"blacklist"] isKindOfClass:NSArray.class]
 					|| servicePrefs[@"token"] == nil || ![servicePrefs[@"token"] isKindOfClass:NSString.class] || ((NSString *) servicePrefs[@"token"]).length == 0
 					|| servicePrefs[@"user"] == nil || ![servicePrefs[@"user"] isKindOfClass:NSString.class] || ((NSString *) servicePrefs[@"user"]).length == 0
 					|| servicePrefs[@"devices"] == nil || ![servicePrefs[@"devices"] isKindOfClass:NSArray.class] // devices can be empty depending on API
 					|| servicePrefs[@"url"] == nil || ![servicePrefs[@"url"] isKindOfClass:NSString.class] || ((NSString *) servicePrefs[@"url"]).length == 0
-					|| servicePrefs[@"customApps"] == nil || ![servicePrefs[@"customApps"] isKindOfClass:NSDictionary.class]) {
+					|| servicePrefs[@"customApps"] == nil || ![servicePrefs[@"customApps"] isKindOfClass:NSDictionary.class]*/) {
 			return YES;
+		}
+		for (id val in servicePrefs.allValues) {
+			if (val == nil) {
+				return YES;
+			}
 		}
 	}
 	return NO;
@@ -204,27 +211,19 @@ static BOOL prefsSayNo() {
 		if ([customApps.allKeys containsObject:appID] && customApps[appID][@"devices"]) {
 			devices = customApps[appID][@"devices"];
 		}
-		NSMutableArray *deviceIDs = [NSMutableArray new];
-		// filters for enabled in prefs changed
-		for (NSDictionary *device in devices) {
-			[deviceIDs addObject:device[@"id"]];
-		}
-		// PUSHOVER SPECIFIC
-		NSString *device = [deviceIDs componentsJoinedByString:@","];
 		// Send
-		NSDictionary *infoDict = @{
+		NSDictionary *infoDict = [self getPusherInfoDictionaryForService:service withDictionary:@{
 			@"title": title,
 			@"message": message,
-			@"device": device
-		};
-		NSDictionary *credentials = nil;
-		PusherAuthorizationType authType = PusherAuthorizationTypeCredentials;
-		if (Xeq(service, PUSHER_SERVICE_PUSHOVER)) {
-			// authType = PusherAuthorizationTypeCredentials;
-			credentials = @{
+			@"devices": devices
+		}];
+		NSDictionary *credentials = [self getPusherCredentialsForService:service withDictionary:@{
 				@"token": servicePrefs[@"token"],
 				@"user": servicePrefs[@"user"]
-			};
+		}];
+		PusherAuthorizationType authType = PusherAuthorizationTypeCredentials;
+		if (Xeq(service, PUSHER_SERVICE_PUSHOVER)) {
+			authType = PusherAuthorizationTypeCredentials;
 		}/* else if (Xeq(service, PUSHER_SERVICE_PUSHBULLET)) {
 			authType = PusherAuthorizationTypeHeader;
 			credentials = @{
@@ -235,6 +234,33 @@ static BOOL prefsSayNo() {
 	}
 
 	XLog(@"Pushed %@", appName);
+}
+
+%new
+- (NSDictionary *)getPusherInfoDictionaryForService:(NSString *)service withDictionary:(NSDictionary *)dictionary {
+	if (Xeq(service, PUSHER_SERVICE_PUSHOVER)) {
+		NSMutableArray *deviceIDs = [NSMutableArray new];
+		for (NSDictionary *device in dictionary[@"devices"]) {
+			[deviceIDs addObject:device[@"id"]];
+		}
+		return @{
+			@"title": dictionary[@"title"],
+			@"message": dictionary[@"message"],
+			@"device": [deviceIDs componentsJoinedByString:@","]
+		};
+	}
+	return @{};
+}
+
+%new
+- (NSDictionary *)getPusherCredentialsForService:(NSString *)service withDictionary:(NSDictionary *)dictionary {
+	if (Xeq(service, PUSHER_SERVICE_PUSHOVER)) {
+		return @{
+			@"token": dictionary[@"token"],
+			@"user": dictionary[@"user"]
+		};
+	}
+	return @{};
 }
 
 %new

@@ -256,89 +256,76 @@ static void setPreference(CFStringRef keyRef, CFPropertyListRef val, BOOL should
 	}] resume];
 }
 
-// - (void)updatePushbulletDevices {
-// 	id val = [_prefs[NSPPreferencePushbulletTokenKey] copy];
-// 	NSString *pushbulletToken = val ?: @"";
-// 	NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:@"https://api.pushbullet.com/v2/devices"] cachePolicy:NSURLRequestUseProtocolCachePolicy timeoutInterval:10];
-// 	[request setHTTPMethod:@"GET"];
-// 	[request setValue:@"application/json" forHTTPHeaderField:@"Accept"];
-// 	[request setValue:pushbulletToken forHTTPHeaderField:@"Authorization"];
+- (void)updatePushbulletDevices {
+	id val = [_prefs[NSPPreferencePushbulletTokenKey] copy];
+	NSString *pushbulletToken = val ?: @"";
+	NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:@"https://api.pushbullet.com/v2/devices"] cachePolicy:NSURLRequestUseProtocolCachePolicy timeoutInterval:10];
+	[request setHTTPMethod:@"GET"];
+	[request setValue:@"application/json" forHTTPHeaderField:@"Accept"];
+	[request setValue:pushbulletToken forHTTPHeaderField:@"Authorization"];
 
-// 	//use async way to connect network
-// 	[[[NSURLSession sharedSession] dataTaskWithRequest:request completionHandler:^(NSData *data,NSURLResponse *response, NSError *error) {
-// 		if (data.length && error == nil) {
-// 			XLog(@"Success");
-// 			NSError *jsonError = nil;
-// 			NSDictionary *json = [NSJSONSerialization JSONObjectWithData:data options:kNilOptions error:&jsonError];
-// 			if (jsonError) {
-// 				XLog(@"JSON Error: %@", jsonError);
-// 			}
-// 			// 0 error, 1 success
-// 			int status = ((NSNumber *) json[@"status"]).intValue;
-// 			if (status == 0) {
-// 				XLog(@"Something went wrong");
-// 				NSArray *errors = (NSArray *) json[@"errors"];
-// 				NSString *title;
-// 				NSString *msg = @"";
-// 				if (errors == nil || errors.count == 0) {
-// 					title = @"Unknown Error";
-// 					msg = Xstr(@"Server response: %@", json);
-// 				} else {
-// 					title = @"Server Error";
-// 					msg = Xstr(@"%@", [errors componentsJoinedByString:@"\n"]);
-// 				}
-// 				UIAlertController *alert = XalertWTitle(title, msg);
-// 				id handler = ^(UIAlertAction *action) {
-// 					[self.navigationController popViewControllerAnimated:YES];
-// 				};
-// 				[alert addAction:XalertBtnWHandler(@"Ok", handler)];
-// 				dispatch_async(dispatch_get_main_queue(), ^(void) {
-// 					[self presentViewController:alert animated:YES completion:nil];
-// 				});
-// 				[self hideActivityIndicator];
-// 				return;
-// 			}
+	//use async way to connect network
+	[[[NSURLSession sharedSession] dataTaskWithRequest:request completionHandler:^(NSData *data,NSURLResponse *response, NSError *error) {
+		if (data.length && error == nil) {
+			XLog(@"Success");
+			NSError *jsonError = nil;
+			NSDictionary *json = [NSJSONSerialization JSONObjectWithData:data options:kNilOptions error:&jsonError];
+			if (jsonError) {
+				XLog(@"JSON Error: %@", jsonError);
+			}
 
-// 			NSArray *serviceDevices = (NSArray *)json[@"devices"];
-// 			for (NSString *device in serviceDevices) {
-// 				_serviceDevices[device] = _serviceDevices[device] ?: @NO;
-// 			}
-// 			for (NSString *device in _serviceDevices.allKeys) {
-// 				if (![serviceDevices containsObject:device]) {
-// 					[_serviceDevices removeObjectForKey:device];
-// 				}
-// 			}
+			NSMutableArray *serviceDevices = [(NSArray *)json[@"devices"] mutableCopy];
+			NSMutableArray *serviceDeviceIDs = [NSMutableArray new];
+			for (NSDictionary *device in serviceDevices) {
+				[serviceDeviceIDs addObject:device[@"id"]];
+			}
 
-// 			[self saveServiceDevices];
+			NSMutableArray *serviceDevicesToRemove = [NSMutableArray new];
+			for (NSDictionary *device in _serviceDevices) {
+				if (![serviceDeviceIDs containsObject:device[@"id"]]) {
+					[serviceDevicesToRemove addObject:device];
+				} else {
+					[serviceDevices removeObject:device[@"id"]];
+				}
+			}
+			for (NSDictionary *device in serviceDevices) {
+				[_serviceDevices addObject:@{ @"name": device[@"nickname"], @"id": device[@"iden"], @"enabled": @NO }];
+			}
+			for (NSDictionary *device in serviceDevicesToRemove) {
+				[_serviceDevices removeObject:device];
+			}
+			[serviceDevicesToRemove release];
 
-// 			XLog(@"Saved devices");
+			[self saveServiceDevices];
 
-// 			// Reload specifiers on current screen
-// 			dispatch_async(dispatch_get_main_queue(), ^(void) {
-// 				[self reloadSpecifiers];
-// 			});
+			XLog(@"Saved devices");
 
-// 		} else {
-// 			id handler = ^(UIAlertAction *action) {
-// 				[self.navigationController popViewControllerAnimated:YES];
-// 			};
-// 			NSString *msg;
-// 			if (data.length == 0 && error == nil) {
-// 				msg = @"Server did not respond. Please check your internet connection or try again later.";
-// 			} else if (error) {
-// 				msg = error.localizedDescription;
-// 			} else {
-// 				msg = @"Unknown Error. Contact Developer.";
-// 			}
-// 			UIAlertController *alert = XalertWTitle(@"Network Error", msg);
-// 			[alert addAction:XalertBtnWHandler(@"Ok", handler)];
-// 			dispatch_async(dispatch_get_main_queue(), ^(void) {
-// 				[self presentViewController:alert animated:YES completion:nil];
-// 			});
-// 		}
+			// Reload specifiers on current screen
+			dispatch_async(dispatch_get_main_queue(), ^(void) {
+				[self reloadSpecifiers];
+			});
 
-// 		[self hideActivityIndicator];
-// 	}] resume];
-// }
+		} else {
+			id handler = ^(UIAlertAction *action) {
+				[self.navigationController popViewControllerAnimated:YES];
+			};
+			NSString *msg;
+			if (data.length == 0 && error == nil) {
+				msg = @"Server did not respond. Please check your internet connection or try again later.";
+			} else if (error) {
+				msg = error.localizedDescription;
+			} else {
+				msg = @"Unknown Error. Contact Developer.";
+			}
+			UIAlertController *alert = XalertWTitle(@"Network Error", msg);
+			[alert addAction:XalertBtnWHandler(@"Ok", handler)];
+			dispatch_async(dispatch_get_main_queue(), ^(void) {
+				[self presentViewController:alert animated:YES completion:nil];
+			});
+		}
+
+		[self hideActivityIndicator];
+	}] resume];
+}
 
 @end
