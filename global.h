@@ -14,7 +14,7 @@ typedef enum {
 
 // All keys MUST HAVE the prefix equal to the name of the service
 #define PUSHER_SERVICE_PUSHOVER @"Pushover"
-#define PUSHER_SERVICE_PUSHOVER_ID @"net.superblock.Pushover"
+// #define PUSHER_SERVICE_PUSHOVER_ID @"net.superblock.Pushover"
 #define PUSHER_SERVICE_PUSHOVER_URL @"https://api.pushover.net/1/messages.json"
 #define NSPPreferencePushoverTokenKey @"PushoverToken"
 #define NSPPreferencePushoverUserKey @"PushoverUser"
@@ -24,8 +24,8 @@ typedef enum {
 
 // All keys MUST HAVE the prefix equal to the name of the service
 #define PUSHER_SERVICE_PUSHBULLET @"Pushbullet"
-#define PUSHER_SERVICE_PUSHBULLET_ID @"net.superblock.Pushover"
-#define PUSHER_SERVICE_PUSHBULLETURL @"https://api.pushbullet.com/v2/pushes"
+// #define PUSHER_SERVICE_PUSHBULLET_ID @"com.pushbullet.client"
+#define PUSHER_SERVICE_PUSHBULLET_URL @"https://api.pushbullet.com/v2/pushes"
 #define NSPPreferencePushbulletTokenKey @"PushbulletToken"
 #define NSPPreferencePushbulletUserKey @"PushbulletUser"
 #define NSPPreferencePushbulletDevicesKey @"PushbulletDevices"

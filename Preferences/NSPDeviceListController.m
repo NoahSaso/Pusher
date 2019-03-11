@@ -100,9 +100,9 @@ static void setPreference(CFStringRef keyRef, CFPropertyListRef val, BOOL should
 
 	if (Xeq(_service, PUSHER_SERVICE_PUSHOVER)) {
 		[self updatePushoverDevices];
-	}/* else if (Xeq(_service, PUSHER_SERVICE_PUSHBULLET)) {
+	} else if (Xeq(_service, PUSHER_SERVICE_PUSHBULLET)) {
 		[self updatePushbulletDevices];
-	}*/
+	}
 }
 
 - (NSArray *)specifiers {
@@ -111,7 +111,11 @@ static void setPreference(CFStringRef keyRef, CFPropertyListRef val, BOOL should
 
 		if (_serviceDevices.count) {
 			PSSpecifier *groupSpecifier = [PSSpecifier emptyGroupSpecifier];
-			[groupSpecifier setProperty:@"Selecting none will forward push notifications to all devices." forKey:@"footerText"];
+			if (Xeq(_service, PUSHER_SERVICE_PUSHOVER)) {
+				[groupSpecifier setProperty:@"Selecting none will forward push notifications to all devices." forKey:@"footerText"];
+			} else if (Xeq(_service, PUSHER_SERVICE_PUSHBULLET)) {
+				[groupSpecifier setProperty:@"Pushbullet only allows one receiving device. Selecting none will forward push notifications to all devices." forKey:@"footerText"];
+			}
 			[allSpecifiers addObject:groupSpecifier];
 		}
 
@@ -138,10 +142,18 @@ static void setPreference(CFStringRef keyRef, CFPropertyListRef val, BOOL should
 }
 
 - (void)setPreferenceValue:(id)value forDeviceSpecifier:(PSSpecifier *)specifier {
+	BOOL onlyAllowOne = Xeq(_service, PUSHER_SERVICE_PUSHBULLET);
 	for (NSMutableDictionary *device in _serviceDevices) {
 		if (Xeq(device[@"id"], specifier.identifier)) {
 			device[@"enabled"] = value;
+		} else if (onlyAllowOne) {
+			// all others must be off
+			device[@"enabled"] = @NO;
 		}
+	}
+	// reload specifiers because likely turned other switch off
+	if (onlyAllowOne) {
+		[self reloadSpecifiers];
 	}
 	[self saveServiceDevices];
 }
@@ -217,7 +229,7 @@ static void setPreference(CFStringRef keyRef, CFPropertyListRef val, BOOL should
 				}
 			}
 			for (NSString *device in serviceDevices) {
-				[_serviceDevices addObject:@{ @"name": device, @"id": device, @"enabled": @NO }];
+				[_serviceDevices addObject:[@{ @"name": device, @"id": device, @"enabled": @NO } mutableCopy]];
 			}
 			for (NSDictionary *device in serviceDevicesToRemove) {
 				[_serviceDevices removeObject:device];
@@ -257,12 +269,11 @@ static void setPreference(CFStringRef keyRef, CFPropertyListRef val, BOOL should
 }
 
 - (void)updatePushbulletDevices {
-	id val = [_prefs[NSPPreferencePushbulletTokenKey] copy];
-	NSString *pushbulletToken = val ?: @"";
+	NSString *pushbulletToken = _prefs[NSPPreferencePushbulletTokenKey] ?: @"";
 	NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:@"https://api.pushbullet.com/v2/devices"] cachePolicy:NSURLRequestUseProtocolCachePolicy timeoutInterval:10];
 	[request setHTTPMethod:@"GET"];
 	[request setValue:@"application/json" forHTTPHeaderField:@"Accept"];
-	[request setValue:pushbulletToken forHTTPHeaderField:@"Authorization"];
+	[request setValue:pushbulletToken forHTTPHeaderField:@"Access-Token"];
 
 	//use async way to connect network
 	[[[NSURLSession sharedSession] dataTaskWithRequest:request completionHandler:^(NSData *data,NSURLResponse *response, NSError *error) {
@@ -274,25 +285,52 @@ static void setPreference(CFStringRef keyRef, CFPropertyListRef val, BOOL should
 				XLog(@"JSON Error: %@", jsonError);
 			}
 
-			NSMutableArray *serviceDevices = [(NSArray *)json[@"devices"] mutableCopy];
-			NSMutableArray *serviceDeviceIDs = [NSMutableArray new];
-			for (NSDictionary *device in serviceDevices) {
-				[serviceDeviceIDs addObject:device[@"id"]];
+			NSDictionary *error = (NSDictionary *) json[@"error"];
+			if (error) {
+				XLog(@"Something went wrong");
+				NSString *title = @"Server Error";
+				NSString *msg = error[@"message"] ?: @"Unknown Error";
+				UIAlertController *alert = XalertWTitle(title, msg);
+				id handler = ^(UIAlertAction *action) {
+					[self.navigationController popViewControllerAnimated:YES];
+				};
+				[alert addAction:XalertBtnWHandler(@"Ok", handler)];
+				dispatch_async(dispatch_get_main_queue(), ^(void) {
+					[self presentViewController:alert animated:YES completion:nil];
+				});
+				[self hideActivityIndicator];
+				return;
 			}
 
+			NSMutableArray *serviceDevices = [(NSArray *)json[@"devices"] mutableCopy];
+
 			NSMutableArray *serviceDevicesToRemove = [NSMutableArray new];
-			for (NSDictionary *device in _serviceDevices) {
-				if (![serviceDeviceIDs containsObject:device[@"id"]]) {
-					[serviceDevicesToRemove addObject:device];
+			for (NSDictionary *savedDevice in _serviceDevices) {
+				NSDictionary *foundNewDevice = nil;
+				for (NSDictionary *newDevice in serviceDevices) {
+					if (Xeq(savedDevice[@"id"], newDevice[@"iden"])) {
+						foundNewDevice = newDevice;
+						break;
+					}
+				}
+				if (foundNewDevice) {
+					// prevent from adding later because already exists
+					[serviceDevices removeObject:foundNewDevice];
 				} else {
-					[serviceDevices removeObject:device[@"id"]];
+					[serviceDevicesToRemove addObject:savedDevice];
 				}
 			}
-			for (NSDictionary *device in serviceDevices) {
-				[_serviceDevices addObject:@{ @"name": device[@"nickname"], @"id": device[@"iden"], @"enabled": @NO }];
+
+			for (NSDictionary *newDevice in serviceDevices) {
+				// pushable deprecated
+				if ((newDevice[@"active"] && !((NSNumber *) newDevice[@"active"]).boolValue)) {
+					continue;
+				}
+				NSString *name = newDevice[@"nickname"] ?: newDevice[@"model"];
+				[_serviceDevices addObject:[@{ @"name": name, @"id": newDevice[@"iden"], @"enabled": @NO } mutableCopy]];
 			}
-			for (NSDictionary *device in serviceDevicesToRemove) {
-				[_serviceDevices removeObject:device];
+			for (NSDictionary *savedDevice in serviceDevicesToRemove) {
+				[_serviceDevices removeObject:savedDevice];
 			}
 			[serviceDevicesToRemove release];
 

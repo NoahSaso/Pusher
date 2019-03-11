@@ -34,4 +34,8 @@
 	Xurl(@"https://pushover.net/dashboard");
 }
 
+- (void)openPushbulletAccount {
+	Xurl(@"https://www.pushbullet.com/#settings/account");
+}
+
 @end

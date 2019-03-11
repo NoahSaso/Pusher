@@ -39,6 +39,8 @@ static NSArray *getPusherBlacklist(NSDictionary *prefs, NSString *prefix) {
 static NSString *getServiceURL(NSString *service) {
 	if (Xeq(service, PUSHER_SERVICE_PUSHOVER)) {
 		return PUSHER_SERVICE_PUSHOVER_URL;
+	} else if (Xeq(service, PUSHER_SERVICE_PUSHBULLET)) {
+		return PUSHER_SERVICE_PUSHBULLET_URL;
 	}
 	return @"";
 }
@@ -224,12 +226,9 @@ static BOOL prefsSayNo() {
 		PusherAuthorizationType authType = PusherAuthorizationTypeCredentials;
 		if (Xeq(service, PUSHER_SERVICE_PUSHOVER)) {
 			authType = PusherAuthorizationTypeCredentials;
-		}/* else if (Xeq(service, PUSHER_SERVICE_PUSHBULLET)) {
+		} else if (Xeq(service, PUSHER_SERVICE_PUSHBULLET)) {
 			authType = PusherAuthorizationTypeHeader;
-			credentials = @{
-				@"token": servicePrefs[@"token"]
-			};
-		}*/
+		}
 		[self makePusherRequest:servicePrefs[@"url"] infoDict:infoDict credentials:credentials authType:authType];
 	}
 
@@ -238,16 +237,29 @@ static BOOL prefsSayNo() {
 
 %new
 - (NSDictionary *)getPusherInfoDictionaryForService:(NSString *)service withDictionary:(NSDictionary *)dictionary {
+	NSMutableArray *deviceIDs = [NSMutableArray new];
+	for (NSDictionary *device in dictionary[@"devices"]) {
+		[deviceIDs addObject:device[@"id"]];
+	}
 	if (Xeq(service, PUSHER_SERVICE_PUSHOVER)) {
-		NSMutableArray *deviceIDs = [NSMutableArray new];
-		for (NSDictionary *device in dictionary[@"devices"]) {
-			[deviceIDs addObject:device[@"id"]];
-		}
+		NSString *combinedDevices = [deviceIDs componentsJoinedByString:@","];
 		return @{
 			@"title": dictionary[@"title"],
 			@"message": dictionary[@"message"],
-			@"device": [deviceIDs componentsJoinedByString:@","]
+			@"device": combinedDevices
 		};
+	} else if (Xeq(service, PUSHER_SERVICE_PUSHBULLET)) {
+		// should always only be one, but just in case
+		NSString *firstDevice = [deviceIDs firstObject];
+		NSMutableDictionary *pushbulletInfoDict = [@{
+			@"type": @"note",
+			@"title": dictionary[@"title"],
+			@"body": dictionary[@"message"]
+		} mutableCopy];
+		if (firstDevice) {
+			pushbulletInfoDict[@"device_iden"] = firstDevice;
+		}
+		return pushbulletInfoDict;
 	}
 	return @{};
 }
@@ -258,6 +270,10 @@ static BOOL prefsSayNo() {
 		return @{
 			@"token": dictionary[@"token"],
 			@"user": dictionary[@"user"]
+		};
+	} else if (Xeq(service, PUSHER_SERVICE_PUSHBULLET)) {
+		return @{
+			@"token": dictionary[@"token"]
 		};
 	}
 	return @{};
