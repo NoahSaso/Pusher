@@ -88,6 +88,8 @@
 			<string>Pushover</string>
 			<key>defaultDevicesKey</key>
 			<string>PushoverDevices</string>
+			<key>defaultSoundsKey</key>
+			<string>PushoverSounds</string>
 		</dict>
 		<dict>
 			<key>cell</key>

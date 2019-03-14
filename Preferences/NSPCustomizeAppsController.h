@@ -13,6 +13,8 @@
   NSIndexPath *_lastTargetIndexPath;
   NSArray *_defaultDevices;
   NSString *_defaultDevicesKey;
+  NSArray *_defaultSounds;
+  NSString *_defaultSoundsKey;
   NSMutableDictionary *_loadedAppControllers;
 }
 - (void)addAppIDs:(NSArray *)appIDs;
