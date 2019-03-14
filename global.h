@@ -19,6 +19,7 @@ typedef enum {
 #define NSPPreferencePushoverTokenKey @"PushoverToken"
 #define NSPPreferencePushoverUserKey @"PushoverUser"
 #define NSPPreferencePushoverDevicesKey @"PushoverDevices"
+#define NSPPreferencePushoverSoundsKey @"PushoverSounds"
 #define NSPPreferencePushoverBLPrefix @"PushoverBL-"
 #define NSPPreferencePushoverCustomAppsKey @"PushoverCustomApps"
 
@@ -33,3 +34,9 @@ typedef enum {
 #define NSPPreferencePushbulletCustomAppsKey @"PushbulletCustomApps"
 
 #define PUSHER_SERVICES @[ PUSHER_SERVICE_PUSHOVER, PUSHER_SERVICE_PUSHBULLET ]
+
+#import <Preferences/PSSpecifier.h>
+
+@interface PSSpecifier (Pusher)
++ (id)emptyGroupSpecifier;
+@end

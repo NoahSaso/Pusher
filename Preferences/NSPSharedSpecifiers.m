@@ -1,5 +1,6 @@
 #import "NSPSharedSpecifiers.h"
 #import "NSPDeviceListController.h"
+#import "NSPSoundListController.h"
 
 #import "../global.h"
 #import <Custom/defines.h>
@@ -21,14 +22,25 @@
 
 + (NSArray *)pushover:(NSString *)appID {
   PSSpecifier *devices = [PSSpecifier preferenceSpecifierNamed:@"Receiving Devices" target:nil set:nil get:nil detail:NSPDeviceListController.class cell:PSLinkCell edit:nil];
+  PSSpecifier *sounds = [PSSpecifier preferenceSpecifierNamed:@"Notification Sound" target:nil set:nil get:nil detail:NSPSoundListController.class cell:PSLinkCell edit:nil];
+
   [devices setProperty:PUSHER_SERVICE_PUSHOVER forKey:@"service"];
+  [sounds setProperty:PUSHER_SERVICE_PUSHOVER forKey:@"service"];
+
   BOOL isCustomApp = appID != nil;
+
   [devices setProperty:(isCustomApp ? NSPPreferencePushoverCustomAppsKey : NSPPreferencePushoverDevicesKey) forKey:@"prefsKey"];
+  [sounds setProperty:(isCustomApp ? NSPPreferencePushoverCustomAppsKey : NSPPreferencePushoverSoundsKey) forKey:@"prefsKey"];
+
   [devices setProperty:[NSNumber numberWithBool:isCustomApp] forKey:@"isCustomApp"];
+  [sounds setProperty:[NSNumber numberWithBool:isCustomApp] forKey:@"isCustomApp"];
+
   if (isCustomApp) {
     [devices setProperty:appID forKey:@"customAppIDKey"];
+    [sounds setProperty:appID forKey:@"customAppIDKey"];
   }
-  return @[devices];
+
+  return @[devices, sounds];
 }
 
 + (NSArray *)pushbullet:(NSString *)appID {

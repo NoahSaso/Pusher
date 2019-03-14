@@ -87,6 +87,7 @@ static void pusherPrefsChanged() {
 		NSString *tokenKey = Xstr(@"%@Token", service);
 		NSString *userKey = Xstr(@"%@User", service);
 		NSString *devicesKey = Xstr(@"%@Devices", service);
+		NSString *soundsKey = Xstr(@"%@Sounds", service);
 		NSString *customAppsKey = Xstr(@"%@CustomApps", service);
 
 		servicePrefs[@"blacklist"] = getPusherBlacklist(prefs, blacklistPrefix);
@@ -108,6 +109,16 @@ static void pusherPrefsChanged() {
 		// [enabledDevices release];
 		// [devices release];
 
+		// sounds
+		NSArray *sounds = prefs[soundsKey] ?: @[];
+		NSMutableArray *enabledSounds = [NSMutableArray new];
+		for (NSDictionary *sound in sounds) {
+			if (((NSNumber *) sound[@"enabled"]).boolValue) {
+				[enabledSounds addObject:sound[@"id"]];
+			}
+		}
+		servicePrefs[@"sounds"] = [enabledSounds retain];
+
 		// custom apps & devices
 		NSDictionary *prefCustomApps = (NSDictionary *)prefs[customAppsKey] ?: @{};
 		NSMutableDictionary *customApps = [NSMutableDictionary new];
@@ -117,8 +128,8 @@ static void pusherPrefsChanged() {
 			if (customAppPrefs[@"enabled"] && !((NSNumber *) customAppPrefs[@"enabled"]).boolValue) {
 				continue;
 			}
-			NSArray *customAppDevices = customAppPrefs[@"devices"] ?: @{};
 
+			NSArray *customAppDevices = customAppPrefs[@"devices"] ?: @{};
 			NSMutableArray *customAppEnabledDevices = [NSMutableArray new];
 			for (NSDictionary *customAppDevice in customAppDevices) {
 				if (((NSNumber *) customAppDevice[@"enabled"]).boolValue) {
@@ -127,6 +138,18 @@ static void pusherPrefsChanged() {
 			}
 			customApps[customAppID] = @{
 				@"devices": [customAppEnabledDevices retain]
+			};
+
+			NSArray *customAppSounds = customAppPrefs[@"sounds"] ?: @{};
+			NSMutableArray *customAppEnabledSounds = [NSMutableArray new];
+			for (NSDictionary *customAppSound in customAppSounds) {
+				if (((NSNumber *) customAppSound[@"enabled"]).boolValue) {
+					[customAppEnabledSounds addObject:customAppSound[@"id"]];
+				}
+			}
+			customApps[customAppID] = @{
+				@"devices": [customAppEnabledDevices retain],
+				@"sounds": [customAppEnabledSounds retain]
 			};
 			// [customAppEnabledDevices release];
 			// [customAppDevices release];
@@ -217,20 +240,26 @@ static BOOL prefsSayNo() {
 			continue;
 		}
 		// Custom app prefs?
-		NSArray *devices = servicePrefs[@"devices"];
 		NSDictionary *customApps = servicePrefs[@"customApps"];
+
+		NSArray *devices = servicePrefs[@"devices"];
 		if ([customApps.allKeys containsObject:appID] && customApps[appID][@"devices"]) {
 			devices = customApps[appID][@"devices"];
+		}
+		NSArray *sounds = servicePrefs[@"sounds"];
+		if ([customApps.allKeys containsObject:appID] && customApps[appID][@"sounds"]) {
+			sounds = customApps[appID][@"sounds"];
 		}
 		// Send
 		NSDictionary *infoDict = [self getPusherInfoDictionaryForService:service withDictionary:@{
 			@"title": title,
 			@"message": message,
-			@"devices": devices
+			@"devices": devices,
+			@"sounds": sounds
 		}];
 		NSDictionary *credentials = [self getPusherCredentialsForService:service withDictionary:@{
-				@"token": servicePrefs[@"token"],
-				@"user": servicePrefs[@"user"]
+			@"token": servicePrefs[@"token"],
+			@"user": servicePrefs[@"user"]
 		}];
 		PusherAuthorizationType authType = PusherAuthorizationTypeCredentials;
 		if (Xeq(service, PUSHER_SERVICE_PUSHOVER)) {
@@ -251,11 +280,16 @@ static BOOL prefsSayNo() {
 	}
 	if (Xeq(service, PUSHER_SERVICE_PUSHOVER)) {
 		NSString *combinedDevices = [deviceIDs componentsJoinedByString:@","];
-		return @{
+		NSMutableDictionary *pushoverInfoDict = [@{
 			@"title": dictionary[@"title"],
 			@"message": dictionary[@"message"],
 			@"device": combinedDevices
-		};
+		} mutableCopy];
+		NSString *firstSoundID = [dictionary[@"sounds"] firstObject];
+		if (firstSoundID) {
+			pushoverInfoDict[@"sound"] = firstSoundID;
+		}
+		return pushoverInfoDict;
 	} else if (Xeq(service, PUSHER_SERVICE_PUSHBULLET)) {
 		// should always only be one, but just in case
 		NSString *firstDevice = [deviceIDs firstObject];

@@ -1,9 +1,5 @@
 #import <Preferences/PSListController.h>
-#import <Preferences/PSSpecifier.h>
-
-@interface PSSpecifier (Pusher)
-+ (id)emptyGroupSpecifier;
-@end
+#import "../global.h"
 
 @interface NSPDeviceListController : PSListController {
   NSMutableArray *_serviceDevices;
