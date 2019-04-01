@@ -11,6 +11,7 @@
   NSString *_service;
   BOOL _isCustomApp;
   NSString *_customAppIDKey;
+  BOOL _onlyAllowOne;
 }
 - (void)setPreferenceValue:(id)value forDeviceSpecifier:(PSSpecifier *)specifier;
 - (id)readDevicePreferenceValue:(PSSpecifier *)specifier;

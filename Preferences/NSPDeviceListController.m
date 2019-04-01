@@ -29,6 +29,8 @@ static void setPreference(CFStringRef keyRef, CFPropertyListRef val, BOOL should
 	if (_isCustomApp) {
 		_customAppIDKey = [[self.specifier propertyForKey:@"customAppIDKey"] retain];
 	}
+
+	_onlyAllowOne = Xeq(_service, PUSHER_SERVICE_PUSHBULLET);
 }
 
 - (void)viewWillAppear:(BOOL)animated {
@@ -142,17 +144,16 @@ static void setPreference(CFStringRef keyRef, CFPropertyListRef val, BOOL should
 }
 
 - (void)setPreferenceValue:(id)value forDeviceSpecifier:(PSSpecifier *)specifier {
-	BOOL onlyAllowOne = Xeq(_service, PUSHER_SERVICE_PUSHBULLET);
 	for (NSMutableDictionary *device in _serviceDevices) {
 		if (Xeq(device[@"id"], specifier.identifier)) {
 			device[@"enabled"] = value;
-		} else if (onlyAllowOne) {
+		} else if (_onlyAllowOne) {
 			// all others must be off
 			device[@"enabled"] = @NO;
 		}
 	}
 	// reload specifiers because likely turned other switch off
-	if (onlyAllowOne) {
+	if (_onlyAllowOne) {
 		[self reloadSpecifiers];
 	}
 	[self saveServiceDevices];
