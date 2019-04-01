@@ -214,7 +214,7 @@ static BOOL prefsSayNo() {
 
 	SBApplication *app = [[NSClassFromString(@"SBApplicationController") sharedInstance] applicationWithBundleIdentifier:appID];
 	NSString *appName = app && app.displayName && app.displayName.length > 0 ? app.displayName : Xstr(@"Unknown App: %@", appID);
-	NSString *title = Xstr(@"%@%@", appName, (bulletin.title && bulletin.title.length > 0 ? Xstr(@" [%@]", bulletin.title) : @""));
+	NSString *title = Xstr(@"%@%@", appName, (bulletin.title && bulletin.title.length > 0 ? Xstr(@": %@", bulletin.title) : @""));
 	NSString *message = @"";
 	if (bulletin.subtitle && bulletin.subtitle.length > 0) {
 		message = bulletin.subtitle;
@@ -223,7 +223,7 @@ static BOOL prefsSayNo() {
 
 	for (NSString *recentNotificationTitle in recentNotificationTitles) {
 		// prevent looping by checking if this title contains any recent titles in format of "App [Previous Title]"
-		if (Xeq(title, Xstr(@"%@ [%@]", appName, recentNotificationTitle))) {
+		if (Xeq(title, Xstr(@"%@: %@", appName, recentNotificationTitle))) {
 			XLog(@"Prevented loop");
 			return;
 		}
