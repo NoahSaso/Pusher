@@ -19,7 +19,7 @@
 @end
 
 static BOOL pusherEnabled = NO;
-static BOOL pusherDeviceLockOnly = NO;
+static int pusherWhenToPush = PUSHER_WHEN_TO_PUSH_LOCKED;
 static NSArray *globalBlacklist = nil;
 static NSMutableDictionary *pusherEnabledServices = nil;
 
@@ -64,8 +64,8 @@ static void pusherPrefsChanged() {
 
 	id val = prefs[@"Enabled"];
 	pusherEnabled = val ? ((NSNumber *) val).boolValue : YES;
-	val = prefs[@"DeviceLockOnly"];
-	pusherDeviceLockOnly = val ? ((NSNumber *) val).boolValue : NO;
+	val = prefs[@"WhenToPush"];
+	pusherWhenToPush = val ? ((NSNumber *) val).intValue : PUSHER_WHEN_TO_PUSH_LOCKED;
 	globalBlacklist = getPusherBlacklist(prefs, NSPPreferenceGlobalBLPrefix);
 
 	if (pusherEnabledServices == nil) {
@@ -165,7 +165,10 @@ static void pusherPrefsChanged() {
 }
 
 static BOOL prefsSayNo() {
-	if (!pusherEnabled || (pusherDeviceLockOnly && !((SBLockScreenManager *) [%c(SBLockScreenManager) sharedInstance]).isUILocked)
+	BOOL deviceIsLocked = ((SBLockScreenManager *) [%c(SBLockScreenManager) sharedInstance]).isUILocked;
+	if (!pusherEnabled
+				|| (pusherWhenToPush == PUSHER_WHEN_TO_PUSH_LOCKED && !deviceIsLocked)
+				|| (pusherWhenToPush == PUSHER_WHEN_TO_PUSH_UNLOCKED && deviceIsLocked)
 				|| globalBlacklist == nil || ![globalBlacklist isKindOfClass:NSArray.class]) {
 		return YES;
 	}
