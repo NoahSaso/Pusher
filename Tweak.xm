@@ -353,13 +353,13 @@ static BOOL prefsSayNo() {
 	}] resume];
 }
 
-// iOS 11?
-- (void)publishBulletin:(BBBulletin *)bulletin destinations:(unsigned int)arg2 alwaysToLockScreen:(BOOL)arg3 {
+// iOS 10 & 11
+- (void)publishBulletin:(BBBulletin *)bulletin destinations:(unsigned long long)arg2 alwaysToLockScreen:(BOOL)arg3 {
 	%orig;
 	[self sendBulletinToPusher:bulletin];
 }
 
-// iOS 12?
+// iOS 12
 - (void)publishBulletin:(BBBulletin *)bulletin destinations:(unsigned long long)arg2 {
 	%orig;
 	[self sendBulletinToPusher:bulletin];
