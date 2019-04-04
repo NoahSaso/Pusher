@@ -89,13 +89,10 @@ static void setPreference(CFStringRef keyRef, CFPropertyListRef val, BOOL should
 	tutorialView.alpha = 0.f;
 	tutorialView.backgroundColor = [UIColor colorWithWhite:0.f alpha:0.8f];
 
-	// Dismiss gesture
-	UITapGestureRecognizer *tapGestureRecognizer = [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(dismissTutorial:)];
-	[tutorialView addGestureRecognizer:tapGestureRecognizer];
-
 	// Label setup
 	UILabel *label = [[UILabel alloc] init];
 	label.font = [UIFont fontWithName:@"HelveticaNeue-Thin" size:UIFont.systemFontSize * 1.5f];
+	label.textColor = UIColor.whiteColor;
 	label.text = @"After setting up your services, remember to enable them by using the 'Edit' button in the top right of this page and dragging your services to the 'Enabled' section at the top.\n\nTap anywhere to continue.";
 	label.lineBreakMode = NSLineBreakByWordWrapping;
 	label.numberOfLines = 0;
@@ -111,6 +108,13 @@ static void setPreference(CFStringRef keyRef, CFPropertyListRef val, BOOL should
 
 	[window addSubview:tutorialView];
 	[UIView animateWithDuration:0.3 animations:^{ tutorialView.alpha = 1.f; }];
+
+	// Add touch action after a second
+	UITapGestureRecognizer *tapGestureRecognizer = [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(dismissTutorial:)];
+	dispatch_after(dispatch_time(DISPATCH_TIME_NOW, 1.f * NSEC_PER_SEC), dispatch_get_main_queue(), ^{
+		// Dismiss gesture
+		[tutorialView addGestureRecognizer:tapGestureRecognizer];
+	});
 
 	CFStringRef tutorialKeyRef = CFSTR("ServiceListTutorialShown");
 	setPreference(tutorialKeyRef, (__bridge CFNumberRef) @YES, NO);
