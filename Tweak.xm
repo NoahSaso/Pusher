@@ -51,6 +51,15 @@ static NSString *getServiceURL(NSString *service) {
 	return @"";
 }
 
+static NSString *getServiceAppID(NSString *service) {
+	if (Xeq(service, PUSHER_SERVICE_PUSHOVER)) {
+		return PUSHER_SERVICE_PUSHOVER_APP_ID;
+	} else if (Xeq(service, PUSHER_SERVICE_PUSHBULLET)) {
+		return PUSHER_SERVICE_PUSHBULLET_APP_ID;
+	}
+	return @"";
+}
+
 static void pusherPrefsChanged() {
 	XLog(@"Reloading prefs");
 
@@ -228,13 +237,17 @@ static BOOL prefsSayNo() {
 			return;
 		}
 	}
-	// keep array small, looping shouldn't happen after 100 notifications have already passed
-	if (recentNotificationTitles.count >= 100) {
+	// keep array small, looping shouldn't happen after 50 notifications have already passed
+	if (recentNotificationTitles.count >= 50) {
 		[recentNotificationTitles removeAllObjects];
 	}
 	[recentNotificationTitles addObject:title];
 
 	for (NSString *service in pusherEnabledServices.allKeys) {
+		if (Xeq(appID, getServiceAppID(service))) {
+			XLog(@"Prevented loop from same app");
+			continue;
+		}
 		NSDictionary *servicePrefs = pusherEnabledServices[service];
 		NSArray *serviceBlacklist = servicePrefs[@"blacklist"];
 		// Blacklist array contains lowercase app IDs

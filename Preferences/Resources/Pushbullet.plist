@@ -94,7 +94,7 @@
 					<key>icon-size</key>
 					<string>29</string>
 					<key>predicate</key>
-					<string>isSystemApplication = FALSE</string>
+					<string>isSystemApplication = FALSE AND displayIdentifier != 'com.pushbullet.client'</string>
 					<key>suppress-hidden-apps</key>
 					<string>1</string>
 					<key>title</key>

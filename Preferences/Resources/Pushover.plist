@@ -124,7 +124,7 @@
 					<key>icon-size</key>
 					<string>29</string>
 					<key>predicate</key>
-					<string>isSystemApplication = FALSE</string>
+					<string>isSystemApplication = FALSE AND displayIdentifier != 'net.superblock.Pushover'</string>
 					<key>suppress-hidden-apps</key>
 					<string>1</string>
 					<key>title</key>
