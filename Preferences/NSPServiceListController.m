@@ -89,37 +89,23 @@ static void setPreference(CFStringRef keyRef, CFPropertyListRef val, BOOL should
 	tutorialView.alpha = 0.f;
 	tutorialView.backgroundColor = [UIColor colorWithWhite:0.f alpha:0.8f];
 
+	// Dismiss gesture
 	UITapGestureRecognizer *tapGestureRecognizer = [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(dismissTutorial:)];
 	[tutorialView addGestureRecognizer:tapGestureRecognizer];
 
-	NSString *tutorialText = @"After setting up the services you want to use, remember to enable them by using the 'Edit' button in the top right of this page and dragging your services to the 'Enabled' section at the top.\n\nTap anywhere to continue.";
-
+	// Label setup
 	UILabel *label = [[UILabel alloc] init];
 	label.font = [UIFont fontWithName:@"HelveticaNeue-Thin" size:UIFont.systemFontSize * 1.5f];
-	label.text = tutorialText;
+	label.text = @"After setting up the services you want to use, remember to enable them by using the 'Edit' button in the top right of this page and dragging your services to the 'Enabled' section at the top.\n\nTap anywhere to continue.";
 	label.lineBreakMode = NSLineBreakByWordWrapping;
 	label.numberOfLines = 0;
 	label.translatesAutoresizingMaskIntoConstraints = NO;
 	label.textAlignment = NSTextAlignmentCenter;
 	[tutorialView addSubview:label];
 
-	[label addConstraint:[NSLayoutConstraint constraintWithItem:label
-                                                      attribute:NSLayoutAttributeWidth
-                                                      relatedBy:NSLayoutRelationEqual
-                                                         toItem:nil
-                                                      attribute:NSLayoutAttributeNotAnAttribute
-                                                     multiplier:1
-                                                       constant:270]];
-
-	// Height constraint
-	[label addConstraint:[NSLayoutConstraint constraintWithItem:label
-																												attribute:NSLayoutAttributeHeight
-																												relatedBy:NSLayoutRelationEqual
-																													toItem:nil
-																												attribute:NSLayoutAttributeNotAnAttribute
-																											multiplier:1
-																												constant:tutorialView.frame.size.height]];
-
+	// Constraints
+	[label addConstraint:[NSLayoutConstraint constraintWithItem:label attribute:NSLayoutAttributeWidth relatedBy:NSLayoutRelationEqual toItem:nil attribute:NSLayoutAttributeNotAnAttribute multiplier:1 constant:270]];
+	[label addConstraint:[NSLayoutConstraint constraintWithItem:label attribute:NSLayoutAttributeHeight relatedBy:NSLayoutRelationEqual toItem:nil attribute:NSLayoutAttributeNotAnAttribute multiplier:1 constant:tutorialView.frame.size.height]];
 	[label.centerXAnchor constraintEqualToAnchor:label.superview.centerXAnchor].active = YES;
 	[label.centerYAnchor constraintEqualToAnchor:label.superview.centerYAnchor].active = YES;
 
