@@ -78,7 +78,7 @@ static void setPreference(CFStringRef keyRef, CFPropertyListRef val, BOOL should
 
 - (void)viewDidAppear:(BOOL)animated {
 	[super viewDidAppear:animated];
-	if (!_prefs[@"ServiceListTutorialShown"]) {
+	if (!_prefs[@"ServiceListTutorialShown"] || !((NSNumber *) _prefs[@"ServiceListTutorialShown"]).boolValue) {
 		[self showTutorial];
 	}
 }
@@ -96,7 +96,7 @@ static void setPreference(CFStringRef keyRef, CFPropertyListRef val, BOOL should
 	// Label setup
 	UILabel *label = [[UILabel alloc] init];
 	label.font = [UIFont fontWithName:@"HelveticaNeue-Thin" size:UIFont.systemFontSize * 1.5f];
-	label.text = @"After setting up the services you want to use, remember to enable them by using the 'Edit' button in the top right of this page and dragging your services to the 'Enabled' section at the top.\n\nTap anywhere to continue.";
+	label.text = @"After setting up your services, remember to enable them by using the 'Edit' button in the top right of this page and dragging your services to the 'Enabled' section at the top.\n\nTap anywhere to continue.";
 	label.lineBreakMode = NSLineBreakByWordWrapping;
 	label.numberOfLines = 0;
 	label.translatesAutoresizingMaskIntoConstraints = NO;
