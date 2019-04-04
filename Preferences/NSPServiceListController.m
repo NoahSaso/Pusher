@@ -76,6 +76,66 @@ static void setPreference(CFStringRef keyRef, CFPropertyListRef val, BOOL should
 	[_table reloadData];
 }
 
+- (void)viewDidAppear:(BOOL)animated {
+	[super viewDidAppear:animated];
+	if (!_prefs[@"ServiceListTutorialShown"]) {
+		[self showTutorial];
+	}
+}
+
+- (void)showTutorial {
+	UIWindow *window = [UIApplication sharedApplication].keyWindow;
+	UIView *tutorialView = [[UIView alloc] initWithFrame:window.bounds];
+	tutorialView.alpha = 0.f;
+	tutorialView.backgroundColor = [UIColor colorWithWhite:0.f alpha:0.8f];
+
+	UITapGestureRecognizer *tapGestureRecognizer = [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(dismissTutorial:)];
+	[tutorialView addGestureRecognizer:tapGestureRecognizer];
+
+	NSString *tutorialText = @"After setting up the services you want to use, remember to enable them by using the 'Edit' button in the top right of this page and dragging your services to the 'Enabled' section at the top.\n\nTap anywhere to continue.";
+
+	UILabel *label = [[UILabel alloc] init];
+	label.font = [UIFont fontWithName:@"HelveticaNeue-Thin" size:UIFont.systemFontSize * 1.5f];
+	label.text = tutorialText;
+	label.lineBreakMode = NSLineBreakByWordWrapping;
+	label.numberOfLines = 0;
+	label.translatesAutoresizingMaskIntoConstraints = NO;
+	label.textAlignment = NSTextAlignmentCenter;
+	[tutorialView addSubview:label];
+
+	[label addConstraint:[NSLayoutConstraint constraintWithItem:label
+                                                      attribute:NSLayoutAttributeWidth
+                                                      relatedBy:NSLayoutRelationEqual
+                                                         toItem:nil
+                                                      attribute:NSLayoutAttributeNotAnAttribute
+                                                     multiplier:1
+                                                       constant:270]];
+
+	// Height constraint
+	[label addConstraint:[NSLayoutConstraint constraintWithItem:label
+																												attribute:NSLayoutAttributeHeight
+																												relatedBy:NSLayoutRelationEqual
+																													toItem:nil
+																												attribute:NSLayoutAttributeNotAnAttribute
+																											multiplier:1
+																												constant:tutorialView.frame.size.height]];
+
+	[label.centerXAnchor constraintEqualToAnchor:label.superview.centerXAnchor].active = YES;
+	[label.centerYAnchor constraintEqualToAnchor:label.superview.centerYAnchor].active = YES;
+
+	[window addSubview:tutorialView];
+	[UIView animateWithDuration:0.3 animations:^{ tutorialView.alpha = 1.f; }];
+
+	CFStringRef tutorialKeyRef = CFSTR("ServiceListTutorialShown");
+	setPreference(tutorialKeyRef, (__bridge CFNumberRef) @YES, NO);
+	CFRelease(tutorialKeyRef);
+}
+
+- (void)dismissTutorial:(UITapGestureRecognizer *)tapGestureRecognizer {
+	UIView *tutorialView = tapGestureRecognizer.view;
+	[UIView animateWithDuration:0.3 animations:^{ tutorialView.alpha = 0.f; } completion:^(BOOL finished){ [tutorialView removeFromSuperview]; }];
+}
+
 - (void)toggleEditing:(UIBarButtonItem *)barButtonItem {
 	[_table setEditing:![_table isEditing] animated:YES];
 	barButtonItem.title = [_table isEditing] ? @"Save" : @"Edit";

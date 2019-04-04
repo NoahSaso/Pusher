@@ -10,4 +10,5 @@
   NSIndexPath *_lastTargetIndexPath;
   NSMutableDictionary *_loadedServiceControllers;
 }
+- (void)showTutorial;
 @end
