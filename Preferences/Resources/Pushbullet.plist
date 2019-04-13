@@ -43,7 +43,7 @@
 			<key>label</key>
 			<string>Options</string>
 			<key>footerText</key>
-			<string>Setup:
+			<string>SETUP:
 1. Click 'Open Pushbullet Account' above (https://www.pushbullet.com/#settings/account).
 2. Scroll down and click 'Create Access Token' on your account page.
 3. Copy the displayed access token into the associated field above.

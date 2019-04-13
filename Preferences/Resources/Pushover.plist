@@ -67,7 +67,7 @@
 			<key>label</key>
 			<string>Options</string>
 			<key>footerText</key>
-			<string>Setup:
+			<string>SETUP:
 1. Click 'Create Pushover App' above (https://pushover.net/apps/build).
 2. Enter a name (e.g. 'Pusher'). Other fields are optional.
 3. Check the box (after reading their Terms of Service).

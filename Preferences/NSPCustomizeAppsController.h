@@ -15,9 +15,12 @@
   NSString *_defaultDevicesKey;
   NSArray *_defaultSounds;
   NSString *_defaultSoundsKey;
+  NSString *_defaultEventName;
+  NSString *_defaultEventNameKey;
   NSMutableDictionary *_loadedAppControllers;
 }
 - (void)addAppIDs:(NSArray *)appIDs;
+- (void)setDefaultsFor:(NSString *)appID enabled:(BOOL)enabled;
 - (void)saveAppState;
 - (void)sortAppIDArray:(NSMutableArray *)array;
 @end

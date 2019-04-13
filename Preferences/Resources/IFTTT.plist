@@ -1,0 +1,164 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>items</key>
+	<array>
+		<!-- Credentials -->
+		<dict>
+			<key>cell</key>
+			<string>PSGroupCell</string>
+			<key>label</key>
+			<string>Credentials</string>
+		</dict>
+		<dict>
+			<key>cell</key>
+			<string>PSButtonCell</string>
+			<key>label</key>
+			<string>Open IFTTT Maker Webhooks Account</string>
+			<key>action</key>
+			<string>openIFTTTAccount</string>
+		</dict>
+		<dict>
+			<key>cell</key>
+			<string>PSEditTextCell</string>
+			<key>detail</key>
+			<string>PSDetailController</string>
+			<key>defaults</key>
+			<string>com.noahsaso.pusher</string>
+			<key>PostNotification</key>
+			<string>com.noahsaso.pusher/prefs</string>
+			<key>key</key>
+			<string>IFTTTKey</string>
+			<key>label</key>
+			<string>Key:</string>
+			<key>noAutoCorrect</key>
+			<true/>
+		</dict>
+
+		<!-- Options -->
+		<dict>
+			<key>cell</key>
+			<string>PSGroupCell</string>
+			<key>label</key>
+			<string>Options</string>
+			<key>footerText</key>
+			<string>SETUP:
+1. Click 'Open IFTTT Maker Webhooks Account' above (https://ifttt.com/services/maker_webhooks/settings).
+2. Click the 'Connect' button if it is not already connected.
+3. Copy the key at the end of the URL displayed (https://maker.ifttt.com/use/YOUR_KEY) into the associated field above.
+4. When you make an applet on IFTTT with the Maker Webhooks service, it will ask you for an event name. Enter that event name in the associated field above.
+
+WEBHOOK REQUEST DATA:
+The following properties will be passed to the webhook trigger under the "Value1" ingredient (property names in parentheses):
+App Name (appName), App Bundle ID (appID), Title (title), Subtitle (subtitle), Message (message), Date (date)</string>
+		</dict>
+		<dict>
+			<key>cell</key>
+			<string>PSLinkCell</string>
+			<key>label</key>
+			<string>App Customization</string>
+			<key>detail</key>
+			<string>NSPCustomizeAppsController</string>
+			<key>service</key>
+			<string>IFTTT</string>
+			<key>defaultEventNameKey</key>
+			<string>IFTTTEventName</string>
+		</dict>
+		<dict>
+			<key>cell</key>
+			<string>PSLinkCell</string>
+			<key>bundle</key>
+			<string>AppList</string>
+			<key>isController</key>
+			<string>1</string>
+			<key>label</key>
+			<string>App Blacklist</string>
+			<key>ALAllowsSelection</key>
+			<string>1</string>
+			<key>ALChangeNotification</key>
+			<string>com.noahsaso.pusher/prefs</string>
+			<key>ALSectionDescriptors</key>
+			<array>
+				<dict>
+					<key>cell-class-name</key>
+					<string>ALSwitchCell</string>
+					<key>icon-size</key>
+					<string>29</string>
+					<key>predicate</key>
+					<string>isSystemApplication = TRUE</string>
+					<key>suppress-hidden-apps</key>
+					<string>1</string>
+					<key>title</key>
+					<string>System Applications</string>
+				</dict>
+				<dict>
+					<key>cell-class-name</key>
+					<string>ALSwitchCell</string>
+					<key>icon-size</key>
+					<string>29</string>
+					<key>predicate</key>
+					<string>isSystemApplication = FALSE</string>
+					<key>suppress-hidden-apps</key>
+					<string>1</string>
+					<key>title</key>
+					<string>User Applications</string>
+				</dict>
+			</array>
+			<key>ALSettingsKeyPrefix</key>
+			<string>IFTTTBL-</string>
+			<key>ALSettingsPath</key>
+			<string>/var/mobile/Library/Preferences/com.noahsaso.pusher.plist</string>
+		</dict>
+
+		<!-- Date Format -->
+		<dict>
+			<key>cell</key>
+			<string>PSGroupCell</string>
+			<key>footerText</key>
+			<string>INSTRUCTIONS:
+1. Click 'Open Date Format Instructions' above (https://nsdateformatter.com).
+2. Using the reference and examples, create your desired date format and enter it above. If you don't care about the date, you may leave it as the default
+
+Example formats for Saturday, April 13, 2019 @ 3:12 AM:
+EEEE, MMM d, yyyy = Saturday, Apr 13, 2019
+MM/dd/yyyy = 04/13/2019
+MM-dd-yyyy HH:mm = 04-13-2019 03:12
+MMM d, h:mm a = Apr 13, 3:12 AM
+E, d MMM yyyy HH:mm:ss Z = Sat, 13 Apr 2019 03:12:11 +0000
+yyyy-MM-dd'T'HH:mm:ssZ = 2019-04-13T03:12:11+0000
+dd.MM.yy = 13.04.19
+HH:mm:ss.SSS = 03:12:11.678
+</string>
+		</dict>
+		<dict>
+			<key>cell</key>
+			<string>PSButtonCell</string>
+			<key>label</key>
+			<string>Open Date Format Instructions</string>
+			<key>action</key>
+			<string>openDateFormatInstructions</string>
+		</dict>
+		<dict>
+			<key>cell</key>
+			<string>PSEditTextCell</string>
+			<key>detail</key>
+			<string>PSDetailController</string>
+			<key>defaults</key>
+			<string>com.noahsaso.pusher</string>
+			<key>PostNotification</key>
+			<string>com.noahsaso.pusher/prefs</string>
+			<key>key</key>
+			<string>IFTTTDateFormat</string>
+			<key>label</key>
+			<string>Date Format:</string>
+			<key>noAutoCorrect</key>
+			<true/>
+			<key>default</key>
+			<string>MMM d, h:mm a</string>
+		</dict>
+	</array>
+	<key>title</key>
+	<string>IFTTT</string>
+</dict>
+</plist>

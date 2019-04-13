@@ -42,11 +42,13 @@ static NSArray *getPusherBlacklist(NSDictionary *prefs, NSString *prefix) {
 	return ret;
 }
 
-static NSString *getServiceURL(NSString *service) {
+static NSString *getServiceURL(NSString *service, NSDictionary *options) {
 	if (Xeq(service, PUSHER_SERVICE_PUSHOVER)) {
 		return PUSHER_SERVICE_PUSHOVER_URL;
 	} else if (Xeq(service, PUSHER_SERVICE_PUSHBULLET)) {
 		return PUSHER_SERVICE_PUSHBULLET_URL;
+	} else if (Xeq(service, PUSHER_SERVICE_IFTTT)) {
+		return [PUSHER_SERVICE_IFTTT_URL stringByReplacingOccurrencesOfString:@"REPLACE_EVENT_NAME" withString:options[@"eventName"]];
 	}
 	return @"";
 }
@@ -58,6 +60,15 @@ static NSString *getServiceAppID(NSString *service) {
 		return PUSHER_SERVICE_PUSHBULLET_APP_ID;
 	}
 	return @"";
+}
+
+static PusherAuthorizationType getServiceAuthType(NSString *service) {
+	if (Xeq(service, PUSHER_SERVICE_PUSHOVER)) {
+		return PusherAuthorizationTypeCredentials;
+	} else if (Xeq(service, PUSHER_SERVICE_PUSHBULLET)) {
+		return PusherAuthorizationTypeHeader;
+	}
+	return PusherAuthorizationTypeKey; // ifttt key
 }
 
 static void pusherPrefsChanged() {
@@ -95,16 +106,25 @@ static void pusherPrefsChanged() {
 		NSString *blacklistPrefix = Xstr(@"%@BL-", service);
 		NSString *tokenKey = Xstr(@"%@Token", service);
 		NSString *userKey = Xstr(@"%@User", service);
+		NSString *keyKey = Xstr(@"%@Key", service);
 		NSString *devicesKey = Xstr(@"%@Devices", service);
 		NSString *soundsKey = Xstr(@"%@Sounds", service);
+		NSString *eventNameKey = Xstr(@"%@EventName", service);
+		NSString *dateFormatKey = Xstr(@"%@DateFormat", service);
 		NSString *customAppsKey = Xstr(@"%@CustomApps", service);
 
 		servicePrefs[@"blacklist"] = getPusherBlacklist(prefs, blacklistPrefix);
 		val = prefs[tokenKey];
-		servicePrefs[@"token"] = [val copy] ?: @"";
+		servicePrefs[@"token"] = [(val ?: @"") copy];
 		val = prefs[userKey];
-		servicePrefs[@"user"] = [val copy] ?: @"";
-		servicePrefs[@"url"] = getServiceURL(service);
+		servicePrefs[@"user"] = [(val ?: @"") copy];
+		val = prefs[keyKey];
+		servicePrefs[@"key"] = [(val ?: @"") copy];
+		val = prefs[eventNameKey];
+		NSString *eventName = [(val ?: @"") copy];
+		val = prefs[dateFormatKey];
+		servicePrefs[@"dateFormat"] = [(val ?: @"MMM d, h:mm a") copy];
+		servicePrefs[@"url"] = getServiceURL(service, @{ @"eventName": eventName });
 
 		// devices
 		NSArray *devices = prefs[devicesKey] ?: @[];
@@ -156,10 +176,20 @@ static void pusherPrefsChanged() {
 					[customAppEnabledSounds addObject:customAppSound[@"id"]];
 				}
 			}
-			customApps[customAppID] = @{
+
+			NSString *customAppEventName = [(customAppPrefs[@"eventName"] ?: eventName) retain];
+			NSString *customAppUrl = getServiceURL(service, @{ @"eventName": customAppEventName });
+
+			NSMutableDictionary *customAppIDPref = [@{
 				@"devices": [customAppEnabledDevices retain],
 				@"sounds": [customAppEnabledSounds retain]
-			};
+			} mutableCopy];
+
+			if (!Xeq(customAppUrl, servicePrefs[@"url"])) {
+				customAppIDPref[@"url"] = customAppUrl;
+			}
+
+			customApps[customAppID] = customAppIDPref;
 			// [customAppEnabledDevices release];
 			// [customAppDevices release];
 			// [customAppPrefs release];
@@ -266,24 +296,27 @@ static BOOL prefsSayNo() {
 		if ([customApps.allKeys containsObject:appID] && customApps[appID][@"sounds"]) {
 			sounds = customApps[appID][@"sounds"];
 		}
+		NSString *url = servicePrefs[@"url"];
+		if ([customApps.allKeys containsObject:appID] && customApps[appID][@"url"]) {
+			url = customApps[appID][@"url"];
+		}
 		// Send
 		NSDictionary *infoDict = [self getPusherInfoDictionaryForService:service withDictionary:@{
 			@"title": title,
 			@"message": message,
 			@"devices": devices,
-			@"sounds": sounds
+			@"sounds": sounds,
+			@"appName": appName,
+			@"bulletin": bulletin,
+			@"dateFormat": servicePrefs[@"dateFormat"]
 		}];
 		NSDictionary *credentials = [self getPusherCredentialsForService:service withDictionary:@{
 			@"token": servicePrefs[@"token"],
-			@"user": servicePrefs[@"user"]
+			@"user": servicePrefs[@"user"],
+			@"key": servicePrefs[@"key"]
 		}];
-		PusherAuthorizationType authType = PusherAuthorizationTypeCredentials;
-		if (Xeq(service, PUSHER_SERVICE_PUSHOVER)) {
-			authType = PusherAuthorizationTypeCredentials;
-		} else if (Xeq(service, PUSHER_SERVICE_PUSHBULLET)) {
-			authType = PusherAuthorizationTypeHeader;
-		}
-		[self makePusherRequest:servicePrefs[@"url"] infoDict:infoDict credentials:credentials authType:authType];
+		PusherAuthorizationType authType = getServiceAuthType(service);
+		[self makePusherRequest:url infoDict:infoDict credentials:credentials authType:authType];
 		XLog(@"[S:%@] Pushed %@", service, appName);
 	}
 }
@@ -318,6 +351,24 @@ static BOOL prefsSayNo() {
 			pushbulletInfoDict[@"device_iden"] = firstDevice;
 		}
 		return pushbulletInfoDict;
+	} else if (Xeq(service, PUSHER_SERVICE_IFTTT)) {
+		BBBulletin *bulletin = dictionary[@"bulletin"];
+		// date
+		NSDateFormatter *dateFormatter = [NSDateFormatter new];
+		[dateFormatter setDateFormat:dictionary[@"dateFormat"]];
+		NSString *dateStr = [dateFormatter stringFromDate:bulletin.date];
+		[dateFormatter release];
+
+		return @{
+			@"value1": @{
+				@"appName": dictionary[@"appName"] ?: @"",
+				@"appID": bulletin.sectionID ?: @"",
+				@"title": bulletin.title ?: @"",
+				@"subtitle": bulletin.subtitle ?: @"",
+				@"message": bulletin.message ?: @"",
+				@"date": dateStr ?: @""
+			}
+		};
 	}
 	return @{};
 }
@@ -334,7 +385,7 @@ static BOOL prefsSayNo() {
 			@"token": dictionary[@"token"]
 		};
 	}
-	return @{};
+	return @{ @"key": dictionary[@"key"] }; // ifttt key
 }
 
 %new
@@ -342,6 +393,9 @@ static BOOL prefsSayNo() {
 	NSMutableDictionary *infoDictForJSON = [infoDict mutableCopy];
 	if (authType == PusherAuthorizationTypeCredentials) {
 		[infoDictForJSON addEntriesFromDictionary:credentials];
+	}
+	if (authType == PusherAuthorizationTypeKey) {
+		urlString = [urlString stringByReplacingOccurrencesOfString:@"REPLACE_KEY" withString:credentials[@"key"]];
 	}
 	NSData *jsonData = [NSJSONSerialization dataWithJSONObject:infoDictForJSON options:NSJSONWritingPrettyPrinted error:nil];
 	NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:urlString] cachePolicy:NSURLRequestUseProtocolCachePolicy timeoutInterval:10];

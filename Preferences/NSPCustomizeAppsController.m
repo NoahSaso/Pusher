@@ -18,34 +18,34 @@ static void setPreference(CFStringRef keyRef, CFPropertyListRef val, BOOL should
 
 @implementation NSPCustomizeAppsController
 
+- (void)setDefaultsFor:(NSString *)appID enabled:(BOOL)enabled {
+	if ([_customApps.allKeys containsObject:appID]) {
+			NSMutableDictionary *appDict = [(NSDictionary *)_customApps[appID] mutableCopy];
+			appDict[@"enabled"] = @NO;
+			_customApps[appID] = appDict;
+	} else {
+		NSMutableDictionary *defaultDict = [@{ @"enabled": [NSNumber numberWithBool:enabled] } mutableCopy];
+		if (Xeq(_service, PUSHER_SERVICE_PUSHOVER) || Xeq(_service, PUSHER_SERVICE_PUSHBULLET)) {
+			defaultDict[@"devices"] = _defaultDevices;
+		}
+		if (Xeq(_service, PUSHER_SERVICE_PUSHOVER)) {
+			defaultDict[@"sounds"] = _defaultSounds;
+		}
+		if (Xeq(_service, PUSHER_SERVICE_IFTTT)) {
+			defaultDict[@"eventName"] = _defaultEventName;
+		}
+		_customApps[appID] = defaultDict;
+	}
+}
+
 - (void)saveAppState {
 	NSArray *enabledApps = _data[@"Enabled"];
 	NSArray *disabledApps = _data[@"Disabled"];
 	for (NSString *appID in enabledApps) {
-		if ([_customApps.allKeys containsObject:appID]) {
-			NSMutableDictionary *appDict = [(NSDictionary *)_customApps[appID] mutableCopy];
-			appDict[@"enabled"] = @YES;
-			_customApps[appID] = appDict;
-		} else {
-			NSMutableDictionary *defaultDict = [@{ @"enabled": @YES, @"devices": _defaultDevices } mutableCopy];
-			if (Xeq(_service, PUSHER_SERVICE_PUSHOVER)) {
-				defaultDict[@"sounds"] = _defaultSounds;
-			}
-			_customApps[appID] = defaultDict;
-		}
+		[self setDefaultsFor:appID enabled:YES];
 	}
 	for (NSString *appID in disabledApps) {
-		if ([_customApps.allKeys containsObject:appID]) {
-			NSMutableDictionary *appDict = [(NSDictionary *)_customApps[appID] mutableCopy];
-			appDict[@"enabled"] = @NO;
-			_customApps[appID] = appDict;
-		} else {
-			NSMutableDictionary *defaultDict = [@{ @"enabled": @NO, @"devices": _defaultDevices } mutableCopy];
-			if (Xeq(_service, PUSHER_SERVICE_PUSHOVER)) {
-				defaultDict[@"sounds"] = _defaultSounds;
-			}
-			_customApps[appID] = defaultDict;
-		}
+		[self setDefaultsFor:appID enabled:NO];
 	}
 	for (NSString *appID in _customApps.allKeys) {
 		if (![enabledApps containsObject:appID] && ![disabledApps containsObject:appID]) {
@@ -69,9 +69,15 @@ static void setPreference(CFStringRef keyRef, CFPropertyListRef val, BOOL should
 
 	_service = [[self.specifier propertyForKey:@"service"] retain];
 	_prefsKey = [Xstr(@"%@CustomApps", _service) retain];
-	_defaultDevicesKey = [self.specifier propertyForKey:@"defaultDevicesKey"];
+
+	if (Xeq(_service, PUSHER_SERVICE_PUSHOVER) || Xeq(_service, PUSHER_SERVICE_PUSHBULLET)) {
+		_defaultDevicesKey = [self.specifier propertyForKey:@"defaultDevicesKey"];
+	}
 	if (Xeq(_service, PUSHER_SERVICE_PUSHOVER)) {
 		_defaultSoundsKey = [self.specifier propertyForKey:@"defaultSoundsKey"];
+	}
+	if (Xeq(_service, PUSHER_SERVICE_IFTTT)) {
+		_defaultEventNameKey = [self.specifier propertyForKey:@"defaultEventNameKey"];
 	}
 
 	_lastTargetAppID = nil;
@@ -110,9 +116,15 @@ static void setPreference(CFStringRef keyRef, CFPropertyListRef val, BOOL should
 	}
 
 	_customApps = [(prefs[_prefsKey] ?: @{}) mutableCopy];
-	_defaultDevices = [(prefs[_defaultDevicesKey] ?: @[]) copy];
+
+	if (Xeq(_service, PUSHER_SERVICE_PUSHOVER) || Xeq(_service, PUSHER_SERVICE_PUSHBULLET)) {
+		_defaultDevices = [(prefs[_defaultDevicesKey] ?: @[]) copy];
+	}
 	if (Xeq(_service, PUSHER_SERVICE_PUSHOVER)) {
 		_defaultSounds = [(prefs[_defaultSoundsKey] ?: @[]) copy];
+	}
+	if (Xeq(_service, PUSHER_SERVICE_IFTTT)) {
+		_defaultEventName = [(prefs[_defaultEventNameKey] ?: @"") copy];
 	}
 
 	_sections = [@[@"", @"Enabled", @"Disabled"] retain];

@@ -13,7 +13,8 @@
 
 typedef enum {
 	PusherAuthorizationTypeCredentials,
-	PusherAuthorizationTypeHeader
+	PusherAuthorizationTypeHeader,
+	PusherAuthorizationTypeKey
 } PusherAuthorizationType;
 
 // All keys MUST HAVE the prefix equal to the name of the service
@@ -32,12 +33,20 @@ typedef enum {
 #define PUSHER_SERVICE_PUSHBULLET_APP_ID @"com.pushbullet.client"
 #define PUSHER_SERVICE_PUSHBULLET_URL @"https://api.pushbullet.com/v2/pushes"
 #define NSPPreferencePushbulletTokenKey @"PushbulletToken"
-#define NSPPreferencePushbulletUserKey @"PushbulletUser"
 #define NSPPreferencePushbulletDevicesKey @"PushbulletDevices"
 #define NSPPreferencePushbulletBLPrefix @"PushbulletBL-"
 #define NSPPreferencePushbulletCustomAppsKey @"PushbulletCustomApps"
 
-#define PUSHER_SERVICES @[ PUSHER_SERVICE_PUSHOVER, PUSHER_SERVICE_PUSHBULLET ]
+// All keys MUST HAVE the prefix equal to the name of the service
+#define PUSHER_SERVICE_IFTTT @"IFTTT"
+#define PUSHER_SERVICE_IFTTT_URL @"https://maker.ifttt.com/trigger/REPLACE_EVENT_NAME/with/key/REPLACE_KEY"
+#define NSPPreferenceIFTTTKeyKey @"IFTTTKey"
+#define NSPPreferenceIFTTTEventNameKey @"IFTTTEventName"
+#define NSPPreferenceIFTTTDateFormatKey @"IFTTTDateFormat"
+#define NSPPreferenceIFTTTBLPrefix @"IFTTTBL-"
+#define NSPPreferenceIFTTTCustomAppsKey @"IFTTTCustomApps"
+
+#define PUSHER_SERVICES @[ PUSHER_SERVICE_PUSHOVER, PUSHER_SERVICE_PUSHBULLET, PUSHER_SERVICE_IFTTT ]
 
 #import <Preferences/PSSpecifier.h>
 
