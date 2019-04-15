@@ -359,16 +359,22 @@ static BOOL prefsSayNo() {
 		NSString *dateStr = [dateFormatter stringFromDate:bulletin.date];
 		[dateFormatter release];
 
-		return @{
-			@"value1": @{
-				@"appName": dictionary[@"appName"] ?: @"",
-				@"appID": bulletin.sectionID ?: @"",
-				@"title": bulletin.title ?: @"",
-				@"subtitle": bulletin.subtitle ?: @"",
-				@"message": bulletin.message ?: @"",
-				@"date": dateStr ?: @""
-			}
+		NSDictionary *data = @{
+			@"appName": dictionary[@"appName"] ?: @"",
+			@"appID": bulletin.sectionID ?: @"",
+			@"title": bulletin.title ?: @"",
+			@"subtitle": bulletin.subtitle ?: @"",
+			@"message": bulletin.message ?: @"",
+			@"date": dateStr ?: @""
 		};
+
+		id json = data;
+		NSData *jsonData = [NSJSONSerialization dataWithJSONObject:json options:0 error:nil];
+		if (jsonData) {
+			json = [[NSString alloc] initWithData:jsonData encoding:NSUTF8StringEncoding];
+		}
+
+		return @{ @"value1": json };
 	}
 	return @{};
 }
