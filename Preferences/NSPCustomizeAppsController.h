@@ -11,12 +11,16 @@
   NSString *_prefsKey;
   NSString *_lastTargetAppID;
   NSIndexPath *_lastTargetIndexPath;
+  
   NSArray *_defaultDevices;
   NSString *_defaultDevicesKey;
   NSArray *_defaultSounds;
   NSString *_defaultSoundsKey;
   NSString *_defaultEventName;
   NSString *_defaultEventNameKey;
+  NSNumber *_defaultIncludeIcon;
+  NSString *_defaultIncludeIconKey;
+
   NSMutableDictionary *_loadedAppControllers;
 }
 - (void)addAppIDs:(NSArray *)appIDs;

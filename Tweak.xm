@@ -146,6 +146,11 @@ static void pusherPrefsChanged() {
 		servicePrefs[@"dateFormat"] = [(val ?: @"MMM d, h:mm a") copy];
 		servicePrefs[@"url"] = getServiceURL(service, @{ @"eventName": eventName });
 
+		if (Xeq(service, PUSHER_SERVICE_IFTTT)) {
+			NSString *includeIconKey = Xstr(@"%@IncludeIcon", service);
+			servicePrefs[@"includeIcon"] = prefs[includeIconKey] ?: @NO;
+		}
+
 		// devices
 		NSArray *devices = prefs[devicesKey] ?: @[];
 		NSMutableArray *enabledDevices = [NSMutableArray new];
@@ -168,7 +173,7 @@ static void pusherPrefsChanged() {
 		}
 		servicePrefs[@"sounds"] = [enabledSounds retain];
 
-		// custom apps & devices
+		// custom apps
 		NSDictionary *prefCustomApps = (NSDictionary *)prefs[customAppsKey] ?: @{};
 		NSMutableDictionary *customApps = [NSMutableDictionary new];
 		for (NSString *customAppID in prefCustomApps.allKeys) {
@@ -185,9 +190,6 @@ static void pusherPrefsChanged() {
 					[customAppEnabledDevices addObject:customAppDevice];
 				}
 			}
-			customApps[customAppID] = @{
-				@"devices": [customAppEnabledDevices retain]
-			};
 
 			NSArray *customAppSounds = customAppPrefs[@"sounds"] ?: @{};
 			NSMutableArray *customAppEnabledSounds = [NSMutableArray new];
@@ -207,6 +209,10 @@ static void pusherPrefsChanged() {
 
 			if (!Xeq(customAppUrl, servicePrefs[@"url"])) {
 				customAppIDPref[@"url"] = customAppUrl;
+			}
+
+			if (Xeq(service, PUSHER_SERVICE_IFTTT)) {
+				customAppIDPref[@"includeIcon"] = customAppPrefs[@"includeIcon"] ?: @NO;
 			}
 
 			customApps[customAppID] = customAppIDPref;
@@ -320,6 +326,10 @@ static BOOL prefsSayNo() {
 		if ([customApps.allKeys containsObject:appID] && customApps[appID][@"url"]) {
 			url = customApps[appID][@"url"];
 		}
+		NSNumber *includeIcon = servicePrefs[@"includeIcon"] ?: @NO;
+		if ([customApps.allKeys containsObject:appID] && customApps[appID][@"includeIcon"]) {
+			includeIcon = customApps[appID][@"includeIcon"];
+		}
 		// Send
 		NSDictionary *infoDict = [self getPusherInfoDictionaryForService:service withDictionary:@{
 			@"title": title,
@@ -328,7 +338,8 @@ static BOOL prefsSayNo() {
 			@"sounds": sounds,
 			@"appName": appName,
 			@"bulletin": bulletin,
-			@"dateFormat": servicePrefs[@"dateFormat"]
+			@"dateFormat": servicePrefs[@"dateFormat"],
+			@"includeIcon": includeIcon
 		}];
 		NSDictionary *credentials = [self getPusherCredentialsForService:service withDictionary:@{
 			@"token": servicePrefs[@"token"],
@@ -379,16 +390,20 @@ static BOOL prefsSayNo() {
 		NSString *dateStr = [dateFormatter stringFromDate:bulletin.date];
 		[dateFormatter release];
 
-		// UIImage *icon = [UIImage _applicationIconImageForBundleIdentifier:bulletin.sectionID format:12];
-
-		NSDictionary *data = @{
+		NSMutableDictionary *data = [@{
 			@"appName": dictionary[@"appName"] ?: @"",
 			@"appID": bulletin.sectionID ?: @"",
 			@"title": bulletin.title ?: @"",
 			@"subtitle": bulletin.subtitle ?: @"",
 			@"message": bulletin.message ?: @"",
 			@"date": dateStr ?: @""
-		};
+		} mutableCopy];
+
+		if (dictionary[@"includeIcon"] && [dictionary[@"includeIcon"] isKindOfClass:NSNumber.class] && ((NSNumber *)dictionary[@"includeIcon"]).boolValue) {
+			UIImage *icon = [UIImage _applicationIconImageForBundleIdentifier:bulletin.sectionID format:12];
+			NSData *iconData = UIImagePNGRepresentation(icon);
+			data[@"icon"] = [iconData base64EncodedStringWithOptions:NSDataBase64EncodingEndLineWithLineFeed];
+		}
 
 		id json = data;
 		NSData *jsonData = [NSJSONSerialization dataWithJSONObject:json options:0 error:nil];

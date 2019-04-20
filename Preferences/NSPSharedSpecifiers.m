@@ -73,23 +73,29 @@ static void setPreference(CFStringRef keyRef, CFPropertyListRef val, BOOL should
 }
 
 + (NSArray *)ifttt:(NSString *)appID {
+  BOOL isCustomApp = appID != nil;
+
   PSSpecifier *eventName = [PSSpecifier preferenceSpecifierNamed:@"Event Name" target:self set:@selector(setPreferenceValue:forIFTTTSpecifier:) get:@selector(readIFTTTPreferenceValue:) detail:nil cell:PSEditTextCell edit:nil];
-  // [eventName setProperty:@"Event Name" forKey:@"label"];
-  // [eventName setProperty:@"com.noahsaso.pusher" forKey:@"defaults"];
-  // [eventName setProperty:@"com.noahsaso.pusher/prefs" forKey:@"PostNotification"];
   [eventName setProperty:NSPPreferenceIFTTTEventNameKey forKey:@"key"];
   [eventName setProperty:@YES forKey:@"enabled"];
   [eventName setProperty:@YES forKey:@"noAutoCorrect"];
-
-  BOOL isCustomApp = appID != nil;
   [eventName setProperty:[NSNumber numberWithBool:isCustomApp] forKey:@"isCustomApp"];
+  [eventName setProperty:NSPPreferenceIFTTTCustomAppsKey forKey:@"customAppsKey"];
+  [eventName setProperty:@"eventName" forKey:@"customAppsPrefsKey"];
+
+  PSSpecifier *includeIcon = [PSSpecifier preferenceSpecifierNamed:@"Include Icon" target:self set:@selector(setPreferenceValue:forIFTTTSpecifier:) get:@selector(readIFTTTPreferenceValue:) detail:nil cell:PSSwitchCell edit:nil];
+  [includeIcon setProperty:NSPPreferenceIFTTTIncludeIconKey forKey:@"key"];
+  [includeIcon setProperty:@YES forKey:@"enabled"];
+  [includeIcon setProperty:[NSNumber numberWithBool:isCustomApp] forKey:@"isCustomApp"];
+  [includeIcon setProperty:NSPPreferenceIFTTTCustomAppsKey forKey:@"customAppsKey"];
+  [includeIcon setProperty:@"includeIcon" forKey:@"customAppsPrefsKey"];
+
   if (isCustomApp) {
     [eventName setProperty:appID forKey:@"customAppID"];
-    [eventName setProperty:NSPPreferenceIFTTTCustomAppsKey forKey:@"customAppsKey"];
-    [eventName setProperty:@"eventName" forKey:@"customAppsPrefsKey"];
+    [includeIcon setProperty:appID forKey:@"customAppID"];
   }
 
-  return @[eventName];
+  return @[eventName, includeIcon];
 }
 
 + (void)setPreferenceValue:(id)value forIFTTTSpecifier:(PSSpecifier *)specifier {

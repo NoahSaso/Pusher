@@ -50,8 +50,8 @@
 4. When you make an applet on IFTTT with the Maker Webhooks service, it will ask you for an event name. Enter that event name in the associated field above.
 
 WEBHOOK REQUEST DATA:
-The following properties will be passed to the webhook trigger under the "Value1" ingredient (property names in parentheses):
-App Name (appName), App Bundle ID (appID), Title (title), Subtitle (subtitle), Message (message), Date (date)</string>
+The following properties will be passed to the webhook trigger under the "Value1" ingredient (property names in parentheses) [Must Turn on "Include Icon" switch above in order to get the icon property]:
+App Name (appName), App Bundle ID (appID), Title (title), Subtitle (subtitle), Message (message), Date (date), Base64 Encoded PNG Icon 58x58 (icon)</string>
 		</dict>
 		<dict>
 			<key>cell</key>
@@ -64,6 +64,8 @@ App Name (appName), App Bundle ID (appID), Title (title), Subtitle (subtitle), M
 			<string>IFTTT</string>
 			<key>defaultEventNameKey</key>
 			<string>IFTTTEventName</string>
+			<key>defaultIncludeIconKey</key>
+			<string>IFTTTIncludeIcon</string>
 		</dict>
 		<dict>
 			<key>cell</key>

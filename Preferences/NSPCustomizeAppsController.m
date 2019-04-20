@@ -33,6 +33,7 @@ static void setPreference(CFStringRef keyRef, CFPropertyListRef val, BOOL should
 		}
 		if (Xeq(_service, PUSHER_SERVICE_IFTTT)) {
 			defaultDict[@"eventName"] = _defaultEventName;
+			defaultDict[@"includeIcon"] = _defaultIncludeIcon;
 		}
 		_customApps[appID] = defaultDict;
 	}
@@ -78,6 +79,7 @@ static void setPreference(CFStringRef keyRef, CFPropertyListRef val, BOOL should
 	}
 	if (Xeq(_service, PUSHER_SERVICE_IFTTT)) {
 		_defaultEventNameKey = [self.specifier propertyForKey:@"defaultEventNameKey"];
+		_defaultIncludeIconKey = [self.specifier propertyForKey:@"defaultIncludeIconKey"];
 	}
 
 	_lastTargetAppID = nil;
@@ -125,6 +127,7 @@ static void setPreference(CFStringRef keyRef, CFPropertyListRef val, BOOL should
 	}
 	if (Xeq(_service, PUSHER_SERVICE_IFTTT)) {
 		_defaultEventName = [(prefs[_defaultEventNameKey] ?: @"") copy];
+		_defaultIncludeIcon = [(prefs[_defaultIncludeIconKey] ?: @NO) copy];
 	}
 
 	_sections = [@[@"", @"Enabled", @"Disabled"] retain];

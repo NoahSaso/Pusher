@@ -45,6 +45,7 @@ typedef enum {
 #define NSPPreferenceIFTTTDateFormatKey @"IFTTTDateFormat"
 #define NSPPreferenceIFTTTBLPrefix @"IFTTTBL-"
 #define NSPPreferenceIFTTTCustomAppsKey @"IFTTTCustomApps"
+#define NSPPreferenceIFTTTIncludeIconKey @"IFTTTIncludeIcon"
 
 #define PUSHER_SERVICES @[ PUSHER_SERVICE_PUSHOVER, PUSHER_SERVICE_PUSHBULLET, PUSHER_SERVICE_IFTTT ]
 
