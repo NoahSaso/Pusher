@@ -185,9 +185,9 @@ static void setPreference(CFStringRef keyRef, CFPropertyListRef val, BOOL should
 			[self presentViewController:existsAlert animated:YES completion:nil];
 			return;
 		}
-		_customServices[serviceName] = @{
+		_customServices[serviceName] = [@{
 			@"Enabled": @NO
-		};
+		} mutableCopy];
 		[_data[@"Disabled"] addObject:serviceName];
 	  [_data[@"Disabled"] sortUsingSelector:@selector(localizedCaseInsensitiveCompare:)];
 		[_table reloadSections:[NSIndexSet indexSetWithIndex:1] withRowAnimation:UITableViewRowAnimationAutomatic];
@@ -241,7 +241,7 @@ static void setPreference(CFStringRef keyRef, CFPropertyListRef val, BOOL should
 	return YES;
 }
 
-- (void)tableView:(UITableView *)tableView moveRowAtIndexPath:(NSIndexPath *)sourceIndexPath toIndexPath:(NSIndexPath *)destinationIndexPath {
+- (void)tableView:(UITableView *)table moveRowAtIndexPath:(NSIndexPath *)sourceIndexPath toIndexPath:(NSIndexPath *)destinationIndexPath {
 	_lastTargetService = nil;
 	_lastTargetIndexPath = nil;
 	NSString *service = _data[_sections[sourceIndexPath.section]][sourceIndexPath.row];
@@ -255,11 +255,6 @@ static void setPreference(CFStringRef keyRef, CFPropertyListRef val, BOOL should
 		return UITableViewCellEditingStyleDelete;
 	}
 	return UITableViewCellEditingStyleNone;
-}
-
-- (BOOL)tableView:(UITableView *)table canEditRowAtIndexPath:(NSIndexPath *)indexPath {
-	NSString *service = _data[_sections[indexPath.section]][indexPath.row];
-	return [_customServices.allKeys containsObject:service];
 }
 
 - (void)tableView:(UITableView *)table commitEditingStyle:(UITableViewCellEditingStyle)editingStyle forRowAtIndexPath:(NSIndexPath *)indexPath {
