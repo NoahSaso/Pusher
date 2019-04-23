@@ -24,6 +24,11 @@
 
 - (NSArray *)specifiers {
 	if (!_specifiers) {
+		if (_isCustom) {
+			_specifiers = [[NSPSharedSpecifiers getCustomForService:_service ref:self] retain];
+			return _specifiers;
+		}
+
 		NSMutableArray *allSpecifiers = [[self loadSpecifiersFromPlistName:_service target:self] mutableCopy];
 
 		NSArray *sharedSpecifiers = [NSPSharedSpecifiers get:_service];

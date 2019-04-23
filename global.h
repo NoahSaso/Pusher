@@ -12,6 +12,7 @@
 #define PUSHER_WHEN_TO_PUSH_UNLOCKED 2
 
 #define NSPPreferenceCustomServicesKey @"CustomServices"
+#define NSPPreferenceCustomServiceCustomAppsKey @"CustomApps"
 
 typedef enum {
 	PusherAuthorizationTypeCredentials,
