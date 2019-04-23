@@ -73,7 +73,9 @@ static void setPreference(CFStringRef keyRef, CFPropertyListRef val, BOOL should
 		}
 	}
 
+	// make deep mutable
 	for (NSString *customService in _customServices.allKeys) {
+		_customServices[customService] = [(_customServices[customService] ?: @{}) mutableCopy];
 		if (_customServices[customService] && _customServices[customService][@"Enabled"] && ((NSNumber *) _customServices[customService][@"Enabled"]).boolValue) {
 			[_data[@"Enabled"] addObject:customService];
 		} else {
@@ -147,9 +149,9 @@ static void setPreference(CFStringRef keyRef, CFPropertyListRef val, BOOL should
 		for (NSString *customService in _customServices.allKeys) {
 			NSNumber *customServiceEnabled = [NSNumber numberWithBool:[_data[@"Enabled"] containsObject:customService]];
 			if (!_customServices[customService]) {
-				_customServices[customService] = @{
+				_customServices[customService] = [@{
 					@"Enabled": customServiceEnabled
-				};
+				} mutableCopy];
 			} else {
 				_customServices[customService][@"Enabled"] = customServiceEnabled;
 			}
