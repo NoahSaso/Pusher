@@ -9,6 +9,9 @@
   NSString *_lastTargetService;
   NSIndexPath *_lastTargetIndexPath;
   NSMutableDictionary *_loadedServiceControllers;
+  UIBarButtonItem *_addNewServiceBarButtonItem;
+  NSMutableDictionary *_customServices;
 }
 - (void)showTutorial;
+- (void)saveCustomServices;
 @end

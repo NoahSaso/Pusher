@@ -8,9 +8,10 @@
 
 @implementation NSPServiceController
 
-- (id)initWithService:(NSString *)service {
+- (id)initWithService:(NSString *)service isCustom:(BOOL)isCustom {
 	NSPServiceController *ret = [self init];
 	ret->_service = service;
+	ret->_isCustom = isCustom;
 	return ret;
 }
 

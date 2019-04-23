@@ -112,7 +112,7 @@ static void pusherPrefsChanged() {
 		pusherEnabledServices = [NSMutableDictionary new];
 	}
 
-	for (NSString *service in PUSHER_SERVICES) {
+	for (NSString *service in BUILTIN_PUSHER_SERVICES) {
 		NSMutableDictionary *servicePrefs = [NSMutableDictionary new];
 
 		NSString *enabledKey = Xstr(@"%@Enabled", service);

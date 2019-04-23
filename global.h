@@ -11,6 +11,8 @@
 #define PUSHER_WHEN_TO_PUSH_ALWAYS 1
 #define PUSHER_WHEN_TO_PUSH_UNLOCKED 2
 
+#define NSPPreferenceCustomServicesKey @"CustomServices"
+
 typedef enum {
 	PusherAuthorizationTypeCredentials,
 	PusherAuthorizationTypeHeader,
@@ -47,7 +49,7 @@ typedef enum {
 #define NSPPreferenceIFTTTCustomAppsKey @"IFTTTCustomApps"
 #define NSPPreferenceIFTTTIncludeIconKey @"IFTTTIncludeIcon"
 
-#define PUSHER_SERVICES @[ PUSHER_SERVICE_PUSHOVER, PUSHER_SERVICE_PUSHBULLET, PUSHER_SERVICE_IFTTT ]
+#define BUILTIN_PUSHER_SERVICES @[ PUSHER_SERVICE_PUSHOVER, PUSHER_SERVICE_PUSHBULLET, PUSHER_SERVICE_IFTTT ]
 
 #import <Preferences/PSSpecifier.h>
 

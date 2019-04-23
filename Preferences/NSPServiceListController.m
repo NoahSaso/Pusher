@@ -37,9 +37,11 @@ static void setPreference(CFStringRef keyRef, CFPropertyListRef val, BOOL should
 	_table.dataSource = self;
 	_table.delegate = self;
 	[self.view addSubview:_table];
+	_addNewServiceBarButtonItem = [[UIBarButtonItem alloc] initWithTitle:@"Add" style:UIBarButtonItemStylePlain target:self action:@selector(addNewService)];
 
 	self.navigationItem.title = @"Services";
 	self.navigationItem.rightBarButtonItem = [[UIBarButtonItem alloc] initWithTitle:@"Edit" style:UIBarButtonItemStylePlain target:self action:@selector(toggleEditing:)];
+	self.navigationItem.leftBarButtonItem = nil;
 }
 
 - (void)viewWillAppear:(BOOL)animated {
@@ -59,7 +61,8 @@ static void setPreference(CFStringRef keyRef, CFPropertyListRef val, BOOL should
 		@"Enabled": [NSMutableArray new],
 		@"Disabled": [NSMutableArray new]
 	} mutableCopy];
-	_services = [PUSHER_SERVICES retain];
+	_services = [[BUILTIN_PUSHER_SERVICES sortedArrayUsingSelector:@selector(localizedCaseInsensitiveCompare:)] retain];
+	_customServices = [(NSDictionary *)(_prefs[NSPPreferenceCustomServicesKey] ?: @{}) mutableCopy];
 
 	for (NSString *service in _services) {
 		NSString *enabledKey = Xstr(@"%@Enabled", service);
@@ -70,8 +73,13 @@ static void setPreference(CFStringRef keyRef, CFPropertyListRef val, BOOL should
 		}
 	}
 
-	[_data[@"Enabled"] sortUsingSelector:@selector(localizedCaseInsensitiveCompare:)];
-	[_data[@"Disabled"] sortUsingSelector:@selector(localizedCaseInsensitiveCompare:)];
+	for (NSString *customService in _customServices.allKeys) {
+		if (_customServices[customService] && _customServices[customService][@"Enabled"] && ((NSNumber *) _customServices[customService][@"Enabled"]).boolValue) {
+			[_data[@"Enabled"] addObject:customService];
+		} else {
+			[_data[@"Disabled"] addObject:customService];
+		}
+	}
 
 	[_table reloadData];
 }
@@ -129,14 +137,66 @@ static void setPreference(CFStringRef keyRef, CFPropertyListRef val, BOOL should
 - (void)toggleEditing:(UIBarButtonItem *)barButtonItem {
 	[_table setEditing:![_table isEditing] animated:YES];
 	barButtonItem.title = [_table isEditing] ? @"Save" : @"Edit";
+	self.navigationItem.leftBarButtonItem = [_table isEditing] ? _addNewServiceBarButtonItem : nil;
 	if (![_table isEditing]) {
 		// Save
 		for (NSString *service in _services) {
 			NSString *enabledKey = Xstr(@"%@Enabled", service);
 			setPreference((__bridge CFStringRef) enabledKey, (__bridge CFNumberRef) [NSNumber numberWithBool:[_data[@"Enabled"] containsObject:service]], NO);
 		}
-		notify_post("com.noahsaso.pusher/prefs");
+		for (NSString *customService in _customServices.allKeys) {
+			NSNumber *customServiceEnabled = [NSNumber numberWithBool:[_data[@"Enabled"] containsObject:customService]];
+			if (!_customServices[customService]) {
+				_customServices[customService] = @{
+					@"Enabled": customServiceEnabled
+				};
+			} else {
+				_customServices[customService][@"Enabled"] = customServiceEnabled;
+			}
+		}
+		[self saveCustomServices]; // will notify post
+		// notify_post("com.noahsaso.pusher/prefs");
 	}
+}
+
+- (void)addNewService {
+	UIAlertController *alert = XalertWTitle(@"Add Pusher Service", nil);
+	[alert addTextFieldWithConfigurationHandler:^(UITextField *textField) {
+		textField.placeholder = @"Service Name";
+	}];
+	[alert addAction:[UIAlertAction actionWithTitle:@"Cancel" style:UIAlertActionStyleCancel handler:nil]];
+	id handler = ^(UIAlertAction *action) {
+		UITextField *textField = alert.textFields[0];
+		if (!textField || !textField.text) {
+			return;
+		}
+		NSString *serviceName = [textField.text stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
+		if (serviceName.length < 1) {
+			return;
+		}
+		if ([_customServices.allKeys containsObject:serviceName] || [_services containsObject:serviceName]) {
+			id existsHandler = ^(UIAlertAction *existsAction) {
+				[self addNewService];
+			};
+			UIAlertController *existsAlert = XalertWTitle(@"Add Pusher Service", @"A service with that name already exists.");
+			[existsAlert addAction:XalertBtnWHandler(@"Ok", existsHandler)];
+			[self presentViewController:existsAlert animated:YES completion:nil];
+			return;
+		}
+		_customServices[serviceName] = @{
+			@"Enabled": @NO
+		};
+		[_data[@"Disabled"] addObject:serviceName];
+	  [_data[@"Disabled"] sortUsingSelector:@selector(localizedCaseInsensitiveCompare:)];
+		[_table reloadSections:[NSIndexSet indexSetWithIndex:1] withRowAnimation:UITableViewRowAnimationAutomatic];
+		[self saveCustomServices];
+	};
+	[alert addAction:XalertBtnWHandler(@"Add", handler)];
+	[self presentViewController:alert animated:YES completion:nil];
+}
+
+- (void)saveCustomServices {
+	setPreference((__bridge CFStringRef) NSPPreferenceCustomServicesKey, (__bridge CFPropertyListRef) _customServices, YES);
 }
 
 - (void)tableView:(UITableView *)table didSelectRowAtIndexPath:(NSIndexPath *)indexPath {
@@ -146,7 +206,7 @@ static void setPreference(CFStringRef keyRef, CFPropertyListRef val, BOOL should
 	if ([_loadedServiceControllers.allKeys containsObject:service]) {
 		controller = _loadedServiceControllers[service];
 	} else {
-		controller = [[NSPServiceController alloc] initWithService:service];
+		controller = [[NSPServiceController alloc] initWithService:service isCustom:[_customServices.allKeys containsObject:service]];
 		_loadedServiceControllers[service] = controller;
 	}
 	[self pushController:controller];
@@ -188,7 +248,27 @@ static void setPreference(CFStringRef keyRef, CFPropertyListRef val, BOOL should
 }
 
 - (UITableViewCellEditingStyle)tableView:(UITableView *)table editingStyleForRowAtIndexPath:(NSIndexPath *)indexPath {
+	NSString *service = _data[_sections[indexPath.section]][indexPath.row];
+	if ([_customServices.allKeys containsObject:service]) {
+		return UITableViewCellEditingStyleDelete;
+	}
 	return UITableViewCellEditingStyleNone;
+}
+
+- (BOOL)tableView:(UITableView *)table canEditRowAtIndexPath:(NSIndexPath *)indexPath {
+	NSString *service = _data[_sections[indexPath.section]][indexPath.row];
+	return [_customServices.allKeys containsObject:service];
+}
+
+- (void)tableView:(UITableView *)table commitEditingStyle:(UITableViewCellEditingStyle)editingStyle forRowAtIndexPath:(NSIndexPath *)indexPath {
+	NSString *service = _data[_sections[indexPath.section]][indexPath.row];
+	if (editingStyle == UITableViewCellEditingStyleDelete && [_customServices.allKeys containsObject:service]) {
+		[_customServices removeObjectForKey:service];
+		[_data[_sections[indexPath.section]] removeObjectAtIndex:indexPath.row];
+		[self saveCustomServices];
+
+		[table deleteRowsAtIndexPaths:@[indexPath] withRowAnimation:UITableViewRowAnimationLeft];
+	}
 }
 
 - (NSIndexPath *)tableView:(UITableView *)tableView targetIndexPathForMoveFromRowAtIndexPath:(NSIndexPath *)sourceIndexPath toProposedIndexPath:(NSIndexPath *)proposedDestinationIndexPath {
