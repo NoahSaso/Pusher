@@ -138,7 +138,7 @@ static void setPreference(CFStringRef keyRef, CFPropertyListRef val, BOOL should
 
 - (void)toggleEditing:(UIBarButtonItem *)barButtonItem {
 	[_table setEditing:![_table isEditing] animated:YES];
-	barButtonItem.title = [_table isEditing] ? @"Save" : @"Edit";
+	barButtonItem.title = [_table isEditing] ? @"Done" : @"Edit";
 	self.navigationItem.leftBarButtonItem = [_table isEditing] ? _addNewServiceBarButtonItem : nil;
 	if (![_table isEditing]) {
 		// Save
