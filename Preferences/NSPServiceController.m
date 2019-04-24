@@ -68,7 +68,24 @@
 }
 
 - (void)sendTestNotification:(PSSpecifier *)specifier {
-	XLog(@"SENDING %@", _service);
+	[self.view endEditing:YES];
+
+	XLog(@"Sending test for %@", _service);
+
+	CPDistributedMessagingCenter *messagingCenter = [CPDistributedMessagingCenter centerNamed:PUSHER_MESSAGING_CENTER_NAME];
+
+	// Two-way (wait for reply)
+	NSDictionary *reply;
+	reply = [messagingCenter sendMessageAndReceiveReplyName:PUSHER_TEST_PUSH_MESSAGE_NAME userInfo:@{ @"service": _service }];
+
+	UIAlertController *alert = nil;
+	if (reply[@"success"] && ((NSNumber *)reply[@"success"]).boolValue) {
+		alert = Xalert(@"Sent test notification");
+	} else {
+		alert = Xalert(@"Failed to send");
+	}
+	[alert addAction:XalertBtn(@"Ok")];
+	[self presentViewController:alert animated:YES completion:nil];
 }
 
 - (void)openPushoverAppBuild {

@@ -1,23 +1,6 @@
 #import "global.h"
 #import <Custom/defines.h>
-
-#import <BulletinBoard/BBBulletin.h>
-#import <SpringBoard/SBApplication.h>
-#import <SpringBoard/SBApplicationController.h>
-
-@interface SBLockScreenManager
-+ (id)sharedInstance;
-@property(readonly) BOOL isUILocked;
-@end
-
-@interface BBBulletin (Pusher)
-@property (nonatomic, readonly) BOOL showsSubtitle;
-- (void)sendBulletinToPusher:(BBBulletin *)bulletin;
-- (void)makePusherRequest:(NSString *)urlString infoDict:(NSDictionary *)infoDict credentials:(NSDictionary *)credentials authType:(PusherAuthorizationType)authType dataType:(PusherDataType)dataType method:(NSString *)method;
-- (NSDictionary *)getPusherInfoDictionaryForService:(NSString *)service withDictionary:(NSDictionary *)dictionary;
-- (NSDictionary *)getPusherCredentialsForService:(NSString *)service withDictionary:(NSDictionary *)dictionary;
-- (void)sendToPusherService:(NSString *)service bulletin:(BBBulletin *)bulletin appID:(NSString *)appID appName:(NSString *)appName title:(NSString *)title message:(NSString *)message isTest:(BOOL)isTest;
-@end
+#import "NSPTestPush.h"
 
 @interface UIImage (UIApplicationIconPrivate)
 /*
@@ -44,6 +27,8 @@ static int pusherWhenToPush = PUSHER_WHEN_TO_PUSH_LOCKED;
 static NSArray *globalBlacklist = nil;
 static NSMutableDictionary *pusherEnabledServices = nil;
 static NSMutableDictionary *pusherServicePrefs = nil;
+
+static BBServer *bbServerInstance = nil;
 
 static NSMutableArray *recentNotificationTitles = [NSMutableArray new];
 
@@ -321,6 +306,16 @@ static BOOL prefsSayNo() {
 %hook BBServer
 
 %new
++ (BBServer *)pusherSharedInstance {
+	return bbServerInstance;
+}
+
+- (void)_addObserver:(id)arg1 {
+	bbServerInstance = self;
+	%orig;
+}
+
+%new
 - (void)sendBulletinToPusher:(BBBulletin *)bulletin {
 	if (bulletin == nil || prefsSayNo()) {
 		XLog(@"Prefs said no / bulletin nil: %d", bulletin == nil);
@@ -371,7 +366,7 @@ static BOOL prefsSayNo() {
 		XLog(@"Prevented loop from same app");
 		return;
 	}
-	NSDictionary *servicePrefs = pusherEnabledServices[service];
+	NSDictionary *servicePrefs = pusherServicePrefs[service];
 	NSArray *serviceBlacklist = servicePrefs[@"blacklist"];
 	// Blacklist array contains lowercase app IDs
 	if (!isTest && [serviceBlacklist containsObject:appID.lowercaseString]) {
@@ -545,8 +540,13 @@ static BOOL prefsSayNo() {
 	if (dataType == PusherDataTypeParameters && Xeq(method, @"GET") && parameterString.length > 0) {
 		urlString = Xstr(@"%@?%@", urlString, parameterString);
 	}
+	NSURL *requestURL = [NSURL URLWithString:urlString];
+	if (!requestURL) {
+		XLog(@"Invalid URL: %@", urlString);
+		return;
+	}
 	urlString = [urlString stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
-	NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:urlString] cachePolicy:NSURLRequestUseProtocolCachePolicy timeoutInterval:10];
+	NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:requestURL cachePolicy:NSURLRequestUseProtocolCachePolicy timeoutInterval:10];
 	[request setHTTPMethod:method];
 	if (authType == PusherAuthorizationTypeHeader) {
 		[request setValue:credentials[@"key"] forHTTPHeaderField:credentials[@"headerName"]];
@@ -597,4 +597,5 @@ static BOOL prefsSayNo() {
 	CFNotificationCenterAddObserver(CFNotificationCenterGetDarwinNotifyCenter(), NULL, (CFNotificationCallback)pusherPrefsChanged, PUSHER_PREFS_NOTIFICATION, NULL, CFNotificationSuspensionBehaviorCoalesce);
 	pusherPrefsChanged();
 	%init;
+	[NSPTestPush load];
 }

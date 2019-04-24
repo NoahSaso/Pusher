@@ -6,8 +6,8 @@ BUNDLE_NAME = Pusher
 Pusher_FILES = NSPRootListController.m NSPDeviceListController.m NSPServiceListController.m NSPServiceController.m NSPSharedSpecifiers.m NSPCustomAppController.m NSPCustomizeAppsController.m NSPAppSelectionController.m NSPSoundListController.m
 Pusher_INSTALL_PATH = /Library/PreferenceBundles
 Pusher_FRAMEWORKS = UIKit
-Pusher_PRIVATE_FRAMEWORKS = Preferences
-Pusher_LIBRARIES = AppList
+Pusher_PRIVATE_FRAMEWORKS = Preferences AppSupport
+Pusher_LIBRARIES = AppList rocketbootstrap
 
 include $(THEOS_MAKE_PATH)/bundle.mk
 

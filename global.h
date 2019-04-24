@@ -5,6 +5,11 @@
 
 #define PUSHER_APP_ID CFSTR("com.noahsaso.pusher")
 
+#define PUSHER_MESSAGING_CENTER_NAME @"com.noahsaso.pusher/testpush"
+#define PUSHER_TEST_PUSH_MESSAGE_NAME @"sendTest"
+#import <rocketbootstrap/rocketbootstrap.h>
+#import <AppSupport/CPDistributedMessagingCenter.h>
+
 #define NSPPreferenceGlobalBLPrefix @"GlobalBL-"
 
 #define PUSHER_WHEN_TO_PUSH_LOCKED 0
@@ -60,7 +65,28 @@ typedef enum {
 #define BUILTIN_PUSHER_SERVICES @[ PUSHER_SERVICE_PUSHOVER, PUSHER_SERVICE_PUSHBULLET, PUSHER_SERVICE_IFTTT ]
 
 #import <Preferences/PSSpecifier.h>
+#import <BulletinBoard/BBBulletin.h>
+#import <SpringBoard/SBApplication.h>
+#import <SpringBoard/SBApplicationController.h>
 
 @interface PSSpecifier (Pusher)
 + (id)emptyGroupSpecifier;
+@end
+
+@interface SBLockScreenManager
++ (id)sharedInstance;
+@property(readonly) BOOL isUILocked;
+@end
+
+@interface BBBulletin (Pusher)
+@property (nonatomic, readonly) BOOL showsSubtitle;
+@end
+
+@interface BBServer : NSObject
++ (BBServer *)pusherSharedInstance;
+- (void)sendBulletinToPusher:(BBBulletin *)bulletin;
+- (void)makePusherRequest:(NSString *)urlString infoDict:(NSDictionary *)infoDict credentials:(NSDictionary *)credentials authType:(PusherAuthorizationType)authType dataType:(PusherDataType)dataType method:(NSString *)method;
+- (NSDictionary *)getPusherInfoDictionaryForService:(NSString *)service withDictionary:(NSDictionary *)dictionary;
+- (NSDictionary *)getPusherCredentialsForService:(NSString *)service withDictionary:(NSDictionary *)dictionary;
+- (void)sendToPusherService:(NSString *)service bulletin:(BBBulletin *)bulletin appID:(NSString *)appID appName:(NSString *)appName title:(NSString *)title message:(NSString *)message isTest:(BOOL)isTest;
 @end
