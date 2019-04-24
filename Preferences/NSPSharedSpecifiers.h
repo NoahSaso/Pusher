@@ -1,10 +1,12 @@
 #import <Preferences/PSSpecifier.h>
+#import <Preferences/PSListController.h>
 
 @interface NSPSharedSpecifiers : NSObject
-+ (NSArray *)get:(NSString *)service withAppID:(NSString *)appID;
++ (NSArray *)get:(NSString *)service withAppID:(NSString *)appID isCustomService:(BOOL)isCustomService;
 + (NSArray *)get:(NSString *)service;
-+ (NSArray *)getCustomForService:(NSString *)service withAppID:(NSString *)appID ref:(PSListController *)listController;
-+ (NSArray *)getCustomForService:(NSString *)service ref:(PSListController *)listController;
++ (NSArray *)getCustom:(NSString *)service ref:(PSListController *)listController;
++ (NSArray *)getCustomShared:(NSString *)service withAppID:(NSString *)appID;
++ (NSArray *)getCustomShared:(NSString *)service;
 + (NSArray *)pushover:(NSString *)appID;
 + (NSArray *)pushbullet:(NSString *)appID;
 + (NSArray *)ifttt:(NSString *)appID;

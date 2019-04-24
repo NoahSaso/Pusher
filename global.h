@@ -12,13 +12,20 @@
 #define PUSHER_WHEN_TO_PUSH_UNLOCKED 2
 
 #define NSPPreferenceCustomServicesKey @"CustomServices"
-#define NSPPreferenceCustomServiceCustomAppsKey @"CustomApps"
+#define NSPPreferenceCustomServiceCustomAppsKey(service) Xstr(@"CustomService_%@_CustomApps", service)
+#define NSPPreferenceCustomServiceBLPrefix(service) Xstr(@"CustomServiceBL_%@-", service)
 
 typedef enum {
-	PusherAuthorizationTypeCredentials,
+	PusherAuthorizationTypeNone,
 	PusherAuthorizationTypeHeader,
-	PusherAuthorizationTypeKey
+	PusherAuthorizationTypeCredentials,
+	PusherAuthorizationTypeReplaceKey
 } PusherAuthorizationType;
+
+typedef enum {
+	PusherDataTypeJSON,
+	PusherDataTypeParameters,
+} PusherDataType;
 
 // All keys MUST HAVE the prefix equal to the name of the service
 #define PUSHER_SERVICE_PUSHOVER @"Pushover"

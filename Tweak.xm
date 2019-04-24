@@ -13,9 +13,10 @@
 @interface BBBulletin (Pusher)
 @property (nonatomic, readonly) BOOL showsSubtitle;
 - (void)sendBulletinToPusher:(BBBulletin *)bulletin;
-- (void)makePusherRequest:(NSString *)urlString infoDict:(NSDictionary *)infoDict credentials:(NSDictionary *)credentials authType:(PusherAuthorizationType)authType;
+- (void)makePusherRequest:(NSString *)urlString infoDict:(NSDictionary *)infoDict credentials:(NSDictionary *)credentials authType:(PusherAuthorizationType)authType dataType:(PusherDataType)dataType method:(NSString *)method;
 - (NSDictionary *)getPusherInfoDictionaryForService:(NSString *)service withDictionary:(NSDictionary *)dictionary;
 - (NSDictionary *)getPusherCredentialsForService:(NSString *)service withDictionary:(NSDictionary *)dictionary;
+- (void)sendToPusherService:(NSString *)service bulletin:(BBBulletin *)bulletin appID:(NSString *)appID appName:(NSString *)appName title:(NSString *)title message:(NSString *)message isTest:(BOOL)isTest;
 @end
 
 @interface UIImage (UIApplicationIconPrivate)
@@ -42,6 +43,7 @@ static BOOL pusherEnabled = NO;
 static int pusherWhenToPush = PUSHER_WHEN_TO_PUSH_LOCKED;
 static NSArray *globalBlacklist = nil;
 static NSMutableDictionary *pusherEnabledServices = nil;
+static NSMutableDictionary *pusherServicePrefs = nil;
 
 static NSMutableArray *recentNotificationTitles = [NSMutableArray new];
 
@@ -82,13 +84,33 @@ static NSString *getServiceAppID(NSString *service) {
 	return @"";
 }
 
-static PusherAuthorizationType getServiceAuthType(NSString *service) {
-	if (Xeq(service, PUSHER_SERVICE_PUSHOVER)) {
+static PusherAuthorizationType getServiceAuthType(NSString *service, NSDictionary *servicePrefs) {
+	if (servicePrefs[@"isCustomService"] && ((NSNumber *) servicePrefs[@"isCustomService"]).boolValue) {
+		NSNumber *authMethod = servicePrefs[@"authenticationMethod"];
+		if (!authMethod) {
+			return PusherAuthorizationTypeNone;
+		}
+		switch (authMethod.intValue) {
+			case 1:
+				return PusherAuthorizationTypeHeader;
+			case 2:
+				return PusherAuthorizationTypeCredentials;
+			default:
+				return PusherAuthorizationTypeNone;
+		}
+	} else if (Xeq(service, PUSHER_SERVICE_PUSHOVER)) {
 		return PusherAuthorizationTypeCredentials;
 	} else if (Xeq(service, PUSHER_SERVICE_PUSHBULLET)) {
 		return PusherAuthorizationTypeHeader;
 	}
-	return PusherAuthorizationTypeKey; // ifttt key
+	return PusherAuthorizationTypeReplaceKey; // ifttt key
+}
+
+static PusherDataType getServiceDataType(NSString *service, NSDictionary *servicePrefs) {
+	if (servicePrefs[@"isCustomService"] && ((NSNumber *) servicePrefs[@"isCustomService"]).boolValue) {
+		return PusherDataTypeParameters;
+	}
+	return PusherDataTypeJSON;
 }
 
 static void pusherPrefsChanged() {
@@ -111,17 +133,47 @@ static void pusherPrefsChanged() {
 	if (pusherEnabledServices == nil) {
 		pusherEnabledServices = [NSMutableDictionary new];
 	}
+	if (pusherServicePrefs == nil) {
+		pusherServicePrefs = [NSMutableDictionary new];
+	}
+
+	NSDictionary *customServices = prefs[NSPPreferenceCustomServicesKey];
+	for (NSString *service in customServices.allKeys) {
+		NSDictionary *customService = customServices[service];
+		NSMutableDictionary *servicePrefs = [customService mutableCopy];
+
+		servicePrefs[@"isCustomService"] = @YES;
+		servicePrefs[@"blacklist"] = getPusherBlacklist(prefs, NSPPreferenceCustomServiceBLPrefix(service));
+
+		NSString *customAppsKey = NSPPreferenceCustomServiceCustomAppsKey(service);
+
+		// custom apps
+		NSDictionary *prefCustomApps = (NSDictionary *) prefs[customAppsKey] ?: @{};
+		NSMutableDictionary *customApps = [NSMutableDictionary new];
+		for (NSString *customAppID in prefCustomApps.allKeys) {
+			NSDictionary *customAppPrefs = prefCustomApps[customAppID];
+			// skip if custom app is disabled, default enabled so ignore bool check if key doesn't exist
+			if (customAppPrefs[@"enabled"] && !((NSNumber *) customAppPrefs[@"enabled"]).boolValue) {
+				continue;
+			}
+			customApps[customAppID] = [customAppPrefs copy];
+		}
+
+		servicePrefs[@"customApps"] = [customApps copy];
+
+		pusherServicePrefs[service] = [servicePrefs copy];
+
+		// default is service disabled
+		if (customService[@"Enabled"] == nil || !((NSNumber *) customService[@"Enabled"]).boolValue) {
+			// skip if disabled
+			[pusherEnabledServices removeObjectForKey:service];
+		} else {
+			pusherEnabledServices[service] = pusherServicePrefs[service];
+		}
+	}
 
 	for (NSString *service in BUILTIN_PUSHER_SERVICES) {
 		NSMutableDictionary *servicePrefs = [NSMutableDictionary new];
-
-		NSString *enabledKey = Xstr(@"%@Enabled", service);
-		// default is service disabled
-		if (prefs[enabledKey] == nil || !((NSNumber *) prefs[enabledKey]).boolValue) {
-			// skip if disabled
-			[pusherEnabledServices removeObjectForKey:service];
-			continue;
-		}
 
 		NSString *blacklistPrefix = Xstr(@"%@BL-", service);
 		NSString *tokenKey = Xstr(@"%@Token", service);
@@ -143,7 +195,7 @@ static void pusherPrefsChanged() {
 		val = prefs[eventNameKey];
 		NSString *eventName = [(val ?: @"") copy];
 		val = prefs[dateFormatKey];
-		servicePrefs[@"dateFormat"] = [(val ?: @"MMM d, h:mm a") copy];
+		servicePrefs[@"dateFormat"] = [(val ?: @"") copy];
 		servicePrefs[@"url"] = getServiceURL(service, @{ @"eventName": eventName });
 
 		if (Xeq(service, PUSHER_SERVICE_IFTTT)) {
@@ -223,7 +275,16 @@ static void pusherPrefsChanged() {
 		servicePrefs[@"customApps"] = [customApps copy];
 		// [customApps release];
 
-		pusherEnabledServices[service] = [servicePrefs copy];
+		pusherServicePrefs[service] = [servicePrefs copy];
+
+		NSString *enabledKey = Xstr(@"%@Enabled", service);
+		// default is service disabled
+		if (prefs[enabledKey] == nil || !((NSNumber *) prefs[enabledKey]).boolValue) {
+			// skip if disabled
+			[pusherEnabledServices removeObjectForKey:service];
+		} else {
+			pusherEnabledServices[service] = pusherServicePrefs[service];
+		}
 	}
 
 	XLog(@"Reloaded");
@@ -300,56 +361,65 @@ static BOOL prefsSayNo() {
 	[recentNotificationTitles addObject:title];
 
 	for (NSString *service in pusherEnabledServices.allKeys) {
-		if (Xeq(appID, getServiceAppID(service))) {
-			XLog(@"Prevented loop from same app");
-			continue;
-		}
-		NSDictionary *servicePrefs = pusherEnabledServices[service];
-		NSArray *serviceBlacklist = servicePrefs[@"blacklist"];
-		// Blacklist array contains lowercase app IDs
-		if ([serviceBlacklist containsObject:appID.lowercaseString]) {
-			XLog(@"[S:%@] Blacklisted", service);
-			continue;
-		}
-		// Custom app prefs?
-		NSDictionary *customApps = servicePrefs[@"customApps"];
-
-		NSArray *devices = servicePrefs[@"devices"];
-		if ([customApps.allKeys containsObject:appID] && customApps[appID][@"devices"]) {
-			devices = customApps[appID][@"devices"];
-		}
-		NSArray *sounds = servicePrefs[@"sounds"];
-		if ([customApps.allKeys containsObject:appID] && customApps[appID][@"sounds"]) {
-			sounds = customApps[appID][@"sounds"];
-		}
-		NSString *url = servicePrefs[@"url"];
-		if ([customApps.allKeys containsObject:appID] && customApps[appID][@"url"]) {
-			url = customApps[appID][@"url"];
-		}
-		NSNumber *includeIcon = servicePrefs[@"includeIcon"] ?: @NO;
-		if ([customApps.allKeys containsObject:appID] && customApps[appID][@"includeIcon"]) {
-			includeIcon = customApps[appID][@"includeIcon"];
-		}
-		// Send
-		NSDictionary *infoDict = [self getPusherInfoDictionaryForService:service withDictionary:@{
-			@"title": title,
-			@"message": message,
-			@"devices": devices,
-			@"sounds": sounds,
-			@"appName": appName,
-			@"bulletin": bulletin,
-			@"dateFormat": servicePrefs[@"dateFormat"],
-			@"includeIcon": includeIcon
-		}];
-		NSDictionary *credentials = [self getPusherCredentialsForService:service withDictionary:@{
-			@"token": servicePrefs[@"token"],
-			@"user": servicePrefs[@"user"],
-			@"key": servicePrefs[@"key"]
-		}];
-		PusherAuthorizationType authType = getServiceAuthType(service);
-		[self makePusherRequest:url infoDict:infoDict credentials:credentials authType:authType];
-		XLog(@"[S:%@] Pushed %@", service, appName);
+		[self sendToPusherService:service bulletin:bulletin appID:appID appName:appName title:title message:message isTest:NO];
 	}
+}
+
+%new
+- (void)sendToPusherService:(NSString *)service bulletin:(BBBulletin *)bulletin appID:(NSString *)appID appName:(NSString *)appName title:(NSString *)title message:(NSString *)message isTest:(BOOL)isTest {
+	if (!isTest && Xeq(appID, getServiceAppID(service))) {
+		XLog(@"Prevented loop from same app");
+		return;
+	}
+	NSDictionary *servicePrefs = pusherEnabledServices[service];
+	NSArray *serviceBlacklist = servicePrefs[@"blacklist"];
+	// Blacklist array contains lowercase app IDs
+	if (!isTest && [serviceBlacklist containsObject:appID.lowercaseString]) {
+		XLog(@"[S:%@] Blacklisted", service);
+		return;
+	}
+	// Custom app prefs?
+	NSDictionary *customApps = servicePrefs[@"customApps"];
+
+	NSArray *devices = servicePrefs[@"devices"];
+	if ([customApps.allKeys containsObject:appID] && customApps[appID][@"devices"]) {
+		devices = customApps[appID][@"devices"];
+	}
+	NSArray *sounds = servicePrefs[@"sounds"];
+	if ([customApps.allKeys containsObject:appID] && customApps[appID][@"sounds"]) {
+		sounds = customApps[appID][@"sounds"];
+	}
+	NSString *url = servicePrefs[@"url"];
+	if ([customApps.allKeys containsObject:appID] && customApps[appID][@"url"]) {
+		url = customApps[appID][@"url"];
+	}
+	NSNumber *includeIcon = servicePrefs[@"includeIcon"] ?: @NO;
+	if ([customApps.allKeys containsObject:appID] && customApps[appID][@"includeIcon"]) {
+		includeIcon = customApps[appID][@"includeIcon"];
+	}
+	// Send
+	PusherAuthorizationType authType = getServiceAuthType(service, servicePrefs);
+	PusherDataType dataType = getServiceDataType(service, servicePrefs);
+	NSDictionary *infoDict = [self getPusherInfoDictionaryForService:service withDictionary:@{
+		@"title": title ?: @"",
+		@"message": message ?: @"",
+		@"devices": devices ?: @[],
+		@"sounds": sounds ?: @[],
+		@"appName": appName ?: @"",
+		@"bulletin": bulletin,
+		@"dateFormat": XStrDefault(servicePrefs[@"dateFormat"], @"MMM d, h:mm a"),
+		@"includeIcon": includeIcon
+	}];
+	NSDictionary *credentials = [self getPusherCredentialsForService:service withDictionary:@{
+		@"token": servicePrefs[@"token"] ?: @"",
+		@"user": servicePrefs[@"user"] ?: @"",
+		@"key": servicePrefs[@"key"] ?: @"",
+		@"paramName": authType == PusherAuthorizationTypeCredentials ? XStrDefault(servicePrefs[@"paramName"], @"key") : @"",
+		@"headerName": authType == PusherAuthorizationTypeHeader ? XStrDefault(servicePrefs[@"paramName"], @"Access-Token") : @""
+	}];
+	NSString *method = XStrDefault(servicePrefs[@"method"], @"POST");
+	[self makePusherRequest:url infoDict:infoDict credentials:credentials authType:authType dataType:dataType method:method];
+	XLog(@"[S:%@:%d] Pushed %@", service, isTest, appName);
 }
 
 %new
@@ -382,38 +452,41 @@ static BOOL prefsSayNo() {
 			pushbulletInfoDict[@"device_iden"] = firstDevice;
 		}
 		return pushbulletInfoDict;
-	} else if (Xeq(service, PUSHER_SERVICE_IFTTT)) {
-		BBBulletin *bulletin = dictionary[@"bulletin"];
-		// date
-		NSDateFormatter *dateFormatter = [NSDateFormatter new];
-		[dateFormatter setDateFormat:dictionary[@"dateFormat"]];
-		NSString *dateStr = [dateFormatter stringFromDate:bulletin.date];
-		[dateFormatter release];
+	}
 
-		NSMutableDictionary *data = [@{
-			@"appName": dictionary[@"appName"] ?: @"",
-			@"appID": bulletin.sectionID ?: @"",
-			@"title": bulletin.title ?: @"",
-			@"subtitle": bulletin.subtitle ?: @"",
-			@"message": bulletin.message ?: @"",
-			@"date": dateStr ?: @""
-		} mutableCopy];
+	// ifttt and custom services
+	BBBulletin *bulletin = dictionary[@"bulletin"];
+	// date
+	NSDateFormatter *dateFormatter = [NSDateFormatter new];
+	[dateFormatter setDateFormat:dictionary[@"dateFormat"]];
+	NSString *dateStr = [dateFormatter stringFromDate:bulletin.date];
+	[dateFormatter release];
 
-		if (dictionary[@"includeIcon"] && [dictionary[@"includeIcon"] isKindOfClass:NSNumber.class] && ((NSNumber *)dictionary[@"includeIcon"]).boolValue) {
-			UIImage *icon = [UIImage _applicationIconImageForBundleIdentifier:bulletin.sectionID format:12];
-			NSData *iconData = UIImagePNGRepresentation(icon);
-			data[@"icon"] = [iconData base64EncodedStringWithOptions:NSDataBase64EncodingEndLineWithLineFeed];
-		}
+	NSMutableDictionary *data = [@{
+		@"appName": dictionary[@"appName"] ?: @"",
+		@"appID": bulletin.sectionID ?: @"",
+		@"title": bulletin.title ?: @"",
+		@"subtitle": bulletin.subtitle ?: @"",
+		@"message": bulletin.message ?: @"",
+		@"date": dateStr ?: @""
+	} mutableCopy];
 
+	if (dictionary[@"includeIcon"] && ((NSNumber *)dictionary[@"includeIcon"]).boolValue) {
+		UIImage *icon = [UIImage _applicationIconImageForBundleIdentifier:bulletin.sectionID format:12];
+		NSData *iconData = UIImagePNGRepresentation(icon);
+		data[@"icon"] = [iconData base64EncodedStringWithOptions:NSDataBase64EncodingEndLineWithLineFeed];
+	}
+
+	if (Xeq(service, PUSHER_SERVICE_IFTTT)) {
 		id json = data;
 		NSData *jsonData = [NSJSONSerialization dataWithJSONObject:json options:0 error:nil];
 		if (jsonData) {
 			json = [[NSString alloc] initWithData:jsonData encoding:NSUTF8StringEncoding];
 		}
-
 		return @{ @"value1": json };
 	}
-	return @{};
+
+	return data;
 }
 
 %new
@@ -425,31 +498,73 @@ static BOOL prefsSayNo() {
 		};
 	} else if (Xeq(service, PUSHER_SERVICE_PUSHBULLET)) {
 		return @{
-			@"token": dictionary[@"token"]
+			@"key": dictionary[@"token"],
+			@"headerName": @"Access-Token"
+		};
+	} else if (Xeq(service, PUSHER_SERVICE_IFTTT)) {
+		return @{
+			@"key": dictionary[@"key"]
 		};
 	}
-	return @{ @"key": dictionary[@"key"] }; // ifttt key
+
+	// custom services
+	if (dictionary[@"paramName"] && ((NSString *) dictionary[@"paramName"]).length > 0) {
+		return @{
+			dictionary[@"paramName"]: dictionary[@"key"]
+		};
+	} else if (dictionary[@"headerName"] && ((NSString *) dictionary[@"headerName"]).length > 0) {
+		return @{
+			@"key": dictionary[@"key"],
+			@"headerName": dictionary[@"headerName"]
+		};
+	}
+
+	return @{
+		@"key": dictionary[@"key"]
+	};
 }
 
 %new
-- (void)makePusherRequest:(NSString *)urlString infoDict:(NSDictionary *)infoDict credentials:(NSDictionary *)credentials authType:(PusherAuthorizationType)authType {
-	NSMutableDictionary *infoDictForJSON = [infoDict mutableCopy];
+- (void)makePusherRequest:(NSString *)urlString infoDict:(NSDictionary *)infoDict credentials:(NSDictionary *)credentials authType:(PusherAuthorizationType)authType dataType:(PusherDataType)dataType method:(NSString *)method {
+	NSMutableDictionary *infoDictForRequest = [infoDict mutableCopy];
 	if (authType == PusherAuthorizationTypeCredentials) {
-		[infoDictForJSON addEntriesFromDictionary:credentials];
+		[infoDictForRequest addEntriesFromDictionary:credentials];
 	}
-	if (authType == PusherAuthorizationTypeKey) {
+	if (authType == PusherAuthorizationTypeReplaceKey) {
 		urlString = [urlString stringByReplacingOccurrencesOfString:@"REPLACE_KEY" withString:credentials[@"key"]];
 	}
-	NSData *jsonData = [NSJSONSerialization dataWithJSONObject:infoDictForJSON options:NSJSONWritingPrettyPrinted error:nil];
-	NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:urlString] cachePolicy:NSURLRequestUseProtocolCachePolicy timeoutInterval:10];
-	[request setHTTPMethod:@"POST"];
-	[request setValue:@"application/json" forHTTPHeaderField:@"Accept"];
-	[request setValue:@"application/json" forHTTPHeaderField:@"Content-Type"];
-	if (authType == PusherAuthorizationTypeHeader) {
-		[request setValue:credentials[@"token"] forHTTPHeaderField:@"Access-Token"];
+	NSString *parameterString = @"";
+	if (dataType == PusherDataTypeParameters) {
+		for (NSString *key in infoDictForRequest.allKeys) {
+			NSString *value = XStrDefault(infoDictForRequest[key], @"");
+			NSString *escapedKey = [key stringByAddingPercentEncodingWithAllowedCharacters:[NSCharacterSet URLQueryAllowedCharacterSet]];
+			NSString *escapedValue = [value stringByAddingPercentEncodingWithAllowedCharacters:[NSCharacterSet URLQueryAllowedCharacterSet]];
+			parameterString = Xstr(@"%@%@%@=%@", parameterString, (parameterString.length < 1 ? @"" : @"&"), escapedKey, escapedValue);
+		}
 	}
-	[request setValue:Xstr(@"%lu", jsonData.length) forHTTPHeaderField:@"Content-length"];
-	[request setHTTPBody:jsonData];
+	if (dataType == PusherDataTypeParameters && Xeq(method, @"GET") && parameterString.length > 0) {
+		urlString = Xstr(@"%@?%@", urlString, parameterString);
+	}
+	urlString = [urlString stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
+	NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:urlString] cachePolicy:NSURLRequestUseProtocolCachePolicy timeoutInterval:10];
+	[request setHTTPMethod:method];
+	if (authType == PusherAuthorizationTypeHeader) {
+		[request setValue:credentials[@"key"] forHTTPHeaderField:credentials[@"headerName"]];
+	}
+	NSData *requestData = nil;
+	if (dataType == PusherDataTypeJSON) {
+		requestData = [NSJSONSerialization dataWithJSONObject:infoDictForRequest options:NSJSONWritingPrettyPrinted error:nil];
+		[request setValue:@"application/json" forHTTPHeaderField:@"Accept"];
+		[request setValue:@"application/json" forHTTPHeaderField:@"Content-Type"];
+	} else if (Xeq(method, @"POST")) { // parameters
+		[request setValue:@"application/x-www-form-urlencoded" forHTTPHeaderField:@"Content-Type"];
+		requestData = [parameterString dataUsingEncoding:NSUTF8StringEncoding];
+	}
+
+	if (requestData != nil) {
+		[request setValue:Xstr(@"%lu", requestData.length) forHTTPHeaderField:@"Content-Length"];
+		[request setHTTPBody:requestData];
+	}
 
 	//use async way to connect network
 	[[[NSURLSession sharedSession] dataTaskWithRequest:request completionHandler:^(NSData *data, NSURLResponse *response, NSError *error) {

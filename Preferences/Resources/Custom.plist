@@ -19,7 +19,7 @@
 			<key>key</key>
 			<string>url</string>
 			<key>label</key>
-			<string>Key:</string>
+			<string>URL:</string>
 			<key>noAutoCorrect</key>
 			<true/>
 		</dict>
@@ -27,7 +27,7 @@
 			<key>cell</key>
 			<string>PSSegmentCell</string>
 			<key>default</key>
-			<string>GET</string>
+			<string>POST</string>
 			<key>detail</key>
 			<string>PSListItemsController</string>
 			<key>key</key>
@@ -44,6 +44,62 @@
 			</array>
 		</dict>
 
+		<!-- Authentication -->
+		<dict>
+			<key>cell</key>
+			<string>PSGroupCell</string>
+			<key>label</key>
+			<string>Authentication</string>
+			<key>footerText</key>
+			<string>Param/Header Name is used to determine the name of the parameter to pass. For example, header authentication is typically passed through the 'Access-Token' header. If you are using the Request Data option and your API takes a parameter named 'token', you would enter token as the name.</string>
+		</dict>
+		<dict>
+			<key>cell</key>
+			<string>PSSegmentCell</string>
+			<key>default</key>
+			<integer>0</integer>
+			<key>detail</key>
+			<string>PSListItemsController</string>
+			<key>key</key>
+			<string>authenticationMethod</string>
+			<key>validTitles</key>
+			<array>
+				<string>None</string>
+				<string>Header</string>
+				<string>Request Data</string>
+			</array>
+			<key>validValues</key>
+			<array>
+				<integer>0</integer>
+				<integer>1</integer>
+				<integer>2</integer>
+			</array>
+		</dict>
+		<dict>
+			<key>cell</key>
+			<string>PSEditTextCell</string>
+			<key>detail</key>
+			<string>PSDetailController</string>
+			<key>key</key>
+			<string>paramName</string>
+			<key>label</key>
+			<string>Param/Header Name:</string>
+			<key>noAutoCorrect</key>
+			<true/>
+		</dict>
+		<dict>
+			<key>cell</key>
+			<string>PSEditTextCell</string>
+			<key>detail</key>
+			<string>PSDetailController</string>
+			<key>key</key>
+			<string>key</string>
+			<key>label</key>
+			<string>Key:</string>
+			<key>noAutoCorrect</key>
+			<true/>
+		</dict>
+
 		<!-- Options -->
 		<dict>
 			<key>cell</key>
@@ -52,6 +108,7 @@
 			<string>Options</string>
 			<key>footerText</key>
 			<string>The following properties will be passed to the URL endpoint (via GET or POST parameters) specified above (property names in parentheses) [Must Turn on "Include Icon" switch above in order to get the icon property]:
+
 App Name (appName), App Bundle ID (appID), Title (title), Subtitle (subtitle), Message (message), Date (date), Base64 Encoded PNG Icon 58x58 (icon)</string>
 		</dict>
 		<dict>
@@ -61,12 +118,10 @@ App Name (appName), App Bundle ID (appID), Title (title), Subtitle (subtitle), M
 			<string>App Customization</string>
 			<key>detail</key>
 			<string>NSPCustomizeAppsController</string>
-			<key>service</key>
-			<string>IFTTT</string>
-			<key>defaultEventNameKey</key>
-			<string>IFTTTEventName</string>
+			<key>isCustomService</key>
+			<true/>
 			<key>defaultIncludeIconKey</key>
-			<string>IFTTTIncludeIcon</string>
+			<string>includeIcon</string>
 		</dict>
 		<dict>
 			<key>cell</key>
@@ -108,8 +163,6 @@ App Name (appName), App Bundle ID (appID), Title (title), Subtitle (subtitle), M
 					<string>User Applications</string>
 				</dict>
 			</array>
-			<key>ALSettingsKeyPrefix</key>
-			<string>IFTTTBL-</string>
 			<key>ALSettingsPath</key>
 			<string>/var/mobile/Library/Preferences/com.noahsaso.pusher.plist</string>
 		</dict>
@@ -147,21 +200,15 @@ HH:mm:ss.SSS = 03:12:11.678
 			<string>PSEditTextCell</string>
 			<key>detail</key>
 			<string>PSDetailController</string>
-			<key>defaults</key>
-			<string>com.noahsaso.pusher</string>
-			<key>PostNotification</key>
-			<string>com.noahsaso.pusher/prefs</string>
 			<key>key</key>
-			<string>IFTTTDateFormat</string>
+			<string>dateFormat</string>
 			<key>label</key>
 			<string>Date Format:</string>
 			<key>noAutoCorrect</key>
 			<true/>
-			<key>default</key>
-			<string>MMM d, h:mm a</string>
 		</dict>
 	</array>
 	<key>title</key>
-	<string>IFTTT</string>
+	<string>Custom</string>
 </dict>
 </plist>

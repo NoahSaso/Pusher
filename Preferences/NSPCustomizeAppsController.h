@@ -11,20 +11,18 @@
   NSString *_prefsKey;
   NSString *_lastTargetAppID;
   NSIndexPath *_lastTargetIndexPath;
-  
+
   NSArray *_defaultDevices;
-  NSString *_defaultDevicesKey;
   NSArray *_defaultSounds;
-  NSString *_defaultSoundsKey;
   NSString *_defaultEventName;
-  NSString *_defaultEventNameKey;
   NSNumber *_defaultIncludeIcon;
-  NSString *_defaultIncludeIconKey;
 
   NSMutableDictionary *_loadedAppControllers;
+
+  BOOL _isCustomService;
 }
 - (void)addAppIDs:(NSArray *)appIDs;
-- (void)setDefaultsFor:(NSString *)appID enabled:(BOOL)enabled;
+- (void)setEnabledWithDefaults:(NSString *)appID enabled:(BOOL)enabled;
 - (void)saveAppState;
 - (void)sortAppIDArray:(NSMutableArray *)array;
 @end

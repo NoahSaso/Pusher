@@ -24,24 +24,27 @@
 
 - (NSArray *)specifiers {
 	if (!_specifiers) {
+
+		NSMutableArray *allSpecifiers = nil;
+		NSArray *sharedSpecifiers = nil;
+
 		if (_isCustom) {
-			_specifiers = [[NSPSharedSpecifiers getCustomForService:_service ref:self] retain];
-			return _specifiers;
+			allSpecifiers = [[NSPSharedSpecifiers getCustom:_service ref:self] mutableCopy];
+			sharedSpecifiers = [NSPSharedSpecifiers getCustomShared:_service];
+		} else {
+			allSpecifiers = [[self loadSpecifiersFromPlistName:_service target:self] mutableCopy];
+			sharedSpecifiers = [NSPSharedSpecifiers get:_service];
 		}
-
-		NSMutableArray *allSpecifiers = [[self loadSpecifiersFromPlistName:_service target:self] mutableCopy];
-
-		NSArray *sharedSpecifiers = [NSPSharedSpecifiers get:_service];
 
 		BOOL insertOnNext = NO;
 		BOOL inserted = NO;
 		int idx = 0;
 		for (PSSpecifier *specifier in allSpecifiers) {
-			if (insertOnNext && specifier.cellType == 0) {
+			if (insertOnNext && specifier.cellType == PSGroupCell) {
 				[self addObjectsFromArray:sharedSpecifiers atIndex:idx toArray:allSpecifiers];
 				inserted = YES;
 				break;
-			} else if (specifier.cellType == 0 && Xeq(specifier.identifier, @"Options")) { // insert at end of options group
+			} else if (specifier.cellType == PSGroupCell && Xeq(specifier.identifier, @"Options")) { // insert at end of options group
 				insertOnNext = YES;
 			}
 			idx += 1;
@@ -51,10 +54,21 @@
 			[allSpecifiers addObjectsFromArray:sharedSpecifiers];
 		}
 
+		PSSpecifier *sendTestNotificationGroup = [PSSpecifier emptyGroupSpecifier];
+		PSSpecifier *sendTestNotification = [PSSpecifier preferenceSpecifierNamed:@"Send Test Notification" target:self set:nil get:nil detail:nil cell:PSButtonCell edit:nil];
+		[sendTestNotification setButtonAction:@selector(sendTestNotification:)];
+		[sendTestNotification setProperty:@YES forKey:@"enabled"];
+
+		[allSpecifiers addObjectsFromArray:@[sendTestNotificationGroup, sendTestNotification]];
+
 		_specifiers = [allSpecifiers copy];
 	}
 
 	return _specifiers;
+}
+
+- (void)sendTestNotification:(PSSpecifier *)specifier {
+	XLog(@"SENDING %@", _service);
 }
 
 - (void)openPushoverAppBuild {

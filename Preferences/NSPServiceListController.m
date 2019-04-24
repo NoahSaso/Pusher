@@ -144,10 +144,10 @@ static void setPreference(CFStringRef keyRef, CFPropertyListRef val, BOOL should
 		// Save
 		for (NSString *service in _services) {
 			NSString *enabledKey = Xstr(@"%@Enabled", service);
-			setPreference((__bridge CFStringRef) enabledKey, (__bridge CFNumberRef) [NSNumber numberWithBool:[_data[@"Enabled"] containsObject:service]], NO);
+			setPreference((__bridge CFStringRef) enabledKey, (__bridge CFNumberRef) @([_data[@"Enabled"] containsObject:service]), NO);
 		}
 		for (NSString *customService in _customServices.allKeys) {
-			NSNumber *customServiceEnabled = [NSNumber numberWithBool:[_data[@"Enabled"] containsObject:customService]];
+			NSNumber *customServiceEnabled = @([_data[@"Enabled"] containsObject:customService]);
 			if (!_customServices[customService]) {
 				_customServices[customService] = [@{
 					@"Enabled": customServiceEnabled

@@ -18,13 +18,13 @@ static void setPreference(CFStringRef keyRef, CFPropertyListRef val, BOOL should
 
 @implementation NSPCustomizeAppsController
 
-- (void)setDefaultsFor:(NSString *)appID enabled:(BOOL)enabled {
+- (void)setEnabledWithDefaults:(NSString *)appID enabled:(BOOL)enabled {
 	if ([_customApps.allKeys containsObject:appID]) {
 			NSMutableDictionary *appDict = [(NSDictionary *)_customApps[appID] mutableCopy];
-			appDict[@"enabled"] = @NO;
+			appDict[@"enabled"] = @(enabled);
 			_customApps[appID] = appDict;
 	} else {
-		NSMutableDictionary *defaultDict = [@{ @"enabled": [NSNumber numberWithBool:enabled] } mutableCopy];
+		NSMutableDictionary *defaultDict = [@{ @"enabled": @(enabled) } mutableCopy];
 		if (Xeq(_service, PUSHER_SERVICE_PUSHOVER) || Xeq(_service, PUSHER_SERVICE_PUSHBULLET)) {
 			defaultDict[@"devices"] = _defaultDevices;
 		}
@@ -33,6 +33,8 @@ static void setPreference(CFStringRef keyRef, CFPropertyListRef val, BOOL should
 		}
 		if (Xeq(_service, PUSHER_SERVICE_IFTTT)) {
 			defaultDict[@"eventName"] = _defaultEventName;
+		}
+		if (_isCustomService || Xeq(_service, PUSHER_SERVICE_IFTTT)) {
 			defaultDict[@"includeIcon"] = _defaultIncludeIcon;
 		}
 		_customApps[appID] = defaultDict;
@@ -43,10 +45,10 @@ static void setPreference(CFStringRef keyRef, CFPropertyListRef val, BOOL should
 	NSArray *enabledApps = _data[@"Enabled"];
 	NSArray *disabledApps = _data[@"Disabled"];
 	for (NSString *appID in enabledApps) {
-		[self setDefaultsFor:appID enabled:YES];
+		[self setEnabledWithDefaults:appID enabled:YES];
 	}
 	for (NSString *appID in disabledApps) {
-		[self setDefaultsFor:appID enabled:NO];
+		[self setEnabledWithDefaults:appID enabled:NO];
 	}
 	for (NSString *appID in _customApps.allKeys) {
 		if (![enabledApps containsObject:appID] && ![disabledApps containsObject:appID]) {
@@ -69,18 +71,8 @@ static void setPreference(CFStringRef keyRef, CFPropertyListRef val, BOOL should
 	_appList = [ALApplicationList sharedApplicationList];
 
 	_service = [[self.specifier propertyForKey:@"service"] retain];
-	_prefsKey = [Xstr(@"%@CustomApps", _service) retain];
-
-	if (Xeq(_service, PUSHER_SERVICE_PUSHOVER) || Xeq(_service, PUSHER_SERVICE_PUSHBULLET)) {
-		_defaultDevicesKey = [self.specifier propertyForKey:@"defaultDevicesKey"];
-	}
-	if (Xeq(_service, PUSHER_SERVICE_PUSHOVER)) {
-		_defaultSoundsKey = [self.specifier propertyForKey:@"defaultSoundsKey"];
-	}
-	if (Xeq(_service, PUSHER_SERVICE_IFTTT)) {
-		_defaultEventNameKey = [self.specifier propertyForKey:@"defaultEventNameKey"];
-		_defaultIncludeIconKey = [self.specifier propertyForKey:@"defaultIncludeIconKey"];
-	}
+	_isCustomService = [self.specifier propertyForKey:@"isCustomService"] && ((NSNumber *)[self.specifier propertyForKey:@"isCustomService"]).boolValue;
+	_prefsKey = [(_isCustomService ? NSPPreferenceCustomServiceCustomAppsKey(_service) : Xstr(@"%@CustomApps", _service)) retain];
 
 	_lastTargetAppID = nil;
 	_lastTargetIndexPath = nil;
@@ -120,14 +112,18 @@ static void setPreference(CFStringRef keyRef, CFPropertyListRef val, BOOL should
 	_customApps = [(prefs[_prefsKey] ?: @{}) mutableCopy];
 
 	if (Xeq(_service, PUSHER_SERVICE_PUSHOVER) || Xeq(_service, PUSHER_SERVICE_PUSHBULLET)) {
-		_defaultDevices = [(prefs[_defaultDevicesKey] ?: @[]) copy];
+		_defaultDevices = [(prefs[[self.specifier propertyForKey:@"defaultDevicesKey"]] ?: @[]) copy];
 	}
 	if (Xeq(_service, PUSHER_SERVICE_PUSHOVER)) {
-		_defaultSounds = [(prefs[_defaultSoundsKey] ?: @[]) copy];
+		_defaultSounds = [(prefs[[self.specifier propertyForKey:@"defaultSoundsKey"]] ?: @[]) copy];
 	}
 	if (Xeq(_service, PUSHER_SERVICE_IFTTT)) {
-		_defaultEventName = [(prefs[_defaultEventNameKey] ?: @"") copy];
-		_defaultIncludeIcon = [(prefs[_defaultIncludeIconKey] ?: @NO) copy];
+		_defaultEventName = [(prefs[[self.specifier propertyForKey:@"defaultEventNameKey"]] ?: @"") copy];
+		_defaultIncludeIcon = [(prefs[[self.specifier propertyForKey:@"defaultIncludeIconKey"]] ?: @NO) copy];
+	}
+	if (_isCustomService) {
+		NSDictionary *customService = (prefs[NSPPreferenceCustomServicesKey] ?: @{})[_service] ?: @{};
+		_defaultIncludeIcon = [(customService[[self.specifier propertyForKey:@"defaultIncludeIconKey"]] ?: @NO) copy];
 	}
 
 	_sections = [@[@"", @"Enabled", @"Disabled"] retain];
@@ -194,7 +190,7 @@ static void setPreference(CFStringRef keyRef, CFPropertyListRef val, BOOL should
 	if ([_loadedAppControllers.allKeys containsObject:appID]) {
 		controller = _loadedAppControllers[appID];
 	} else {
-		controller = [[NSPCustomAppController alloc] initWithService:_service appID:appID];
+		controller = [[NSPCustomAppController alloc] initWithService:_service appID:appID isCustomService:_isCustomService];
 		_loadedAppControllers[appID] = controller;
 	}
 	[self pushController:controller];

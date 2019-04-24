@@ -61,7 +61,7 @@ static void setPreference(CFStringRef keyRef, CFPropertyListRef val, BOOL should
 	_serviceDevices = [val mutableCopy];
 	NSMutableDictionary *indexesToReplace = [NSMutableDictionary new];
 	for (int i = 0; i < _serviceDevices.count; i++) {
-		indexesToReplace[[NSNumber numberWithInt:i]] = [_serviceDevices[i] mutableCopy];
+		indexesToReplace[@(i)] = [_serviceDevices[i] mutableCopy];
 	}
 	for (NSNumber *index in indexesToReplace.allKeys) {
 		[_serviceDevices replaceObjectAtIndex:index.intValue withObject:indexesToReplace[index]];
