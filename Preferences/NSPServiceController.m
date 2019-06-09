@@ -62,6 +62,8 @@
 		[allSpecifiers addObjectsFromArray:@[sendTestNotificationGroup, sendTestNotification]];
 
 		_specifiers = [allSpecifiers copy];
+		
+		[self setTitle:_service];
 	}
 
 	return _specifiers;

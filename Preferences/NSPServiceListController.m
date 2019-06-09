@@ -61,7 +61,7 @@ static void setPreference(CFStringRef keyRef, CFPropertyListRef val, BOOL should
 		@"Enabled": [NSMutableArray new],
 		@"Disabled": [NSMutableArray new]
 	} mutableCopy];
-	_services = [[BUILTIN_PUSHER_SERVICES sortedArrayUsingSelector:@selector(localizedCaseInsensitiveCompare:)] retain];
+	_services = [BUILTIN_PUSHER_SERVICES retain];
 	_customServices = [(NSDictionary *)(_prefs[NSPPreferenceCustomServicesKey] ?: @{}) mutableCopy];
 
 	for (NSString *service in _services) {
@@ -82,6 +82,9 @@ static void setPreference(CFStringRef keyRef, CFPropertyListRef val, BOOL should
 			[_data[@"Disabled"] addObject:customService];
 		}
 	}
+
+	[_data[@"Enabled"] sortUsingSelector:@selector(localizedCaseInsensitiveCompare:)];
+	[_data[@"Disabled"] sortUsingSelector:@selector(localizedCaseInsensitiveCompare:)];
 
 	[_table reloadData];
 }
