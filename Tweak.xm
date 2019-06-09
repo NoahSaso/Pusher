@@ -361,7 +361,7 @@ static BOOL prefsSayNo() {
 
 %new
 - (void)sendToPusherService:(NSString *)service bulletin:(BBBulletin *)bulletin appID:(NSString *)appID appName:(NSString *)appName title:(NSString *)title message:(NSString *)message isTest:(BOOL)isTest {
-	if (NO && !isTest && Xeq(appID, getServiceAppID(service))) {
+	if (!isTest && Xeq(appID, getServiceAppID(service))) {
 		XLog(@"Prevented loop from same app");
 		return;
 	}
