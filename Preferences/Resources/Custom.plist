@@ -10,6 +10,8 @@
 			<string>PSGroupCell</string>
 			<key>label</key>
 			<string>Endpoint</string>
+			<key>footerText</key>
+			<string>GET sends the data in the query string while POST sends the data in a JSON-formatted request body (Content-Type: application/json).</string>
 		</dict>
 		<dict>
 			<key>cell</key>
@@ -51,7 +53,7 @@
 			<key>label</key>
 			<string>Authentication</string>
 			<key>footerText</key>
-			<string>Param/Header Name is used to determine the name of the parameter to pass. For example, header authentication is typically passed through the 'Access-Token' header. If you are using the Request Data option and your API takes a parameter named 'token', you would enter token as the name.</string>
+			<string>Param/Header Name is used to determine the name of the parameter to pass. For example, header authentication is typically passed through the 'Access-Token' header. If you are using the Request Body option and your API takes a parameter named 'token', you would enter token as the name.</string>
 		</dict>
 		<dict>
 			<key>cell</key>
@@ -66,7 +68,7 @@
 			<array>
 				<string>None</string>
 				<string>Header</string>
-				<string>Request Data</string>
+				<string>Request Body</string>
 			</array>
 			<key>validValues</key>
 			<array>

@@ -1,6 +1,7 @@
 #import "global.h"
 #import <Custom/defines.h>
 #import "NSPTestPush.h"
+#import <SystemConfiguration/CaptiveNetwork.h>
 
 @interface UIImage (UIApplicationIconPrivate)
 /*
@@ -24,6 +25,7 @@
 
 static BOOL pusherEnabled = NO;
 static int pusherWhenToPush = PUSHER_WHEN_TO_PUSH_LOCKED;
+static BOOL pusherOnWiFiOnly = NO;
 static NSArray *globalBlacklist = nil;
 static NSMutableDictionary *pusherEnabledServices = nil;
 static NSMutableDictionary *pusherServicePrefs = nil;
@@ -91,13 +93,6 @@ static PusherAuthorizationType getServiceAuthType(NSString *service, NSDictionar
 	return PusherAuthorizationTypeReplaceKey; // ifttt key
 }
 
-static PusherDataType getServiceDataType(NSString *service, NSDictionary *servicePrefs) {
-	if (servicePrefs[@"isCustomService"] && ((NSNumber *) servicePrefs[@"isCustomService"]).boolValue) {
-		return PusherDataTypeParameters;
-	}
-	return PusherDataTypeJSON;
-}
-
 static void pusherPrefsChanged() {
 	XLog(@"Reloading prefs");
 
@@ -113,6 +108,8 @@ static void pusherPrefsChanged() {
 	pusherEnabled = val ? ((NSNumber *) val).boolValue : YES;
 	val = prefs[@"WhenToPush"];
 	pusherWhenToPush = val ? ((NSNumber *) val).intValue : PUSHER_WHEN_TO_PUSH_LOCKED;
+	val = prefs[@"OnWiFiOnly"];
+	pusherOnWiFiOnly = val ? ((NSNumber *) val).boolValue : NO;
 	globalBlacklist = getPusherBlacklist(prefs, NSPPreferenceGlobalBLPrefix);
 
 	if (pusherEnabledServices == nil) {
@@ -277,7 +274,9 @@ static void pusherPrefsChanged() {
 
 static BOOL prefsSayNo() {
 	BOOL deviceIsLocked = ((SBLockScreenManager *) [%c(SBLockScreenManager) sharedInstance]).isUILocked;
+	BOOL onWifi = [[%c(SBWiFiManager) sharedInstance] currentNetworkName] != nil;
 	if (!pusherEnabled
+				|| (pusherOnWiFiOnly && !onWifi)
 				|| (pusherWhenToPush == PUSHER_WHEN_TO_PUSH_LOCKED && !deviceIsLocked)
 				|| (pusherWhenToPush == PUSHER_WHEN_TO_PUSH_UNLOCKED && deviceIsLocked)
 				|| globalBlacklist == nil || ![globalBlacklist isKindOfClass:NSArray.class]) {
@@ -362,7 +361,7 @@ static BOOL prefsSayNo() {
 
 %new
 - (void)sendToPusherService:(NSString *)service bulletin:(BBBulletin *)bulletin appID:(NSString *)appID appName:(NSString *)appName title:(NSString *)title message:(NSString *)message isTest:(BOOL)isTest {
-	if (!isTest && Xeq(appID, getServiceAppID(service))) {
+	if (NO && !isTest && Xeq(appID, getServiceAppID(service))) {
 		XLog(@"Prevented loop from same app");
 		return;
 	}
@@ -394,7 +393,6 @@ static BOOL prefsSayNo() {
 	}
 	// Send
 	PusherAuthorizationType authType = getServiceAuthType(service, servicePrefs);
-	PusherDataType dataType = getServiceDataType(service, servicePrefs);
 	NSDictionary *infoDict = [self getPusherInfoDictionaryForService:service withDictionary:@{
 		@"title": title ?: @"",
 		@"message": message ?: @"",
@@ -413,7 +411,7 @@ static BOOL prefsSayNo() {
 		@"headerName": authType == PusherAuthorizationTypeHeader ? XStrDefault(servicePrefs[@"paramName"], @"Access-Token") : @""
 	}];
 	NSString *method = XStrDefault(servicePrefs[@"method"], @"POST");
-	[self makePusherRequest:url infoDict:infoDict credentials:credentials authType:authType dataType:dataType method:method];
+	[self makePusherRequest:url infoDict:infoDict credentials:credentials authType:authType method:method];
 	XLog(@"[S:%@:%d] Pushed %@", service, isTest, appName);
 }
 
@@ -467,9 +465,7 @@ static BOOL prefsSayNo() {
 	} mutableCopy];
 
 	if (dictionary[@"includeIcon"] && ((NSNumber *)dictionary[@"includeIcon"]).boolValue) {
-		UIImage *icon = [UIImage _applicationIconImageForBundleIdentifier:bulletin.sectionID format:12];
-		NSData *iconData = UIImagePNGRepresentation(icon);
-		data[@"icon"] = [iconData base64EncodedStringWithOptions:NSDataBase64EncodingEndLineWithLineFeed];
+		data[@"icon"] = [self base64IconDataForBundleID:bulletin.sectionID];
 	}
 
 	if (Xeq(service, PUSHER_SERVICE_IFTTT)) {
@@ -482,6 +478,17 @@ static BOOL prefsSayNo() {
 	}
 
 	return data;
+}
+
+%new
+- (NSString *)base64IconDataForBundleID:(NSString *)bundleID {
+	SBApplicationIcon *icon = [((SBIconController *)[%c(SBIconController) sharedInstance]).model expectedIconForDisplayIdentifier:bundleID];
+	UIImage *image = [icon generateIconImage:2];
+
+	NSData *iconData = UIImagePNGRepresentation(image);
+	NSString *base64Representation = [iconData base64EncodedStringWithOptions:NSDataBase64EncodingEndLineWithLineFeed];
+
+	return base64Representation;
 }
 
 %new
@@ -520,7 +527,8 @@ static BOOL prefsSayNo() {
 }
 
 %new
-- (void)makePusherRequest:(NSString *)urlString infoDict:(NSDictionary *)infoDict credentials:(NSDictionary *)credentials authType:(PusherAuthorizationType)authType dataType:(PusherDataType)dataType method:(NSString *)method {
+- (void)makePusherRequest:(NSString *)urlString infoDict:(NSDictionary *)infoDict credentials:(NSDictionary *)credentials authType:(PusherAuthorizationType)authType method:(NSString *)method {
+
 	NSMutableDictionary *infoDictForRequest = [infoDict mutableCopy];
 	if (authType == PusherAuthorizationTypeCredentials) {
 		[infoDictForRequest addEntriesFromDictionary:credentials];
@@ -528,18 +536,19 @@ static BOOL prefsSayNo() {
 	if (authType == PusherAuthorizationTypeReplaceKey) {
 		urlString = [urlString stringByReplacingOccurrencesOfString:@"REPLACE_KEY" withString:credentials[@"key"]];
 	}
-	NSString *parameterString = @"";
-	if (dataType == PusherDataTypeParameters) {
+
+	if (Xeq(method, @"GET")) {
+		NSString *parameterString = @"";
 		for (NSString *key in infoDictForRequest.allKeys) {
 			NSString *value = XStrDefault(infoDictForRequest[key], @"");
-			NSString *escapedKey = [key stringByAddingPercentEncodingWithAllowedCharacters:[NSCharacterSet URLQueryAllowedCharacterSet]];
-			NSString *escapedValue = [value stringByAddingPercentEncodingWithAllowedCharacters:[NSCharacterSet URLQueryAllowedCharacterSet]];
+			NSString *escapedKey = [[[key stringByAddingPercentEncodingWithAllowedCharacters:NSCharacterSet.URLQueryAllowedCharacterSet] stringByReplacingOccurrencesOfString:@"+" withString:@"%2B"] stringByReplacingOccurrencesOfString:@"=" withString:@"%3D"];
+			NSString *escapedValue = [[[value stringByAddingPercentEncodingWithAllowedCharacters:NSCharacterSet.URLQueryAllowedCharacterSet] stringByReplacingOccurrencesOfString:@"+" withString:@"%2B"] stringByReplacingOccurrencesOfString:@"=" withString:@"%3D"];
 			parameterString = Xstr(@"%@%@%@=%@", parameterString, (parameterString.length < 1 ? @"" : @"&"), escapedKey, escapedValue);
 		}
-	}
-	if (dataType == PusherDataTypeParameters && Xeq(method, @"GET") && parameterString.length > 0) {
 		urlString = Xstr(@"%@?%@", urlString, parameterString);
+		XLog(@"URL String: %@", urlString);
 	}
+
 	NSURL *requestURL = [NSURL URLWithString:urlString];
 	if (!requestURL) {
 		XLog(@"Invalid URL: %@", urlString);
@@ -547,21 +556,16 @@ static BOOL prefsSayNo() {
 	}
 	urlString = [urlString stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
 	NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:requestURL cachePolicy:NSURLRequestUseProtocolCachePolicy timeoutInterval:10];
+
 	[request setHTTPMethod:method];
 	if (authType == PusherAuthorizationTypeHeader) {
 		[request setValue:credentials[@"key"] forHTTPHeaderField:credentials[@"headerName"]];
 	}
-	NSData *requestData = nil;
-	if (dataType == PusherDataTypeJSON) {
-		requestData = [NSJSONSerialization dataWithJSONObject:infoDictForRequest options:NSJSONWritingPrettyPrinted error:nil];
+
+	if (Xeq(method, @"POST")) {
 		[request setValue:@"application/json" forHTTPHeaderField:@"Accept"];
 		[request setValue:@"application/json" forHTTPHeaderField:@"Content-Type"];
-	} else if (Xeq(method, @"POST")) { // parameters
-		[request setValue:@"application/x-www-form-urlencoded" forHTTPHeaderField:@"Content-Type"];
-		requestData = [parameterString dataUsingEncoding:NSUTF8StringEncoding];
-	}
-
-	if (requestData != nil) {
+		NSData *requestData = [NSJSONSerialization dataWithJSONObject:infoDictForRequest options:NSJSONWritingPrettyPrinted error:nil];
 		[request setValue:Xstr(@"%lu", requestData.length) forHTTPHeaderField:@"Content-Length"];
 		[request setHTTPBody:requestData];
 	}
@@ -570,12 +574,14 @@ static BOOL prefsSayNo() {
 	[[[NSURLSession sharedSession] dataTaskWithRequest:request completionHandler:^(NSData *data, NSURLResponse *response, NSError *error) {
 		if (data.length && error == nil) {
 			XLog(@"Success");
+			// XLog(@"data: %@", [[[[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding] componentsSeparatedByCharactersInSet:[NSCharacterSet newlineCharacterSet]] componentsJoinedByString:@" "]);
 		} else if (error) {
 			XLog(@"Error: %@", error);
 		} else {
 			XLog(@"No data");
 		}
 	}] resume];
+
 }
 
 // iOS 10 & 11

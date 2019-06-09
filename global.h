@@ -27,11 +27,6 @@ typedef enum {
 	PusherAuthorizationTypeReplaceKey
 } PusherAuthorizationType;
 
-typedef enum {
-	PusherDataTypeJSON,
-	PusherDataTypeParameters,
-} PusherDataType;
-
 // All keys MUST HAVE the prefix equal to the name of the service
 #define PUSHER_SERVICE_PUSHOVER @"Pushover"
 #define PUSHER_SERVICE_PUSHOVER_APP_ID @"net.superblock.Pushover"
@@ -85,8 +80,27 @@ typedef enum {
 @interface BBServer : NSObject
 + (BBServer *)pusherSharedInstance;
 - (void)sendBulletinToPusher:(BBBulletin *)bulletin;
-- (void)makePusherRequest:(NSString *)urlString infoDict:(NSDictionary *)infoDict credentials:(NSDictionary *)credentials authType:(PusherAuthorizationType)authType dataType:(PusherDataType)dataType method:(NSString *)method;
+- (void)makePusherRequest:(NSString *)urlString infoDict:(NSDictionary *)infoDict credentials:(NSDictionary *)credentials authType:(PusherAuthorizationType)authType method:(NSString *)method;
 - (NSDictionary *)getPusherInfoDictionaryForService:(NSString *)service withDictionary:(NSDictionary *)dictionary;
 - (NSDictionary *)getPusherCredentialsForService:(NSString *)service withDictionary:(NSDictionary *)dictionary;
 - (void)sendToPusherService:(NSString *)service bulletin:(BBBulletin *)bulletin appID:(NSString *)appID appName:(NSString *)appName title:(NSString *)title message:(NSString *)message isTest:(BOOL)isTest;
+- (NSString *)base64IconDataForBundleID:(NSString *)bundleID;
+@end
+
+@interface SBApplicationIcon : NSObject
+- (UIImage *)generateIconImage:(int)arg1;
+@end
+
+@interface SBIconModel : NSObject
+- (SBApplicationIcon *)expectedIconForDisplayIdentifier:(id)arg1;
+@end
+
+@interface SBIconController : UIViewController
+@property (nonatomic, retain) SBIconModel *model;
++ (id)sharedInstance;
+@end
+
+@interface SBWiFiManager : NSObject
++ (id)sharedInstance;
+- (NSString *)currentNetworkName;
 @end
