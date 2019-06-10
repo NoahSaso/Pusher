@@ -19,20 +19,16 @@
 
 - (FSSwitchState)stateForSwitchIdentifier:(NSString *)switchIdentifier {
 	NSNumber *n = (NSNumber *)[[NSUserDefaults standardUserDefaults] objectForKey:@"Enabled" inDomain:(__bridge NSString *)PUSHER_APP_ID];
-	BOOL enabled = (n)? [n boolValue]:YES;
-	return (enabled) ? FSSwitchStateOn : FSSwitchStateOff;
+	BOOL enabled = n ? n.boolValue : YES;
+	return enabled ? FSSwitchStateOn : FSSwitchStateOff;
 }
 
 - (void)applyState:(FSSwitchState)newState forSwitchIdentifier:(NSString *)switchIdentifier {
 	switch (newState) {
 	case FSSwitchStateIndeterminate:
 		break;
-	case FSSwitchStateOn:
-		[[NSUserDefaults standardUserDefaults] setObject:@YES forKey:@"Enabled" inDomain:(__bridge NSString *)PUSHER_APP_ID];
-		CFNotificationCenterPostNotification(CFNotificationCenterGetDarwinNotifyCenter(), PUSHER_PREFS_NOTIFICATION, NULL, NULL, YES);
-		break;
-	case FSSwitchStateOff:
-		[[NSUserDefaults standardUserDefaults] setObject:@NO forKey:@"Enabled" inDomain:(__bridge NSString *)PUSHER_APP_ID];
+	default:
+		[[NSUserDefaults standardUserDefaults] setObject:@(newState == FSSwitchStateOn) forKey:@"Enabled" inDomain:(__bridge NSString *)PUSHER_APP_ID];
 		CFNotificationCenterPostNotification(CFNotificationCenterGetDarwinNotifyCenter(), PUSHER_PREFS_NOTIFICATION, NULL, NULL, YES);
 		break;
 	}
