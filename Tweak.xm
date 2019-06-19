@@ -336,7 +336,7 @@ static BOOL prefsSayNo() {
 	NSString *appName = app && app.displayName && app.displayName.length > 0 ? app.displayName : Xstr(@"Unknown App: %@", appID);
 	NSString *title = Xstr(@"%@%@", appName, (bulletin.title && bulletin.title.length > 0 ? Xstr(@": %@", bulletin.title) : @""));
 	NSString *message = @"";
-	if (bulletin.subtitle && bulletin.subtitle.length > 0) {
+	if (bulletin.showsSubtitle && bulletin.subtitle && bulletin.subtitle.length > 0) {
 		message = bulletin.subtitle;
 	}
 	message = Xstr(@"%@%@%@", message, (message.length > 0 && bulletin.message && bulletin.message.length > 0 ? @"\n" : @""), bulletin.message ? bulletin.message : @"");
