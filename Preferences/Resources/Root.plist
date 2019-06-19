@@ -77,6 +77,8 @@
 			<string>PSGroupCell</string>
 			<key>label</key>
 			<string>When to Push</string>
+			<key>footerText</key>
+			<string>SUFFICIENT NOTIFICATION SETTINGS: Each app has custom notification settings that determine where their notifications are allowed to show (in the Settings.app > Notifications list). In order to prevent notifications which you have disabled from being pushed with Pusher, this option allows you to select which location settings must be enabled in order to forward them with Pusher. Default: Anything Except Disallowed. LS = Lock Screen, NC = Notification Center</string>
 		</dict>
 		<dict>
 			<key>cell</key>
@@ -94,7 +96,7 @@
 			<key>validTitles</key>
 			<array>
 				<string>Locked</string>
-				<string>Always</string>
+				<string>Either</string>
 				<string>Unlocked</string>
 			</array>
 			<key>validValues</key>
@@ -102,6 +104,48 @@
 				<integer>0</integer>
 				<integer>1</integer>
 				<integer>2</integer>
+			</array>
+		</dict>
+		<dict>
+			<key>cell</key>
+			<string>PSLinkListCell</string>
+			<key>default</key>
+			<integer>6</integer>
+			<key>defaults</key>
+			<string>com.noahsaso.pusher</string>
+			<key>PostNotification</key>
+			<string>com.noahsaso.pusher/prefs</string>
+			<key>detail</key>
+			<string>PSListItemsController</string>
+			<key>key</key>
+			<string>SufficientNotificationSettings</string>
+			<key>label</key>
+			<string>Sufficient Notification Settings</string>
+			<key>validTitles</key>
+			<array>
+				<string>Lock Screen</string>
+				<string>Notification Center</string>
+				<string>Both LS and NC</string>
+				<string>Either LS or NC</string>
+				<string>Badges</string>
+				<string>Sounds</string>
+				<string>Both Badges and Sounds</string>
+				<string>Either Badges or Sounds</string>
+				<string>Anything Except Disallowed</string>
+				<string>Anything</string>
+			</array>
+			<key>validValues</key>
+			<array>
+				<integer>0</integer>
+				<integer>1</integer>
+				<integer>2</integer>
+				<integer>3</integer>
+				<integer>4</integer>
+				<integer>5</integer>
+				<integer>6</integer>
+				<integer>7</integer>
+				<integer>8</integer>
+				<integer>9</integer>
 			</array>
 		</dict>
 		<dict>

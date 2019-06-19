@@ -25,6 +25,7 @@
 
 static BOOL pusherEnabled = NO;
 static int pusherWhenToPush = PUSHER_WHEN_TO_PUSH_LOCKED;
+static int pusherSufficient = PUSHER_SUFFICIENT_ANYTHING_EXCEPT_DISALLOWED;
 static BOOL pusherOnWiFiOnly = NO;
 static NSArray *globalBlacklist = nil;
 static NSMutableDictionary *pusherEnabledServices = nil;
@@ -108,6 +109,8 @@ static void pusherPrefsChanged() {
 	pusherEnabled = val ? ((NSNumber *) val).boolValue : YES;
 	val = prefs[@"WhenToPush"];
 	pusherWhenToPush = val ? ((NSNumber *) val).intValue : PUSHER_WHEN_TO_PUSH_LOCKED;
+	val = prefs[@"SufficientNotificationSettings"];
+	pusherSufficient = val ? ((NSNumber *) val).intValue : PUSHER_SUFFICIENT_ANYTHING_EXCEPT_DISALLOWED;
 	val = prefs[@"OnWiFiOnly"];
 	pusherOnWiFiOnly = val ? ((NSNumber *) val).boolValue : NO;
 	globalBlacklist = getPusherBlacklist(prefs, NSPPreferenceGlobalBLPrefix);
@@ -272,7 +275,7 @@ static void pusherPrefsChanged() {
 	XLog(@"Reloaded");
 }
 
-static BOOL prefsSayNo() {
+static BOOL prefsSayNo(BBServer *server, BBBulletin *bulletin) {
 	BOOL deviceIsLocked = ((SBLockScreenManager *) [%c(SBLockScreenManager) sharedInstance]).isUILocked;
 	BOOL onWifi = [[%c(SBWiFiManager) sharedInstance] currentNetworkName] != nil;
 	if (!pusherEnabled
@@ -282,6 +285,50 @@ static BOOL prefsSayNo() {
 				|| globalBlacklist == nil || ![globalBlacklist isKindOfClass:NSArray.class]) {
 		return YES;
 	}
+
+	// Sufficient
+
+	BBSectionInfo *sectionInfo = [server _sectionInfoForSectionID:bulletin.sectionID effective:YES];
+	if (sectionInfo && pusherSufficient != PUSHER_SUFFICIENT_ANYTHING) {
+		if (!sectionInfo.allowsNotifications) {
+			return YES;
+		}
+		BOOL sufficient = YES;
+		switch (pusherSufficient) {
+			case PUSHER_SUFFICIENT_LS:
+				sufficient = sectionInfo.showsInLockScreen;
+				break;
+			case PUSHER_SUFFICIENT_NC:
+				sufficient = sectionInfo.showsInNotificationCenter;
+				break;
+			case PUSHER_SUFFICIENT_LS_AND_NC:
+				sufficient = sectionInfo.showsInLockScreen && sectionInfo.showsInNotificationCenter;
+				break;
+			case PUSHER_SUFFICIENT_LS_OR_NC:
+				sufficient = sectionInfo.showsInLockScreen || sectionInfo.showsInNotificationCenter;
+				break;
+			case PUSHER_SUFFICIENT_BADGES:
+				sufficient = (sectionInfo.pushSettings & BBActualSectionInfoPushSettingsBadges) != 0;
+				break;
+			case PUSHER_SUFFICIENT_SOUNDS:
+				sufficient = (sectionInfo.pushSettings & BBActualSectionInfoPushSettingsSounds) != 0;
+				break;
+			case PUSHER_SUFFICIENT_BADGES_AND_SOUNDS:
+				sufficient = (sectionInfo.pushSettings & BBActualSectionInfoPushSettingsBadges) != 0 && (sectionInfo.pushSettings & BBActualSectionInfoPushSettingsSounds) != 0;
+				break;
+			case PUSHER_SUFFICIENT_BADGES_OR_SOUNDS:
+				sufficient = (sectionInfo.pushSettings & (BBActualSectionInfoPushSettingsSounds | BBActualSectionInfoPushSettingsBadges)) != 0;
+				break;
+			default:
+				break;
+		}
+		if (!sufficient) {
+			return YES;
+		}
+	}
+
+	// End Sufficient
+
 	for (NSString *service in pusherEnabledServices.allKeys) {
 		NSDictionary *servicePrefs = pusherEnabledServices[service];
 		if (servicePrefs == nil/*
@@ -316,7 +363,7 @@ static BOOL prefsSayNo() {
 
 %new
 - (void)sendBulletinToPusher:(BBBulletin *)bulletin {
-	if (bulletin == nil || prefsSayNo()) {
+	if (bulletin == nil || prefsSayNo(self, bulletin)) {
 		XLog(@"Prefs said no / bulletin nil: %d", bulletin == nil);
 		return;
 	}
@@ -361,16 +408,6 @@ static BOOL prefsSayNo() {
 
 %new
 - (void)sendToPusherService:(NSString *)service bulletin:(BBBulletin *)bulletin appID:(NSString *)appID appName:(NSString *)appName title:(NSString *)title message:(NSString *)message isTest:(BOOL)isTest {
-	XLog(@"alertSuppressionContexts: [");
-	for (NSObject *item in bulletin.alertSuppressionContexts) {
-		XLog(@"\tClass: %@, Value: %@", item.class, item);
-	}
-	XLog(@"]");
-	XLog(@"Context: {");
-	for (id key in bulletin.context.allKeys) {
-		XLog(@"\t%@: %@", key, bulletin.context[key]);
-	}
-	XLog(@"}");
 	if (!isTest && Xeq(appID, getServiceAppID(service))) {
 		XLog(@"Prevented loop from same app");
 		return;

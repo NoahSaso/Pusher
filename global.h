@@ -16,6 +16,23 @@
 #define PUSHER_WHEN_TO_PUSH_ALWAYS 1
 #define PUSHER_WHEN_TO_PUSH_UNLOCKED 2
 
+typedef NS_OPTIONS(NSUInteger, BBActualSectionInfoPushSettings) {
+	BBActualSectionInfoPushSettingsBadges = 1 << 3, // was 0
+	BBActualSectionInfoPushSettingsSounds = 1 << 4, // was 1
+	// BBSectionInfoPushSettingsAlerts = 1 << 2 // wrong
+};
+
+#define PUSHER_SUFFICIENT_LS 0
+#define PUSHER_SUFFICIENT_NC 1
+#define PUSHER_SUFFICIENT_LS_AND_NC 2
+#define PUSHER_SUFFICIENT_LS_OR_NC 3
+#define PUSHER_SUFFICIENT_BADGES 4
+#define PUSHER_SUFFICIENT_SOUNDS 5
+#define PUSHER_SUFFICIENT_BADGES_AND_SOUNDS 6
+#define PUSHER_SUFFICIENT_BADGES_OR_SOUNDS 7
+#define PUSHER_SUFFICIENT_ANYTHING_EXCEPT_DISALLOWED 8
+#define PUSHER_SUFFICIENT_ANYTHING 9
+
 #define NSPPreferenceCustomServicesKey @"CustomServices"
 #define NSPPreferenceCustomServiceCustomAppsKey(service) Xstr(@"CustomService_%@_CustomApps", service)
 #define NSPPreferenceCustomServiceBLPrefix(service) Xstr(@"CustomServiceBL_%@-", service)
@@ -61,6 +78,7 @@ typedef enum {
 
 #import <Preferences/PSSpecifier.h>
 #import <BulletinBoard/BBBulletin.h>
+#import <BulletinBoard/BBSectionInfo.h> // imports BBSectionInfoSettings
 #import <SpringBoard/SBApplication.h>
 #import <SpringBoard/SBApplicationController.h>
 
@@ -75,10 +93,10 @@ typedef enum {
 
 @interface BBBulletin (Pusher)
 @property (nonatomic, readonly) BOOL showsSubtitle;
-@property (nonatomic, copy) NSSet *alertSuppressionContexts;
 @end
 
 @interface BBServer : NSObject
+- (BBSectionInfo *)_sectionInfoForSectionID:(id)arg1 effective:(BOOL)arg2;
 + (BBServer *)pusherSharedInstance;
 - (void)sendBulletinToPusher:(BBBulletin *)bulletin;
 - (void)makePusherRequest:(NSString *)urlString infoDict:(NSDictionary *)infoDict credentials:(NSDictionary *)credentials authType:(PusherAuthorizationType)authType method:(NSString *)method;
