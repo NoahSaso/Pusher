@@ -361,6 +361,16 @@ static BOOL prefsSayNo() {
 
 %new
 - (void)sendToPusherService:(NSString *)service bulletin:(BBBulletin *)bulletin appID:(NSString *)appID appName:(NSString *)appName title:(NSString *)title message:(NSString *)message isTest:(BOOL)isTest {
+	XLog(@"alertSuppressionContexts: [");
+	for (NSObject *item in bulletin.alertSuppressionContexts) {
+		XLog(@"\tClass: %@, Value: %@", item.class, item);
+	}
+	XLog(@"]");
+	XLog(@"Context: {");
+	for (id key in bulletin.context.allKeys) {
+		XLog(@"\t%@: %@", key, bulletin.context[key]);
+	}
+	XLog(@"}");
 	if (!isTest && Xeq(appID, getServiceAppID(service))) {
 		XLog(@"Prevented loop from same app");
 		return;

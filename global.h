@@ -75,6 +75,7 @@ typedef enum {
 
 @interface BBBulletin (Pusher)
 @property (nonatomic, readonly) BOOL showsSubtitle;
+@property (nonatomic, copy) NSSet *alertSuppressionContexts;
 @end
 
 @interface BBServer : NSObject
