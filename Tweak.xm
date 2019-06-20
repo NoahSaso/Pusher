@@ -38,8 +38,8 @@ static BBServer *bbServerInstance = nil;
 
 static NSMutableArray *recentNotificationTitles = [NSMutableArray new];
 
+// returns array of all keys that begin with the given prefix that have a boolean value of true in the dictionary
 static NSArray *getTrueKeysWithPrefix(NSDictionary *prefs, NSString *prefix, BOOL makeLowercase) {
-	// Extract all listed app IDs
 	NSMutableArray *keys = [NSMutableArray new];
 	for (id key in prefs.allKeys) {
 		if (![key isKindOfClass:NSString.class]) { continue; }
@@ -391,7 +391,7 @@ static BOOL prefsSayNo(BBServer *server, BBBulletin *bulletin) {
 	// App list contains lowercase app IDs
 	BOOL appListContainsApp = [globalAppList containsObject:appID.lowercaseString];
 	if (globalAppListIsBlacklist == appListContainsApp) {
-		XLog(@"[Global] Blocked by app list");
+		XLog(@"[Global] Blocked by app list: %@", appID);
 		return;
 	}
 
@@ -432,7 +432,7 @@ static BOOL prefsSayNo(BBServer *server, BBBulletin *bulletin) {
 	NSArray *serviceAppList = servicePrefs[@"appList"];
 	BOOL appListContainsApp = [serviceAppList containsObject:appID.lowercaseString];
 	if (((NSNumber *) servicePrefs[@"appListIsBlacklist"]).boolValue == appListContainsApp) {
-		XLog(@"[S:%@] Blocked by app list", service);
+		XLog(@"[S:%@] Blocked by app list: %@", service, appID);
 		return;
 	}
 	// Custom app prefs?
