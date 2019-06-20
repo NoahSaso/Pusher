@@ -132,6 +132,7 @@
 			<key>label</key>
 			<string>Badges</string>
 		</dict>
+		<!--
 		<dict>
 			<key>cell</key>
 			<string>PSSwitchCell</string>
@@ -146,6 +147,7 @@
 			<key>label</key>
 			<string>Sounds</string>
 		</dict>
+		-->
 		<dict>
 			<key>cell</key>
 			<string>PSSwitchCell</string>

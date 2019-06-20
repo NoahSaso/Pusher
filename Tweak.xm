@@ -295,14 +295,25 @@ static void pusherPrefsChanged() {
 }
 
 static BOOL prefsSayNo(BBServer *server, BBBulletin *bulletin) {
+	XLog(@"---Bulletin:--- %@", bulletin.sectionID);
+	if (!pusherEnabled) {
+		XLog(@"pusherEnabled: %d", pusherEnabled);
+		return YES;
+	}
+
+	BBSectionInfo *sectionInfo = [server _sectionInfoForSectionID:bulletin.sectionID effective:YES];
+	XLog(@"sectionInfo.pushSettings: %lu", sectionInfo.pushSettings);
+	if (!sectionInfo) {
+		XLog(@"sectionInfo nil");
+		return YES;
+	}
+
 	BOOL deviceIsLocked = ((SBLockScreenManager *) [%c(SBLockScreenManager) sharedInstance]).isUILocked;
 	BOOL onWiFi = [[%c(SBWiFiManager) sharedInstance] currentNetworkName] != nil;
-	if (!pusherEnabled
-				|| (pusherOnWiFiOnly && !onWiFi)
+	if ((pusherOnWiFiOnly && !onWiFi)
 				|| (pusherWhenToPush == PUSHER_WHEN_TO_PUSH_LOCKED && !deviceIsLocked)
 				|| (pusherWhenToPush == PUSHER_WHEN_TO_PUSH_UNLOCKED && deviceIsLocked)
 				|| globalAppList == nil || ![globalAppList isKindOfClass:NSArray.class]) {
-		XLog(@"pusherEnabled: %d", pusherEnabled);
 		XLog(@"pusherOnWiFiOnly: %d, onWiFi: %d", pusherOnWiFiOnly, onWiFi);
 		XLog(@"pusherWhenToPush: %d, deviceIsLocked: %d", pusherWhenToPush, deviceIsLocked);
 		XLog(@"globalAppList nil?: %d", globalAppList == nil);
@@ -310,12 +321,6 @@ static BOOL prefsSayNo(BBServer *server, BBBulletin *bulletin) {
 	}
 
 	// Sufficient
-
-	BBSectionInfo *sectionInfo = [server _sectionInfoForSectionID:bulletin.sectionID effective:YES];
-	if (!sectionInfo) {
-		XLog(@"sectionInfo nil");
-		return YES;
-	}
 
 	if (!pusherSNSIsAnd && pusherSNSRequireANWithOR && !sectionInfo.allowsNotifications) {
 		XLog(@"OR and requires allow and not allow");
@@ -334,8 +339,8 @@ static BOOL prefsSayNo(BBServer *server, BBBulletin *bulletin) {
 			sufficient = sectionInfo.alertType == BBSectionInfoAlertTypeBanner;
 		} else if (Xeq(key, PUSHER_SUFFICIENT_BADGES_KEY)) {
 			sufficient = (sectionInfo.pushSettings & BBActualSectionInfoPushSettingsBadges) != 0;
-		} else if (Xeq(key, PUSHER_SUFFICIENT_SOUNDS_KEY)) {
-			sufficient = (sectionInfo.pushSettings & BBActualSectionInfoPushSettingsSounds) != 0;
+		// } else if (Xeq(key, PUSHER_SUFFICIENT_SOUNDS_KEY)) {
+			// sufficient = (sectionInfo.pushSettings & BBActualSectionInfoPushSettingsSounds) != 0;
 		} else if (Xeq(key, PUSHER_SUFFICIENT_SHOWS_PREVIEWS_KEY)) {
 			sufficient = sectionInfo.showsMessagePreview;
 		}
@@ -389,7 +394,7 @@ static BOOL prefsSayNo(BBServer *server, BBBulletin *bulletin) {
 %new
 - (void)sendBulletinToPusher:(BBBulletin *)bulletin {
 	if (bulletin == nil || prefsSayNo(self, bulletin)) {
-		XLog(@"Prefs said no / bulletin nil: %d", bulletin == nil);
+		XLog(@"Prefs say no. bulletin nil? %d", bulletin == nil);
 		return;
 	}
 	// Check if notification within last 5 seconds so we don't send uncleared notifications every respring
