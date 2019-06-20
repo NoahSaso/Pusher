@@ -11,6 +11,7 @@
 #import <AppSupport/CPDistributedMessagingCenter.h>
 
 #define NSPPreferenceGlobalBLPrefix @"GlobalBL-"
+#define NSPPreferenceSNSPrefix @"SNS-"
 
 #define PUSHER_WHEN_TO_PUSH_LOCKED 0
 #define PUSHER_WHEN_TO_PUSH_ALWAYS 1
@@ -22,16 +23,13 @@ typedef NS_OPTIONS(NSUInteger, BBActualSectionInfoPushSettings) {
 	// BBSectionInfoPushSettingsAlerts = 1 << 2 // wrong
 };
 
-#define PUSHER_SUFFICIENT_LS 0
-#define PUSHER_SUFFICIENT_NC 1
-#define PUSHER_SUFFICIENT_LS_AND_NC 2
-#define PUSHER_SUFFICIENT_LS_OR_NC 3
-#define PUSHER_SUFFICIENT_BADGES 4
-#define PUSHER_SUFFICIENT_SOUNDS 5
-#define PUSHER_SUFFICIENT_BADGES_AND_SOUNDS 6
-#define PUSHER_SUFFICIENT_BADGES_OR_SOUNDS 7
-#define PUSHER_SUFFICIENT_ANYTHING_EXCEPT_DISALLOWED 8
-#define PUSHER_SUFFICIENT_ANYTHING 9
+#define PUSHER_SUFFICIENT_ALLOW_NOTIFICATIONS_KEY @"AllowNotifications"
+#define PUSHER_SUFFICIENT_LOCK_SCREEN_KEY @"LockScreen"
+#define PUSHER_SUFFICIENT_NOTIFICATION_CENTER_KEY @"NotificationCenter"
+#define PUSHER_SUFFICIENT_BANNERS_KEY @"Banners"
+#define PUSHER_SUFFICIENT_BADGES_KEY @"Badges"
+#define PUSHER_SUFFICIENT_SOUNDS_KEY @"Sounds"
+#define PUSHER_SUFFICIENT_SHOWS_PREVIEWS_KEY @"ShowsPreviews"
 
 #define NSPPreferenceCustomServicesKey @"CustomServices"
 #define NSPPreferenceCustomServiceCustomAppsKey(service) Xstr(@"CustomService_%@_CustomApps", service)

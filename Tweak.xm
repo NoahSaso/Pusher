@@ -25,9 +25,12 @@
 
 static BOOL pusherEnabled = NO;
 static int pusherWhenToPush = PUSHER_WHEN_TO_PUSH_LOCKED;
-static int pusherSufficient = PUSHER_SUFFICIENT_ANYTHING_EXCEPT_DISALLOWED;
+static NSArray *pusherSNS = nil;
+static BOOL pusherSNSIsAnd = YES;
+static BOOL pusherSNSRequireANWithOR = YES;
 static BOOL pusherOnWiFiOnly = NO;
-static NSArray *globalBlacklist = nil;
+static BOOL appListIsBlacklist = YES;
+static NSArray *globalAppList = nil;
 static NSMutableDictionary *pusherEnabledServices = nil;
 static NSMutableDictionary *pusherServicePrefs = nil;
 
@@ -35,21 +38,25 @@ static BBServer *bbServerInstance = nil;
 
 static NSMutableArray *recentNotificationTitles = [NSMutableArray new];
 
-// Make all app IDs lowercase in case some library I use starts messing with the case
-static NSArray *getPusherBlacklist(NSDictionary *prefs, NSString *prefix) {
-	// Extract all blacklisted app IDs
-	NSMutableArray *blacklist = [NSMutableArray new];
+static NSArray *getTrueKeysWithPrefix(NSDictionary *prefs, NSString *prefix, BOOL makeLowercase) {
+	// Extract all listed app IDs
+	NSMutableArray *keys = [NSMutableArray new];
 	for (id key in prefs.allKeys) {
 		if (![key isKindOfClass:NSString.class]) { continue; }
 		if ([key hasPrefix:prefix]) {
 			if (((NSNumber *) prefs[key]).boolValue) {
-				[blacklist addObject:[key substringFromIndex:prefix.length].lowercaseString];
+				NSString *subKey = [key substringFromIndex:prefix.length];
+				[keys addObject:(makeLowercase ? subKey.lowercaseString : subKey)];
 			}
 		}
 	}
-	NSArray *ret = [blacklist copy];
-	[blacklist release];
+	NSArray *ret = [keys copy];
+	[keys release];
 	return ret;
+}
+
+static NSArray *getTrueKeysWithPrefix(NSDictionary *prefs, NSString *prefix) {
+	return getTrueKeysWithPrefix(prefs, prefix, NO);
 }
 
 static NSString *getServiceURL(NSString *service, NSDictionary *options) {
@@ -109,11 +116,16 @@ static void pusherPrefsChanged() {
 	pusherEnabled = val ? ((NSNumber *) val).boolValue : YES;
 	val = prefs[@"WhenToPush"];
 	pusherWhenToPush = val ? ((NSNumber *) val).intValue : PUSHER_WHEN_TO_PUSH_LOCKED;
-	val = prefs[@"SufficientNotificationSettings"];
-	pusherSufficient = val ? ((NSNumber *) val).intValue : PUSHER_SUFFICIENT_ANYTHING_EXCEPT_DISALLOWED;
 	val = prefs[@"OnWiFiOnly"];
 	pusherOnWiFiOnly = val ? ((NSNumber *) val).boolValue : NO;
-	globalBlacklist = getPusherBlacklist(prefs, NSPPreferenceGlobalBLPrefix);
+	val = prefs[@"GlobalAppListIsBlacklist"];
+	appListIsBlacklist = val ? ((NSNumber *) val).boolValue : YES;
+	val = prefs[@"SufficientNotificationSettingsIsAnd"];
+	pusherSNSIsAnd = val ? ((NSNumber *) val).boolValue : YES;
+	val = prefs[@"SNSORRequireAllowNotifications"];
+	pusherSNSRequireANWithOR = val ? ((NSNumber *) val).boolValue : YES;
+	globalAppList = getTrueKeysWithPrefix(prefs, NSPPreferenceGlobalBLPrefix, YES);
+	pusherSNS = getTrueKeysWithPrefix(prefs, NSPPreferenceSNSPrefix);
 
 	if (pusherEnabledServices == nil) {
 		pusherEnabledServices = [NSMutableDictionary new];
@@ -128,7 +140,7 @@ static void pusherPrefsChanged() {
 		NSMutableDictionary *servicePrefs = [customService mutableCopy];
 
 		servicePrefs[@"isCustomService"] = @YES;
-		servicePrefs[@"blacklist"] = getPusherBlacklist(prefs, NSPPreferenceCustomServiceBLPrefix(service));
+		servicePrefs[@"appList"] = getTrueKeysWithPrefix(prefs, NSPPreferenceCustomServiceBLPrefix(service), YES);
 
 		NSString *customAppsKey = NSPPreferenceCustomServiceCustomAppsKey(service);
 
@@ -160,7 +172,7 @@ static void pusherPrefsChanged() {
 	for (NSString *service in BUILTIN_PUSHER_SERVICES) {
 		NSMutableDictionary *servicePrefs = [NSMutableDictionary new];
 
-		NSString *blacklistPrefix = Xstr(@"%@BL-", service);
+		NSString *appListPrefix = Xstr(@"%@BL-", service);
 		NSString *tokenKey = Xstr(@"%@Token", service);
 		NSString *userKey = Xstr(@"%@User", service);
 		NSString *keyKey = Xstr(@"%@Key", service);
@@ -170,7 +182,7 @@ static void pusherPrefsChanged() {
 		NSString *dateFormatKey = Xstr(@"%@DateFormat", service);
 		NSString *customAppsKey = Xstr(@"%@CustomApps", service);
 
-		servicePrefs[@"blacklist"] = getPusherBlacklist(prefs, blacklistPrefix);
+		servicePrefs[@"appList"] = getTrueKeysWithPrefix(prefs, appListPrefix, YES);
 		val = prefs[tokenKey];
 		servicePrefs[@"token"] = [(val ?: @"") copy];
 		val = prefs[userKey];
@@ -282,48 +294,44 @@ static BOOL prefsSayNo(BBServer *server, BBBulletin *bulletin) {
 				|| (pusherOnWiFiOnly && !onWifi)
 				|| (pusherWhenToPush == PUSHER_WHEN_TO_PUSH_LOCKED && !deviceIsLocked)
 				|| (pusherWhenToPush == PUSHER_WHEN_TO_PUSH_UNLOCKED && deviceIsLocked)
-				|| globalBlacklist == nil || ![globalBlacklist isKindOfClass:NSArray.class]) {
+				|| globalAppList == nil || ![globalAppList isKindOfClass:NSArray.class]) {
 		return YES;
 	}
 
 	// Sufficient
 
 	BBSectionInfo *sectionInfo = [server _sectionInfoForSectionID:bulletin.sectionID effective:YES];
-	if (sectionInfo && pusherSufficient != PUSHER_SUFFICIENT_ANYTHING) {
-		if (!sectionInfo.allowsNotifications) {
-			return YES;
-		}
+	if (!sectionInfo) {
+		return YES;
+	}
+
+	if (!pusherSNSIsAnd && pusherSNSRequireANWithOR && !sectionInfo.allowsNotifications) {
+		return YES;
+	}
+
+	for (NSString *key in pusherSNS) {
 		BOOL sufficient = YES;
-		switch (pusherSufficient) {
-			case PUSHER_SUFFICIENT_LS:
-				sufficient = sectionInfo.showsInLockScreen;
-				break;
-			case PUSHER_SUFFICIENT_NC:
-				sufficient = sectionInfo.showsInNotificationCenter;
-				break;
-			case PUSHER_SUFFICIENT_LS_AND_NC:
-				sufficient = sectionInfo.showsInLockScreen && sectionInfo.showsInNotificationCenter;
-				break;
-			case PUSHER_SUFFICIENT_LS_OR_NC:
-				sufficient = sectionInfo.showsInLockScreen || sectionInfo.showsInNotificationCenter;
-				break;
-			case PUSHER_SUFFICIENT_BADGES:
-				sufficient = (sectionInfo.pushSettings & BBActualSectionInfoPushSettingsBadges) != 0;
-				break;
-			case PUSHER_SUFFICIENT_SOUNDS:
-				sufficient = (sectionInfo.pushSettings & BBActualSectionInfoPushSettingsSounds) != 0;
-				break;
-			case PUSHER_SUFFICIENT_BADGES_AND_SOUNDS:
-				sufficient = (sectionInfo.pushSettings & BBActualSectionInfoPushSettingsBadges) != 0 && (sectionInfo.pushSettings & BBActualSectionInfoPushSettingsSounds) != 0;
-				break;
-			case PUSHER_SUFFICIENT_BADGES_OR_SOUNDS:
-				sufficient = (sectionInfo.pushSettings & (BBActualSectionInfoPushSettingsSounds | BBActualSectionInfoPushSettingsBadges)) != 0;
-				break;
-			default:
-				break;
+		if (Xeq(key, PUSHER_SUFFICIENT_ALLOW_NOTIFICATIONS_KEY)) {
+			sufficient = sectionInfo.allowsNotifications;
+		} else if (Xeq(key, PUSHER_SUFFICIENT_LOCK_SCREEN_KEY)) {
+			sufficient = sectionInfo.showsInLockScreen;
+		} else if (Xeq(key, PUSHER_SUFFICIENT_NOTIFICATION_CENTER_KEY)) {
+			sufficient = sectionInfo.showsInNotificationCenter;
+		} else if (Xeq(key, PUSHER_SUFFICIENT_BANNERS_KEY)) {
+			sufficient = sectionInfo.alertType == BBSectionInfoAlertTypeBanner;
+		} else if (Xeq(key, PUSHER_SUFFICIENT_BADGES_KEY)) {
+			sufficient = (sectionInfo.pushSettings & BBActualSectionInfoPushSettingsBadges) != 0;
+		} else if (Xeq(key, PUSHER_SUFFICIENT_SOUNDS_KEY)) {
+			sufficient = (sectionInfo.pushSettings & BBActualSectionInfoPushSettingsSounds) != 0;
+		} else if (Xeq(key, PUSHER_SUFFICIENT_SHOWS_PREVIEWS_KEY)) {
+			sufficient = sectionInfo.showsMessagePreview;
 		}
-		if (!sufficient) {
+		// AND, so if any one is insufficient, just return right away
+		if (pusherSNSIsAnd && !sufficient) {
 			return YES;
+		// OR, so just one sufficient is enough
+		} else if (!pusherSNSIsAnd && sufficient) {
+			break;
 		}
 	}
 
@@ -332,7 +340,7 @@ static BOOL prefsSayNo(BBServer *server, BBBulletin *bulletin) {
 	for (NSString *service in pusherEnabledServices.allKeys) {
 		NSDictionary *servicePrefs = pusherEnabledServices[service];
 		if (servicePrefs == nil/*
-					|| servicePrefs[@"blacklist"] == nil || ![servicePrefs[@"blacklist"] isKindOfClass:NSArray.class]
+					|| servicePrefs[@"appList"] == nil || ![servicePrefs[@"appList"] isKindOfClass:NSArray.class]
 					|| servicePrefs[@"token"] == nil || ![servicePrefs[@"token"] isKindOfClass:NSString.class] || ((NSString *) servicePrefs[@"token"]).length == 0
 					|| servicePrefs[@"user"] == nil || ![servicePrefs[@"user"] isKindOfClass:NSString.class] || ((NSString *) servicePrefs[@"user"]).length == 0
 					|| servicePrefs[@"devices"] == nil || ![servicePrefs[@"devices"] isKindOfClass:NSArray.class] // devices can be empty depending on API
@@ -373,9 +381,10 @@ static BOOL prefsSayNo(BBServer *server, BBBulletin *bulletin) {
 		return;
 	}
 	NSString *appID = bulletin.sectionID;
-	// Blacklist array contains lowercase app IDs
-	if ([globalBlacklist containsObject:appID.lowercaseString]) {
-		XLog(@"[Global] Blacklisted");
+	// App list contains lowercase app IDs
+	BOOL appListContainsApp = [globalAppList containsObject:appID.lowercaseString];
+	if (appListIsBlacklist == appListContainsApp) {
+		XLog(@"[Global] Blocked by app list");
 		return;
 	}
 
@@ -413,10 +422,10 @@ static BOOL prefsSayNo(BBServer *server, BBBulletin *bulletin) {
 		return;
 	}
 	NSDictionary *servicePrefs = pusherServicePrefs[service];
-	NSArray *serviceBlacklist = servicePrefs[@"blacklist"];
-	// Blacklist array contains lowercase app IDs
-	if (!isTest && [serviceBlacklist containsObject:appID.lowercaseString]) {
-		XLog(@"[S:%@] Blacklisted", service);
+	NSArray *serviceAppList = servicePrefs[@"appList"];
+	// App list contains lowercase app IDs
+	if (!isTest && [serviceAppList containsObject:appID.lowercaseString]) {
+		XLog(@"[S:%@] Blocked by app list", service);
 		return;
 	}
 	// Custom app prefs?
