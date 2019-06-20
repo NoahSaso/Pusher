@@ -102,28 +102,36 @@
 			<true/>
 		</dict>
 
-		<!-- Options -->
+		<!-- App List -->
 		<dict>
 			<key>cell</key>
 			<string>PSGroupCell</string>
 			<key>label</key>
-			<string>Options</string>
-			<key>footerText</key>
-			<string>The following properties will be passed to the URL endpoint (via GET or POST parameters) specified above (property names in parentheses) [Must Turn on "Include Icon" switch above in order to get the icon property]:
-
-App Name (appName), App Bundle ID (appID), Title (title), Subtitle (subtitle), Message (message), Date (date), Base64 Encoded PNG Icon 58x58 (icon)</string>
+			<string>Apps</string>
 		</dict>
 		<dict>
 			<key>cell</key>
-			<string>PSLinkCell</string>
-			<key>label</key>
-			<string>App Customization</string>
-			<key>detail</key>
-			<string>NSPCustomizeAppsController</string>
-			<key>isCustomService</key>
+			<string>PSSegmentCell</string>
+			<key>default</key>
 			<true/>
-			<key>defaultIncludeIconKey</key>
-			<string>includeIcon</string>
+			<key>defaults</key>
+			<string>com.noahsaso.pusher</string>
+			<key>PostNotification</key>
+			<string>com.noahsaso.pusher/prefs</string>
+			<key>detail</key>
+			<string>PSListItemsController</string>
+			<key>key</key>
+			<string>appListIsBlacklist</string>
+			<key>validTitles</key>
+			<array>
+				<string>Blacklist</string>
+				<string>Whitelist</string>
+			</array>
+			<key>validValues</key>
+			<array>
+				<true/>
+				<false/>
+			</array>
 		</dict>
 		<dict>
 			<key>cell</key>
@@ -133,7 +141,7 @@ App Name (appName), App Bundle ID (appID), Title (title), Subtitle (subtitle), M
 			<key>isController</key>
 			<string>1</string>
 			<key>label</key>
-			<string>App Blacklist</string>
+			<string>App List</string>
 			<key>ALAllowsSelection</key>
 			<string>1</string>
 			<key>ALChangeNotification</key>
@@ -167,6 +175,30 @@ App Name (appName), App Bundle ID (appID), Title (title), Subtitle (subtitle), M
 			</array>
 			<key>ALSettingsPath</key>
 			<string>/var/mobile/Library/Preferences/com.noahsaso.pusher.plist</string>
+		</dict>
+		<dict>
+			<key>cell</key>
+			<string>PSLinkCell</string>
+			<key>label</key>
+			<string>App Customization</string>
+			<key>detail</key>
+			<string>NSPCustomizeAppsController</string>
+			<key>isCustomService</key>
+			<true/>
+			<key>defaultIncludeIconKey</key>
+			<string>includeIcon</string>
+		</dict>
+
+		<!-- Options -->
+		<dict>
+			<key>cell</key>
+			<string>PSGroupCell</string>
+			<key>label</key>
+			<string>Options</string>
+			<key>footerText</key>
+			<string>The following properties will be passed to the URL endpoint (via GET or POST parameters) specified above (property names in parentheses) [Must Turn on "Include Icon" switch above in order to get the icon property]:
+
+App Name (appName), App Bundle ID (appID), Title (title), Subtitle (subtitle), Message (message), Date (date), Base64 Encoded PNG Icon 58x58 (icon)</string>
 		</dict>
 
 		<!-- Date Format -->

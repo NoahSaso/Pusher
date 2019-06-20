@@ -181,8 +181,11 @@ static void pusherPrefsChanged() {
 		NSString *eventNameKey = Xstr(@"%@EventName", service);
 		NSString *dateFormatKey = Xstr(@"%@DateFormat", service);
 		NSString *customAppsKey = Xstr(@"%@CustomApps", service);
+		NSString *appListIsBlacklistKey = Xstr(@"%@AppListIsBlacklist", service);
 
 		servicePrefs[@"appList"] = getTrueKeysWithPrefix(prefs, appListPrefix, YES);
+		val = prefs[appListIsBlacklistKey];
+		servicePrefs[@"appListIsBlacklist"] = [(val ?: @YES) copy];
 		val = prefs[tokenKey];
 		servicePrefs[@"token"] = [(val ?: @"") copy];
 		val = prefs[userKey];
@@ -427,8 +430,8 @@ static BOOL prefsSayNo(BBServer *server, BBBulletin *bulletin) {
 	}
 	NSDictionary *servicePrefs = pusherServicePrefs[service];
 	NSArray *serviceAppList = servicePrefs[@"appList"];
-	// App list contains lowercase app IDs
-	if (!isTest && [serviceAppList containsObject:appID.lowercaseString]) {
+	BOOL appListContainsApp = [serviceAppList containsObject:appID.lowercaseString];
+	if (((NSNumber *) servicePrefs[@"appListIsBlacklist"]).boolValue == appListContainsApp) {
 		XLog(@"[S:%@] Blocked by app list", service);
 		return;
 	}

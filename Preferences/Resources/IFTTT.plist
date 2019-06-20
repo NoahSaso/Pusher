@@ -36,42 +36,36 @@
 			<true/>
 		</dict>
 
-		<!-- Options -->
+		<!-- App List -->
 		<dict>
 			<key>cell</key>
 			<string>PSGroupCell</string>
 			<key>label</key>
-			<string>Options</string>
-			<key>footerText</key>
-			<string>SETUP:
-1. Click 'Open IFTTT Maker Webhooks Account' above (https://ifttt.com/services/maker_webhooks/settings).
-2. Click the 'Connect' button if it is not already connected.
-3. Copy the key at the end of the URL displayed (https://maker.ifttt.com/use/YOUR_KEY) into the associated field above.
-4. When you make an applet on IFTTT with the Maker Webhooks service, it will ask you for an event name. Enter that event name in the associated field above.
-
-WEBHOOK REQUEST DATA:
-If Curate Request Data is enabled:
-The "Value1" ingredient is set to the title (which includes app name), "Value2" is set to the message (which includes subtitle), and "Value3" is either the base64 encoded PNG 58x58 icon if "Include Icon" is turned on or the date string if "Include Icon" is turned off.
-
-If Curate Request Data is disabled:
-The following properties will be passed to the webhook trigger under the "Value1" ingredient (property names in parentheses) [Must Turn on "Include Icon" switch above in order to get the icon property]:
-App Name (appName), App Bundle ID (appID), Title (title), Subtitle (subtitle), Message (message), Date (date), Base64 Encoded PNG Icon 58x58 (icon)</string>
+			<string>Apps</string>
 		</dict>
 		<dict>
 			<key>cell</key>
-			<string>PSLinkCell</string>
-			<key>label</key>
-			<string>App Customization</string>
+			<string>PSSegmentCell</string>
+			<key>default</key>
+			<true/>
+			<key>defaults</key>
+			<string>com.noahsaso.pusher</string>
+			<key>PostNotification</key>
+			<string>com.noahsaso.pusher/prefs</string>
 			<key>detail</key>
-			<string>NSPCustomizeAppsController</string>
-			<key>service</key>
-			<string>IFTTT</string>
-			<key>defaultEventNameKey</key>
-			<string>IFTTTEventName</string>
-			<key>defaultIncludeIconKey</key>
-			<string>IFTTTIncludeIcon</string>
-			<key>defaultCurateDataKey</key>
-			<string>IFTTTCurateData</string>
+			<string>PSListItemsController</string>
+			<key>key</key>
+			<string>IFTTTAppListIsBlacklist</string>
+			<key>validTitles</key>
+			<array>
+				<string>Blacklist</string>
+				<string>Whitelist</string>
+			</array>
+			<key>validValues</key>
+			<array>
+				<true/>
+				<false/>
+			</array>
 		</dict>
 		<dict>
 			<key>cell</key>
@@ -81,7 +75,7 @@ App Name (appName), App Bundle ID (appID), Title (title), Subtitle (subtitle), M
 			<key>isController</key>
 			<string>1</string>
 			<key>label</key>
-			<string>App Blacklist</string>
+			<string>App List</string>
 			<key>ALAllowsSelection</key>
 			<string>1</string>
 			<key>ALChangeNotification</key>
@@ -117,6 +111,44 @@ App Name (appName), App Bundle ID (appID), Title (title), Subtitle (subtitle), M
 			<string>IFTTTBL-</string>
 			<key>ALSettingsPath</key>
 			<string>/var/mobile/Library/Preferences/com.noahsaso.pusher.plist</string>
+		</dict>
+		<dict>
+			<key>cell</key>
+			<string>PSLinkCell</string>
+			<key>label</key>
+			<string>App Customization</string>
+			<key>detail</key>
+			<string>NSPCustomizeAppsController</string>
+			<key>service</key>
+			<string>IFTTT</string>
+			<key>defaultEventNameKey</key>
+			<string>IFTTTEventName</string>
+			<key>defaultIncludeIconKey</key>
+			<string>IFTTTIncludeIcon</string>
+			<key>defaultCurateDataKey</key>
+			<string>IFTTTCurateData</string>
+		</dict>
+
+		<!-- Options -->
+		<dict>
+			<key>cell</key>
+			<string>PSGroupCell</string>
+			<key>label</key>
+			<string>Options</string>
+			<key>footerText</key>
+			<string>SETUP:
+1. Click 'Open IFTTT Maker Webhooks Account' above (https://ifttt.com/services/maker_webhooks/settings).
+2. Click the 'Connect' button if it is not already connected.
+3. Copy the key at the end of the URL displayed (https://maker.ifttt.com/use/YOUR_KEY) into the associated field above.
+4. When you make an applet on IFTTT with the Maker Webhooks service, it will ask you for an event name. Enter that event name in the associated field above.
+
+WEBHOOK REQUEST DATA:
+If Curate Request Data is enabled:
+The "Value1" ingredient is set to the title (which includes app name), "Value2" is set to the message (which includes subtitle), and "Value3" is either the base64 encoded PNG 58x58 icon if "Include Icon" is turned on or the date string if "Include Icon" is turned off.
+
+If Curate Request Data is disabled:
+The following properties will be passed to the webhook trigger under the "Value1" ingredient (property names in parentheses) [Must Turn on "Include Icon" switch above in order to get the icon property]:
+App Name (appName), App Bundle ID (appID), Title (title), Subtitle (subtitle), Message (message), Date (date), Base64 Encoded PNG Icon 58x58 (icon)</string>
 		</dict>
 
 		<!-- Date Format -->

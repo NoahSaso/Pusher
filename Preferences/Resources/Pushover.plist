@@ -60,36 +60,36 @@
 			<true/>
 		</dict>
 
-		<!-- Options -->
+		<!-- App List -->
 		<dict>
 			<key>cell</key>
 			<string>PSGroupCell</string>
 			<key>label</key>
-			<string>Options</string>
-			<key>footerText</key>
-			<string>SETUP:
-1. Click 'Create Pushover App' above (https://pushover.net/apps/build).
-2. Enter a name (e.g. 'Pusher'). Other fields are optional.
-3. Check the box (after reading their Terms of Service).
-4. Press 'Create Application' at the bottom.
-5. Copy the API Token/Key into the associated field above.
-6. Click 'Open Pushover Dashboard' above (https://pushover.net/dashboard).
-7. Copy 'Your User Key' into the associated field above.
-8. Click 'Receiving Devices' to validate your credentials and load the receiving device list.</string>
+			<string>Apps</string>
 		</dict>
 		<dict>
 			<key>cell</key>
-			<string>PSLinkCell</string>
-			<key>label</key>
-			<string>App Customization</string>
+			<string>PSSegmentCell</string>
+			<key>default</key>
+			<true/>
+			<key>defaults</key>
+			<string>com.noahsaso.pusher</string>
+			<key>PostNotification</key>
+			<string>com.noahsaso.pusher/prefs</string>
 			<key>detail</key>
-			<string>NSPCustomizeAppsController</string>
-			<key>service</key>
-			<string>Pushover</string>
-			<key>defaultDevicesKey</key>
-			<string>PushoverDevices</string>
-			<key>defaultSoundsKey</key>
-			<string>PushoverSounds</string>
+			<string>PSListItemsController</string>
+			<key>key</key>
+			<string>PushoverAppListIsBlacklist</string>
+			<key>validTitles</key>
+			<array>
+				<string>Blacklist</string>
+				<string>Whitelist</string>
+			</array>
+			<key>validValues</key>
+			<array>
+				<true/>
+				<false/>
+			</array>
 		</dict>
 		<dict>
 			<key>cell</key>
@@ -99,7 +99,7 @@
 			<key>isController</key>
 			<string>1</string>
 			<key>label</key>
-			<string>App Blacklist</string>
+			<string>App List</string>
 			<key>ALAllowsSelection</key>
 			<string>1</string>
 			<key>ALChangeNotification</key>
@@ -124,7 +124,7 @@
 					<key>icon-size</key>
 					<string>29</string>
 					<key>predicate</key>
-					<string>isSystemApplication = FALSE AND displayIdentifier != 'net.superblock.Pushover'</string>
+					<string>isSystemApplication = FALSE</string>
 					<key>suppress-hidden-apps</key>
 					<string>1</string>
 					<key>title</key>
@@ -135,6 +135,38 @@
 			<string>PushoverBL-</string>
 			<key>ALSettingsPath</key>
 			<string>/var/mobile/Library/Preferences/com.noahsaso.pusher.plist</string>
+		</dict>
+		<dict>
+			<key>cell</key>
+			<string>PSLinkCell</string>
+			<key>label</key>
+			<string>App Customization</string>
+			<key>detail</key>
+			<string>NSPCustomizeAppsController</string>
+			<key>service</key>
+			<string>Pushover</string>
+			<key>defaultDevicesKey</key>
+			<string>PushoverDevices</string>
+			<key>defaultSoundsKey</key>
+			<string>PushoverSounds</string>
+		</dict>
+
+		<!-- Options -->
+		<dict>
+			<key>cell</key>
+			<string>PSGroupCell</string>
+			<key>label</key>
+			<string>Options</string>
+			<key>footerText</key>
+			<string>SETUP:
+1. Click 'Create Pushover App' above (https://pushover.net/apps/build).
+2. Enter a name (e.g. 'Pusher'). Other fields are optional.
+3. Check the box (after reading their Terms of Service).
+4. Press 'Create Application' at the bottom.
+5. Copy the API Token/Key into the associated field above.
+6. Click 'Open Pushover Dashboard' above (https://pushover.net/dashboard).
+7. Copy 'Your User Key' into the associated field above.
+8. Click 'Receiving Devices' to validate your credentials and load the receiving device list.</string>
 		</dict>
 	</array>
 	<key>title</key>

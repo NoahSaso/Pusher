@@ -48,7 +48,7 @@ static void setPreference(CFStringRef keyRef, CFPropertyListRef val, BOOL should
   for (PSSpecifier *specifier in specifiers) {
     [specifier setProperty:service forKey:@"service"];
     if ([specialCells containsObject:@(specifier.cellType)]) { // don't set these properties on group specifiers
-      if (Xeq(specifier.name, @"App Blacklist")) {
+      if (Xeq(specifier.name, @"App List")) {
         [specifier setProperty:NSPPreferenceCustomServiceBLPrefix(service) forKey:@"ALSettingsKeyPrefix"];
       } else if (Xeq(specifier.name, @"App Customization")) {
         [specifier setProperty:service forKey:@"service"];
