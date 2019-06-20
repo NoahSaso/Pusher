@@ -29,7 +29,7 @@ static NSArray *pusherSNS = nil;
 static BOOL pusherSNSIsAnd = YES;
 static BOOL pusherSNSRequireANWithOR = YES;
 static BOOL pusherOnWiFiOnly = NO;
-static BOOL appListIsBlacklist = YES;
+static BOOL globalAppListIsBlacklist = YES;
 static NSArray *globalAppList = nil;
 static NSMutableDictionary *pusherEnabledServices = nil;
 static NSMutableDictionary *pusherServicePrefs = nil;
@@ -119,7 +119,7 @@ static void pusherPrefsChanged() {
 	val = prefs[@"OnWiFiOnly"];
 	pusherOnWiFiOnly = val ? ((NSNumber *) val).boolValue : NO;
 	val = prefs[@"GlobalAppListIsBlacklist"];
-	appListIsBlacklist = val ? ((NSNumber *) val).boolValue : YES;
+	globalAppListIsBlacklist = val ? ((NSNumber *) val).boolValue : YES;
 	val = prefs[@"SufficientNotificationSettingsIsAnd"];
 	pusherSNSIsAnd = val ? ((NSNumber *) val).boolValue : YES;
 	val = prefs[@"SNSORRequireAllowNotifications"];
@@ -390,7 +390,7 @@ static BOOL prefsSayNo(BBServer *server, BBBulletin *bulletin) {
 	NSString *appID = bulletin.sectionID;
 	// App list contains lowercase app IDs
 	BOOL appListContainsApp = [globalAppList containsObject:appID.lowercaseString];
-	if (appListIsBlacklist == appListContainsApp) {
+	if (globalAppListIsBlacklist == appListContainsApp) {
 		XLog(@"[Global] Blocked by app list");
 		return;
 	}

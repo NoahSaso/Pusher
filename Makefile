@@ -10,8 +10,8 @@ Pusher_PRIVATE_FRAMEWORKS = AppSupport BulletinBoard
 include $(THEOS_MAKE_PATH)/tweak.mk
 
 after-install::
-	# install.exec "killall -9 SpringBoard"
-	install.exec "killall -9 Preferences"
+	install.exec "killall -9 SpringBoard"
+	# install.exec "killall -9 Preferences"
 SUBPROJECTS += Preferences
 SUBPROJECTS += Flipswitch
 include $(THEOS_MAKE_PATH)/aggregate.mk
