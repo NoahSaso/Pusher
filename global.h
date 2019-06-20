@@ -14,7 +14,7 @@
 #define NSPPreferenceSNSPrefix @"SNS-"
 
 #define PUSHER_WHEN_TO_PUSH_LOCKED 0
-#define PUSHER_WHEN_TO_PUSH_ALWAYS 1
+#define PUSHER_WHEN_TO_PUSH_EITHER 1
 #define PUSHER_WHEN_TO_PUSH_UNLOCKED 2
 
 typedef NS_OPTIONS(NSUInteger, BBActualSectionInfoPushSettings) {

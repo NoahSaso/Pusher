@@ -296,12 +296,16 @@ static void pusherPrefsChanged() {
 
 static BOOL prefsSayNo(BBServer *server, BBBulletin *bulletin) {
 	BOOL deviceIsLocked = ((SBLockScreenManager *) [%c(SBLockScreenManager) sharedInstance]).isUILocked;
-	BOOL onWifi = [[%c(SBWiFiManager) sharedInstance] currentNetworkName] != nil;
+	BOOL onWiFi = [[%c(SBWiFiManager) sharedInstance] currentNetworkName] != nil;
 	if (!pusherEnabled
-				|| (pusherOnWiFiOnly && !onWifi)
+				|| (pusherOnWiFiOnly && !onWiFi)
 				|| (pusherWhenToPush == PUSHER_WHEN_TO_PUSH_LOCKED && !deviceIsLocked)
 				|| (pusherWhenToPush == PUSHER_WHEN_TO_PUSH_UNLOCKED && deviceIsLocked)
 				|| globalAppList == nil || ![globalAppList isKindOfClass:NSArray.class]) {
+		XLog(@"pusherEnabled: %d", pusherEnabled);
+		XLog(@"pusherOnWiFiOnly: %d, onWiFi: %d", pusherOnWiFiOnly, onWiFi);
+		XLog(@"pusherWhenToPush: %d, deviceIsLocked: %d", pusherWhenToPush, deviceIsLocked);
+		XLog(@"globalAppList nil?: %d", globalAppList == nil);
 		return YES;
 	}
 
@@ -309,10 +313,12 @@ static BOOL prefsSayNo(BBServer *server, BBBulletin *bulletin) {
 
 	BBSectionInfo *sectionInfo = [server _sectionInfoForSectionID:bulletin.sectionID effective:YES];
 	if (!sectionInfo) {
+		XLog(@"sectionInfo nil");
 		return YES;
 	}
 
 	if (!pusherSNSIsAnd && pusherSNSRequireANWithOR && !sectionInfo.allowsNotifications) {
+		XLog(@"OR and requires allow and not allow");
 		return YES;
 	}
 
@@ -335,9 +341,11 @@ static BOOL prefsSayNo(BBServer *server, BBBulletin *bulletin) {
 		}
 		// AND, so if any one is insufficient, just return right away
 		if (pusherSNSIsAnd && !sufficient) {
+			XLog(@"AND and not sufficient: %@", key);
 			return YES;
 		// OR, so just one sufficient is enough
 		} else if (!pusherSNSIsAnd && sufficient) {
+			XLog(@"OR and sufficient: %@", key);
 			break;
 		}
 	}
@@ -353,13 +361,15 @@ static BOOL prefsSayNo(BBServer *server, BBBulletin *bulletin) {
 					|| servicePrefs[@"devices"] == nil || ![servicePrefs[@"devices"] isKindOfClass:NSArray.class] // devices can be empty depending on API
 					|| servicePrefs[@"url"] == nil || ![servicePrefs[@"url"] isKindOfClass:NSString.class] || ((NSString *) servicePrefs[@"url"]).length == 0
 					|| servicePrefs[@"customApps"] == nil || ![servicePrefs[@"customApps"] isKindOfClass:NSDictionary.class]*/) {
+			XLog(@"service prefs are nil");
 			return YES;
 		}
-		for (id val in servicePrefs.allValues) {
-			if (val == nil) {
-				return YES;
-			}
-		}
+		// for (id val in servicePrefs.allValues) {
+		// 	if (val == nil) {
+		// 		XLog(@"value in service prefs nil");
+		// 		return YES;
+		// 	}
+		// }
 	}
 	return NO;
 }
