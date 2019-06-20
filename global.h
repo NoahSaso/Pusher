@@ -71,6 +71,7 @@ typedef enum {
 #define NSPPreferenceIFTTTBLPrefix @"IFTTTBL-"
 #define NSPPreferenceIFTTTCustomAppsKey @"IFTTTCustomApps"
 #define NSPPreferenceIFTTTIncludeIconKey @"IFTTTIncludeIcon"
+#define NSPPreferenceIFTTTCurateDataKey @"IFTTTCurateData"
 
 #define BUILTIN_PUSHER_SERVICES @[ PUSHER_SERVICE_PUSHOVER, PUSHER_SERVICE_PUSHBULLET, PUSHER_SERVICE_IFTTT ]
 

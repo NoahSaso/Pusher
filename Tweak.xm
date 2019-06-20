@@ -198,6 +198,9 @@ static void pusherPrefsChanged() {
 		if (Xeq(service, PUSHER_SERVICE_IFTTT)) {
 			NSString *includeIconKey = Xstr(@"%@IncludeIcon", service);
 			servicePrefs[@"includeIcon"] = prefs[includeIconKey] ?: @NO;
+
+			NSString *curateDataKey = Xstr(@"%@CurateData", service);
+			servicePrefs[@"curateData"] = prefs[curateDataKey] ?: @YES;
 		}
 
 		// devices
@@ -262,6 +265,7 @@ static void pusherPrefsChanged() {
 
 			if (Xeq(service, PUSHER_SERVICE_IFTTT)) {
 				customAppIDPref[@"includeIcon"] = customAppPrefs[@"includeIcon"] ?: @NO;
+				customAppIDPref[@"curateData"] = customAppPrefs[@"curateData"] ?: @YES;
 			}
 
 			customApps[customAppID] = customAppIDPref;
@@ -447,6 +451,10 @@ static BOOL prefsSayNo(BBServer *server, BBBulletin *bulletin) {
 	if ([customApps.allKeys containsObject:appID] && customApps[appID][@"includeIcon"]) {
 		includeIcon = customApps[appID][@"includeIcon"];
 	}
+	NSNumber *curateData = servicePrefs[@"curateData"] ?: @YES;
+	if ([customApps.allKeys containsObject:appID] && customApps[appID][@"curateData"]) {
+		curateData = customApps[appID][@"curateData"];
+	}
 	// Send
 	PusherAuthorizationType authType = getServiceAuthType(service, servicePrefs);
 	NSDictionary *infoDict = [self getPusherInfoDictionaryForService:service withDictionary:@{
@@ -457,7 +465,8 @@ static BOOL prefsSayNo(BBServer *server, BBBulletin *bulletin) {
 		@"appName": appName ?: @"",
 		@"bulletin": bulletin,
 		@"dateFormat": XStrDefault(servicePrefs[@"dateFormat"], @"MMM d, h:mm a"),
-		@"includeIcon": includeIcon
+		@"includeIcon": includeIcon,
+		@"curateData": curateData
 	}];
 	NSDictionary *credentials = [self getPusherCredentialsForService:service withDictionary:@{
 		@"token": servicePrefs[@"token"] ?: @"",
@@ -525,6 +534,9 @@ static BOOL prefsSayNo(BBServer *server, BBBulletin *bulletin) {
 	}
 
 	if (Xeq(service, PUSHER_SERVICE_IFTTT)) {
+		if (dictionary[@"curateData"] && ((NSNumber *)dictionary[@"curateData"]).boolValue) {
+			return @{ @"value1": dictionary[@"title"], @"value2": dictionary[@"message"], @"value3": data[@"icon"] ?: dateStr };
+		}
 		id json = data;
 		NSData *jsonData = [NSJSONSerialization dataWithJSONObject:json options:0 error:nil];
 		if (jsonData) {

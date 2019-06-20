@@ -16,6 +16,7 @@
   NSArray *_defaultSounds;
   NSString *_defaultEventName;
   NSNumber *_defaultIncludeIcon;
+  NSNumber *_defaultCurateData;
 
   NSMutableDictionary *_loadedAppControllers;
 
