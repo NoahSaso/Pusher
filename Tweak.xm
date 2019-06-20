@@ -429,11 +429,13 @@ static BOOL prefsSayNo(BBServer *server, BBBulletin *bulletin) {
 		return;
 	}
 	NSDictionary *servicePrefs = pusherServicePrefs[service];
-	NSArray *serviceAppList = servicePrefs[@"appList"];
-	BOOL appListContainsApp = [serviceAppList containsObject:appID.lowercaseString];
-	if (((NSNumber *) servicePrefs[@"appListIsBlacklist"]).boolValue == appListContainsApp) {
-		XLog(@"[S:%@] Blocked by app list: %@", service, appID);
-		return;
+	if (!isTest) {
+		NSArray *serviceAppList = servicePrefs[@"appList"];
+		BOOL appListContainsApp = [serviceAppList containsObject:appID.lowercaseString];
+		if (((NSNumber *) servicePrefs[@"appListIsBlacklist"]).boolValue == appListContainsApp) {
+			XLog(@"[S:%@] Blocked by app list: %@", service, appID);
+			return;
+		}
 	}
 	// Custom app prefs?
 	NSDictionary *customApps = servicePrefs[@"customApps"];
