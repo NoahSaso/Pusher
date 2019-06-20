@@ -34,6 +34,7 @@ typedef NS_OPTIONS(NSUInteger, BBActualSectionInfoPushSettings) {
 #define NSPPreferenceCustomServicesKey @"CustomServices"
 #define NSPPreferenceCustomServiceCustomAppsKey(service) Xstr(@"CustomService_%@_CustomApps", service)
 #define NSPPreferenceCustomServiceBLPrefix(service) Xstr(@"CustomServiceBL_%@-", service)
+// IF ADDING MORE CUSTOM SERVICE KEY CALCULATORS, REMEMBER TO RENAME THEM UPON CUSTOM SERVICE RENAME IN SERVICE LIST
 
 typedef enum {
 	PusherAuthorizationTypeNone,
