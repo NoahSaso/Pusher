@@ -18,13 +18,13 @@ static void setPreference(CFStringRef keyRef, CFPropertyListRef val, BOOL should
 
 @implementation NSPCustomizeAppsController
 
-- (void)setEnabledWithDefaults:(NSString *)appID enabled:(BOOL)enabled {
+- (void)setAppDefaults:(NSString *)appID {
 	if ([_customApps.allKeys containsObject:appID]) {
 			NSMutableDictionary *appDict = [(NSDictionary *)_customApps[appID] mutableCopy];
-			appDict[@"enabled"] = @(enabled);
+			appDict[@"enabled"] = @YES;
 			_customApps[appID] = appDict;
 	} else {
-		NSMutableDictionary *defaultDict = [@{ @"enabled": @(enabled) } mutableCopy];
+		NSMutableDictionary *defaultDict = [@{ @"enabled": @YES } mutableCopy];
 		if (Xeq(_service, PUSHER_SERVICE_PUSHOVER) || Xeq(_service, PUSHER_SERVICE_PUSHBULLET)) {
 			defaultDict[@"devices"] = _defaultDevices;
 		}
@@ -43,16 +43,12 @@ static void setPreference(CFStringRef keyRef, CFPropertyListRef val, BOOL should
 }
 
 - (void)saveAppState {
-	NSArray *enabledApps = _data[@"Enabled"];
-	NSArray *disabledApps = _data[@"Disabled"];
-	for (NSString *appID in enabledApps) {
-		[self setEnabledWithDefaults:appID enabled:YES];
-	}
-	for (NSString *appID in disabledApps) {
-		[self setEnabledWithDefaults:appID enabled:NO];
+	NSArray *appIDs = _data[@"Apps"];
+	for (NSString *appID in appIDs) {
+		[self setAppDefaults:appID];
 	}
 	for (NSString *appID in _customApps.allKeys) {
-		if (![enabledApps containsObject:appID] && ![disabledApps containsObject:appID]) {
+		if (![appIDs containsObject:appID]) {
 			[_customApps removeObjectForKey:appID];
 		}
 	}
@@ -128,25 +124,15 @@ static void setPreference(CFStringRef keyRef, CFPropertyListRef val, BOOL should
 		_defaultIncludeIcon = [(customService[[self.specifier propertyForKey:@"defaultIncludeIconKey"]] ?: @NO) copy];
 	}
 
-	_sections = [@[@"", @"Enabled", @"Disabled"] retain];
+	_sections = [@[@"", @"Apps"] retain];
 	_data = [@{
 		@"": @[@"Add Apps"],
-		@"Enabled": [NSMutableArray new],
-		@"Disabled": [NSMutableArray new]
+		@"Apps": [NSMutableArray new],
 	} mutableCopy];
 
-	for (NSString *appID in _customApps.allKeys) {
-		NSDictionary *customAppPrefs = _customApps[appID];
-		BOOL enabled = customAppPrefs[@"enabled"] ? ((NSNumber *) customAppPrefs[@"enabled"]).boolValue : NO;
-		if (enabled) {
-			[_data[@"Enabled"] addObject:appID];
-		} else {
-			[_data[@"Disabled"] addObject:appID];
-		}
-	}
+	[_data[@"Apps"] addObjectsFromArray:_customApps.allKeys];
 
-	[self sortAppIDArray:_data[@"Enabled"]];
-	[self sortAppIDArray:_data[@"Disabled"]];
+	[self sortAppIDArray:_data[@"Apps"]];
 
 	[_table reloadData];
 }
@@ -167,12 +153,12 @@ static void setPreference(CFStringRef keyRef, CFPropertyListRef val, BOOL should
 - (void)addAppIDs:(NSArray *)appIDs {
 	NSMutableArray *nonOverlappingAppIDs = [NSMutableArray new];
 	for (NSString *appID in appIDs) {
-		if (![_data[@"Enabled"] containsObject:appID] && ![_data[@"Disabled"] containsObject:appID]) {
+		if (![_data[@"Apps"] containsObject:appID]) {
 			[nonOverlappingAppIDs addObject:appID];
 		}
 	}
-	[_data[@"Enabled"] addObjectsFromArray:nonOverlappingAppIDs];
-	[self sortAppIDArray:_data[@"Enabled"]];
+	[_data[@"Apps"] addObjectsFromArray:nonOverlappingAppIDs];
+	[self sortAppIDArray:_data[@"Apps"]];
 	[self saveAppState];
 	[_table reloadData];
 }
@@ -192,7 +178,8 @@ static void setPreference(CFStringRef keyRef, CFPropertyListRef val, BOOL should
 	if ([_loadedAppControllers.allKeys containsObject:appID]) {
 		controller = _loadedAppControllers[appID];
 	} else {
-		controller = [[NSPCustomAppController alloc] initWithService:_service appID:appID isCustomService:_isCustomService];
+		NSString *appTitle = _appList.applications[appID] ?: @"UNKNOWN APP";
+		controller = [[NSPCustomAppController alloc] initWithService:_service appID:appID appTitle:appTitle isCustomService:_isCustomService];
 		_loadedAppControllers[appID] = controller;
 	}
 	[self pushController:controller];
@@ -225,20 +212,6 @@ static void setPreference(CFStringRef keyRef, CFPropertyListRef val, BOOL should
 	return cell;
 }
 
-- (BOOL)tableView:(UITableView *)table canMoveRowAtIndexPath:(NSIndexPath *)indexPath {
-	return indexPath.section > 0;
-}
-
-- (void)tableView:(UITableView *)table moveRowAtIndexPath:(NSIndexPath *)sourceIndexPath toIndexPath:(NSIndexPath *)destinationIndexPath {
-	_lastTargetAppID = nil;
-	_lastTargetIndexPath = nil;
-	NSString *appID = _data[_sections[sourceIndexPath.section]][sourceIndexPath.row];
-	[_data[_sections[sourceIndexPath.section]] removeObjectAtIndex:sourceIndexPath.row];
-	// sorted because target index path forces to be in right place
-	[_data[_sections[destinationIndexPath.section]] insertObject:appID atIndex:destinationIndexPath.row];
-	[self saveAppState];
-}
-
 - (UITableViewCellEditingStyle)tableView:(UITableView *)table editingStyleForRowAtIndexPath:(NSIndexPath *)indexPath {
 	if (indexPath.section > 0) {
 		return UITableViewCellEditingStyleDelete;
@@ -255,27 +228,11 @@ static void setPreference(CFStringRef keyRef, CFPropertyListRef val, BOOL should
 		[self saveAppState];
 		[table deleteRowsAtIndexPaths:@[indexPath] withRowAnimation:UITableViewRowAnimationAutomatic];
 	}];
-	return @[ deleteAction ];
+	return @[deleteAction];
 }
 
 - (BOOL)tableView:(UITableView *)tableView shouldIndentWhileEditingRowAtIndexPath:(NSIndexPath *)indexPath {
 	return indexPath.section > 0;
-}
-
-- (NSIndexPath *)tableView:(UITableView *)tableView targetIndexPathForMoveFromRowAtIndexPath:(NSIndexPath *)sourceIndexPath toProposedIndexPath:(NSIndexPath *)proposedDestinationIndexPath {
-	if (proposedDestinationIndexPath.section == 0
-			|| sourceIndexPath.section == proposedDestinationIndexPath.section) {
-		return sourceIndexPath;
-	}
-	NSString *appID = _data[_sections[sourceIndexPath.section]][sourceIndexPath.row];
-	if (_lastTargetAppID && Xeq(appID, _lastTargetAppID)) {
-		return _lastTargetIndexPath;
-	}
-	_lastTargetAppID = appID;
-	NSMutableArray *tempArray = [[_data[_sections[proposedDestinationIndexPath.section]] arrayByAddingObject:appID] mutableCopy];
-	[self sortAppIDArray:tempArray];
-	_lastTargetIndexPath = [NSIndexPath indexPathForRow:[tempArray indexOfObject:appID] inSection:proposedDestinationIndexPath.section];
-	return _lastTargetIndexPath;
 }
 
 @end

@@ -7,12 +7,19 @@
 
 @implementation NSPCustomAppController
 
-- (id)initWithService:(NSString *)service appID:(NSString *)appID isCustomService:(BOOL)isCustomService {
-	NSPCustomAppController *ret = [self init];
-	_service = service;
-	_appID = appID;
-	_isCustomService = isCustomService;
-	return ret;
+- (id)initWithService:(NSString *)service appID:(NSString *)appID appTitle:(NSString *)appTitle isCustomService:(BOOL)isCustomService {
+	if (self = [super init]) {
+		_service = service;
+		_appID = appID;
+		_appTitle = appTitle;
+		_isCustomService = isCustomService;
+	}
+	return self;
+}
+
+- (void)viewWillAppear:(BOOL)animated {
+	[super viewWillAppear:animated];
+	self.navigationItem.title = _appTitle;
 }
 
 - (NSArray *)specifiers {

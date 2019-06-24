@@ -150,7 +150,11 @@ static void pusherPrefsChanged() {
 		for (NSString *customAppID in prefCustomApps.allKeys) {
 			NSDictionary *customAppPrefs = prefCustomApps[customAppID];
 			// skip if custom app is disabled, default enabled so ignore bool check if key doesn't exist
-			if (customAppPrefs[@"enabled"] && !((NSNumber *) customAppPrefs[@"enabled"]).boolValue) {
+			// COMMENTED OUT BECAUSE REMOVED ENABLE/DISABLE STATUS FOR CUSTOM APPS
+			// if (customAppPrefs[@"enabled"] && !((NSNumber *) customAppPrefs[@"enabled"]).boolValue) {
+			// 	continue;
+			// }
+			if (!customAppPrefs) {
 				continue;
 			}
 			customApps[customAppID] = [customAppPrefs copy];
@@ -496,8 +500,8 @@ static BOOL prefsSayNo(BBServer *server, BBBulletin *bulletin) {
 		@"headerName": authType == PusherAuthorizationTypeHeader ? XStrDefault(servicePrefs[@"paramName"], @"Access-Token") : @""
 	}];
 	NSString *method = XStrDefault(servicePrefs[@"method"], @"POST");
-	[self makePusherRequest:url infoDict:infoDict credentials:credentials authType:authType method:method];
-	XLog(@"[S:%@:%d] Pushed %@", service, isTest, appName);
+	[self makePusherRequest:url infoDict:infoDict credentials:credentials authType:authType method:method logString:Xstr(@"[S:%@,A:%@]", service, appName)];
+	XLog(@"[S:%@,T:%d,A:%@] Pushed", service, isTest, appName);
 }
 
 %new
@@ -615,7 +619,7 @@ static BOOL prefsSayNo(BBServer *server, BBBulletin *bulletin) {
 }
 
 %new
-- (void)makePusherRequest:(NSString *)urlString infoDict:(NSDictionary *)infoDict credentials:(NSDictionary *)credentials authType:(PusherAuthorizationType)authType method:(NSString *)method {
+- (void)makePusherRequest:(NSString *)urlString infoDict:(NSDictionary *)infoDict credentials:(NSDictionary *)credentials authType:(PusherAuthorizationType)authType method:(NSString *)method logString:(NSString *)logString {
 
 	NSMutableDictionary *infoDictForRequest = [infoDict mutableCopy];
 	if (authType == PusherAuthorizationTypeCredentials) {
@@ -661,12 +665,12 @@ static BOOL prefsSayNo(BBServer *server, BBBulletin *bulletin) {
 	//use async way to connect network
 	[[[NSURLSession sharedSession] dataTaskWithRequest:request completionHandler:^(NSData *data, NSURLResponse *response, NSError *error) {
 		if (data.length && error == nil) {
-			XLog(@"Success");
+			XLog(@"%@ Success", logString);
 			// XLog(@"data: %@", [[[[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding] componentsSeparatedByCharactersInSet:[NSCharacterSet newlineCharacterSet]] componentsJoinedByString:@" "]);
 		} else if (error) {
-			XLog(@"Error: %@", error);
+			XLog(@"%@ Error: %@", logString, error);
 		} else {
-			XLog(@"No data");
+			XLog(@"%@ No data", logString);
 		}
 	}] resume];
 

@@ -23,7 +23,7 @@
   BOOL _isCustomService;
 }
 - (void)addAppIDs:(NSArray *)appIDs;
-- (void)setEnabledWithDefaults:(NSString *)appID enabled:(BOOL)enabled;
+- (void)setAppDefaults:(NSString *)appID;
 - (void)saveAppState;
 - (void)sortAppIDArray:(NSMutableArray *)array;
 @end
