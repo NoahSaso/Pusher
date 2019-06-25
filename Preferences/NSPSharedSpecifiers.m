@@ -32,6 +32,8 @@ static void setPreference(CFStringRef keyRef, CFPropertyListRef val, BOOL should
     return [NSPSharedSpecifiers pushbullet:appID];
   } else if (Xeq(service, PUSHER_SERVICE_IFTTT)) {
     return [NSPSharedSpecifiers ifttt:appID];
+  } else if (Xeq(service, PUSHER_SERVICE_PUSHER_RECEIVER)) {
+    return [NSPSharedSpecifiers pusherReceiver:appID];
   }
   return @[];
 }
@@ -123,7 +125,7 @@ static void setPreference(CFStringRef keyRef, CFPropertyListRef val, BOOL should
 + (NSArray *)ifttt:(NSString *)appID {
   BOOL isCustomApp = appID != nil;
 
-  PSSpecifier *eventName = [PSSpecifier preferenceSpecifierNamed:@"Event Name" target:self set:@selector(setPreferenceValue:forIFTTTSpecifier:) get:@selector(readIFTTTPreferenceValue:) detail:nil cell:PSEditTextCell edit:nil];
+  PSSpecifier *eventName = [PSSpecifier preferenceSpecifierNamed:@"Event Name" target:self set:@selector(setPreferenceValue:forBuiltInServiceSpecifier:) get:@selector(readBuiltInServicePreferenceValue:) detail:nil cell:PSEditTextCell edit:nil];
   [eventName setProperty:NSPPreferenceIFTTTEventNameKey forKey:@"key"];
   [eventName setProperty:@YES forKey:@"enabled"];
   [eventName setProperty:@YES forKey:@"noAutoCorrect"];
@@ -131,7 +133,7 @@ static void setPreference(CFStringRef keyRef, CFPropertyListRef val, BOOL should
   [eventName setProperty:NSPPreferenceIFTTTCustomAppsKey forKey:@"customAppsKey"];
   [eventName setProperty:@"eventName" forKey:@"customAppsPrefsKey"];
 
-  PSSpecifier *includeIcon = [PSSpecifier preferenceSpecifierNamed:@"Include Icon" target:self set:@selector(setPreferenceValue:forIFTTTSpecifier:) get:@selector(readIFTTTPreferenceValue:) detail:nil cell:PSSwitchCell edit:nil];
+  PSSpecifier *includeIcon = [PSSpecifier preferenceSpecifierNamed:@"Include Icon" target:self set:@selector(setPreferenceValue:forBuiltInServiceSpecifier:) get:@selector(readBuiltInServicePreferenceValue:) detail:nil cell:PSSwitchCell edit:nil];
   [includeIcon setProperty:NSPPreferenceIFTTTIncludeIconKey forKey:@"key"];
   [includeIcon setProperty:@YES forKey:@"enabled"];
   [includeIcon setProperty:@NO forKey:@"default"];
@@ -139,7 +141,7 @@ static void setPreference(CFStringRef keyRef, CFPropertyListRef val, BOOL should
   [includeIcon setProperty:NSPPreferenceIFTTTCustomAppsKey forKey:@"customAppsKey"];
   [includeIcon setProperty:@"includeIcon" forKey:@"customAppsPrefsKey"];
 
-  PSSpecifier *curateData = [PSSpecifier preferenceSpecifierNamed:@"Curate Request Data" target:self set:@selector(setPreferenceValue:forIFTTTSpecifier:) get:@selector(readIFTTTPreferenceValue:) detail:nil cell:PSSwitchCell edit:nil];
+  PSSpecifier *curateData = [PSSpecifier preferenceSpecifierNamed:@"Curate Request Data" target:self set:@selector(setPreferenceValue:forBuiltInServiceSpecifier:) get:@selector(readBuiltInServicePreferenceValue:) detail:nil cell:PSSwitchCell edit:nil];
   [curateData setProperty:NSPPreferenceIFTTTCurateDataKey forKey:@"key"];
   [curateData setProperty:@YES forKey:@"enabled"];
   [curateData setProperty:@YES forKey:@"default"];
@@ -156,7 +158,25 @@ static void setPreference(CFStringRef keyRef, CFPropertyListRef val, BOOL should
   return @[eventName, includeIcon, curateData];
 }
 
-+ (void)setPreferenceValue:(id)value forIFTTTSpecifier:(PSSpecifier *)specifier {
++ (NSArray *)pusherReceiver:(NSString *)appID {
+  BOOL isCustomApp = appID != nil;
+
+  PSSpecifier *includeIcon = [PSSpecifier preferenceSpecifierNamed:@"Include Icon" target:self set:@selector(setPreferenceValue:forBuiltInServiceSpecifier:) get:@selector(readBuiltInServicePreferenceValue:) detail:nil cell:PSSwitchCell edit:nil];
+  [includeIcon setProperty:NSPPreferencePusherReceiverIncludeIconKey forKey:@"key"];
+  [includeIcon setProperty:@YES forKey:@"enabled"];
+  [includeIcon setProperty:@YES forKey:@"default"];
+  [includeIcon setProperty:@(isCustomApp) forKey:@"isCustomApp"];
+  [includeIcon setProperty:NSPPreferencePusherReceiverCustomAppsKey forKey:@"customAppsKey"];
+  [includeIcon setProperty:@"includeIcon" forKey:@"customAppsPrefsKey"];
+
+  if (isCustomApp) {
+    [includeIcon setProperty:appID forKey:@"customAppID"];
+  }
+
+  return @[includeIcon];
+}
+
++ (void)setPreferenceValue:(id)value forBuiltInServiceSpecifier:(PSSpecifier *)specifier {
   BOOL isCustomApp = ((NSNumber *)[specifier propertyForKey:@"isCustomApp"]).boolValue;
   if (isCustomApp) {
 		NSMutableDictionary *customApps = [(NSDictionary *)getPreference((__bridge CFStringRef) [specifier propertyForKey:@"customAppsKey"]) mutableCopy];
@@ -169,7 +189,7 @@ static void setPreference(CFStringRef keyRef, CFPropertyListRef val, BOOL should
 	}
 }
 
-+ (id)readIFTTTPreferenceValue:(PSSpecifier *)specifier {
++ (id)readBuiltInServicePreferenceValue:(PSSpecifier *)specifier {
   BOOL isCustomApp = ((NSNumber *)[specifier propertyForKey:@"isCustomApp"]).boolValue;
 	if (isCustomApp) {
     NSDictionary *customApps = getPreference((__bridge CFStringRef) [specifier propertyForKey:@"customAppsKey"]) ?: @{};

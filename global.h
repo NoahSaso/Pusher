@@ -38,7 +38,7 @@ typedef NS_OPTIONS(NSUInteger, BBActualSectionInfoPushSettings) {
 
 typedef enum {
 	PusherAuthorizationTypeNone,
-	PusherAuthorizationTypeHeader,
+	PusherAuthorizationTypeHeader, // credentials dictionary needs value and headerName
 	PusherAuthorizationTypeCredentials,
 	PusherAuthorizationTypeReplaceKey
 } PusherAuthorizationType;
@@ -74,7 +74,17 @@ typedef enum {
 #define NSPPreferenceIFTTTIncludeIconKey @"IFTTTIncludeIcon"
 #define NSPPreferenceIFTTTCurateDataKey @"IFTTTCurateData"
 
-#define BUILTIN_PUSHER_SERVICES @[ PUSHER_SERVICE_PUSHOVER, PUSHER_SERVICE_PUSHBULLET, PUSHER_SERVICE_IFTTT ]
+// All keys MUST HAVE the prefix equal to the name of the service
+#define PUSHER_SERVICE_PUSHER_RECEIVER @"Pusher Receiver"
+#define PUSHER_SERVICE_PUSHER_RECEIVER_URL @"https://REPLACE_DB_NAME.restdb.io/rest/notifications"
+#define NSPPreferencePusherReceiverDBNameKey @"Pusher ReceiverDBName"
+#define NSPPreferencePusherReceiverAPIKeyKey @"Pusher ReceiverKey"
+#define NSPPreferencePusherReceiverDateFormatKey @"Pusher ReceiverDateFormat"
+#define NSPPreferencePusherReceiverBLPrefix @"Pusher ReceiverBL-"
+#define NSPPreferencePusherReceiverCustomAppsKey @"Pusher ReceiverCustomApps"
+#define NSPPreferencePusherReceiverIncludeIconKey @"Pusher ReceiverIncludeIcon"
+
+#define BUILTIN_PUSHER_SERVICES @[ PUSHER_SERVICE_PUSHOVER, PUSHER_SERVICE_PUSHBULLET, PUSHER_SERVICE_IFTTT, PUSHER_SERVICE_PUSHER_RECEIVER ]
 
 #import <Preferences/PSSpecifier.h>
 #import <BulletinBoard/BBBulletin.h>

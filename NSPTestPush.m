@@ -32,12 +32,12 @@
 	}
 
 	BBBulletin *bulletin = [BBBulletin new];
-	bulletin.title = @"Test Notification Title";
-	bulletin.subtitle = @"Test Notification Subtitle";
-	bulletin.message = @"Test Notification Message";
+	bulletin.title = @"Title";
+	bulletin.subtitle = @"Subtitle";
+	bulletin.message = @"Message";
 	bulletin.date = [NSDate date];
 	bulletin.sectionID = @"com.apple.Preferences";
-	[bbServer sendToPusherService:service bulletin:bulletin appID:@"APP_ID" appName:@"APP_NAME" title:@"Test Title!" message:@"Test Message!" isTest:YES];
+	[bbServer sendToPusherService:service bulletin:bulletin appID:@"com.apple.Preferences" appName:@"Settings" title:@"Title" message:@"Subtitle\nMessage" isTest:YES];
 
 	return @{ @"success": @YES };
 }

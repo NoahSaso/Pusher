@@ -66,6 +66,8 @@ static NSString *getServiceURL(NSString *service, NSDictionary *options) {
 		return PUSHER_SERVICE_PUSHBULLET_URL;
 	} else if (Xeq(service, PUSHER_SERVICE_IFTTT)) {
 		return [PUSHER_SERVICE_IFTTT_URL stringByReplacingOccurrencesOfString:@"REPLACE_EVENT_NAME" withString:options[@"eventName"]];
+	} else if (Xeq(service, PUSHER_SERVICE_PUSHER_RECEIVER)) {
+		return [PUSHER_SERVICE_PUSHER_RECEIVER_URL stringByReplacingOccurrencesOfString:@"REPLACE_DB_NAME" withString:options[@"dbName"]];
 	}
 	return @"";
 }
@@ -95,7 +97,7 @@ static PusherAuthorizationType getServiceAuthType(NSString *service, NSDictionar
 		}
 	} else if (Xeq(service, PUSHER_SERVICE_PUSHOVER)) {
 		return PusherAuthorizationTypeCredentials;
-	} else if (Xeq(service, PUSHER_SERVICE_PUSHBULLET)) {
+	} else if (Xeq(service, PUSHER_SERVICE_PUSHBULLET) || Xeq(service, PUSHER_SERVICE_PUSHER_RECEIVER)) {
 		return PusherAuthorizationTypeHeader;
 	}
 	return PusherAuthorizationTypeReplaceKey; // ifttt key
@@ -186,6 +188,7 @@ static void pusherPrefsChanged() {
 		NSString *dateFormatKey = Xstr(@"%@DateFormat", service);
 		NSString *customAppsKey = Xstr(@"%@CustomApps", service);
 		NSString *appListIsBlacklistKey = Xstr(@"%@AppListIsBlacklist", service);
+		NSString *dbNameKey = Xstr(@"%@DBName", service);
 
 		servicePrefs[@"appList"] = getTrueKeysWithPrefix(prefs, appListPrefix, YES);
 		val = prefs[appListIsBlacklistKey];
@@ -198,9 +201,11 @@ static void pusherPrefsChanged() {
 		servicePrefs[@"key"] = [(val ?: @"") copy];
 		val = prefs[eventNameKey];
 		NSString *eventName = [(val ?: @"") copy];
+		val = prefs[dbNameKey];
+		NSString *dbName = [[(val ?: @"") stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]] copy];
 		val = prefs[dateFormatKey];
 		servicePrefs[@"dateFormat"] = [(val ?: @"") copy];
-		servicePrefs[@"url"] = getServiceURL(service, @{ @"eventName": eventName });
+		servicePrefs[@"url"] = getServiceURL(service, @{ @"eventName": eventName, @"dbName": dbName });
 
 		if (Xeq(service, PUSHER_SERVICE_IFTTT)) {
 			NSString *includeIconKey = Xstr(@"%@IncludeIcon", service);
@@ -208,6 +213,11 @@ static void pusherPrefsChanged() {
 
 			NSString *curateDataKey = Xstr(@"%@CurateData", service);
 			servicePrefs[@"curateData"] = prefs[curateDataKey] ?: @YES;
+		}
+
+		if (Xeq(service, PUSHER_SERVICE_PUSHER_RECEIVER)) {
+			NSString *includeIconKey = Xstr(@"%@IncludeIcon", service);
+			servicePrefs[@"includeIcon"] = prefs[includeIconKey] ?: @YES;
 		}
 
 		// devices
@@ -259,7 +269,7 @@ static void pusherPrefsChanged() {
 			}
 
 			NSString *customAppEventName = [(customAppPrefs[@"eventName"] ?: eventName) retain];
-			NSString *customAppUrl = getServiceURL(service, @{ @"eventName": customAppEventName });
+			NSString *customAppUrl = getServiceURL(service, @{ @"eventName": customAppEventName, @"dbName": dbName });
 
 			NSMutableDictionary *customAppIDPref = [@{
 				@"devices": [customAppEnabledDevices retain],
@@ -268,6 +278,10 @@ static void pusherPrefsChanged() {
 
 			if (!Xeq(customAppUrl, servicePrefs[@"url"])) {
 				customAppIDPref[@"url"] = customAppUrl;
+			}
+
+			if (Xeq(service, PUSHER_SERVICE_PUSHER_RECEIVER)) {
+				customAppIDPref[@"includeIcon"] = customAppPrefs[@"includeIcon"] ?: @YES;
 			}
 
 			if (Xeq(service, PUSHER_SERVICE_IFTTT)) {
@@ -536,7 +550,7 @@ static BOOL prefsSayNo(BBServer *server, BBBulletin *bulletin) {
 		return pushbulletInfoDict;
 	}
 
-	// ifttt and custom services
+	// ifttt, pusher receiver, and custom services
 	BBBulletin *bulletin = dictionary[@"bulletin"];
 	// date
 	NSDateFormatter *dateFormatter = [NSDateFormatter new];
@@ -592,12 +606,17 @@ static BOOL prefsSayNo(BBServer *server, BBBulletin *bulletin) {
 		};
 	} else if (Xeq(service, PUSHER_SERVICE_PUSHBULLET)) {
 		return @{
-			@"key": dictionary[@"token"],
-			@"headerName": @"Access-Token"
+			@"headerName": @"Access-Token",
+			@"value": dictionary[@"token"]
 		};
 	} else if (Xeq(service, PUSHER_SERVICE_IFTTT)) {
 		return @{
 			@"key": dictionary[@"key"]
+		};
+	} else if (Xeq(service, PUSHER_SERVICE_PUSHER_RECEIVER)) {
+		return @{
+			@"headerName": @"x-apikey",
+			@"value": dictionary[@"key"]
 		};
 	}
 
@@ -651,7 +670,7 @@ static BOOL prefsSayNo(BBServer *server, BBBulletin *bulletin) {
 
 	[request setHTTPMethod:method];
 	if (authType == PusherAuthorizationTypeHeader) {
-		[request setValue:credentials[@"key"] forHTTPHeaderField:credentials[@"headerName"]];
+		[request setValue:credentials[@"value"] forHTTPHeaderField:credentials[@"headerName"]];
 	}
 
 	if (Xeq(method, @"POST")) {

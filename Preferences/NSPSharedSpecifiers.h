@@ -10,8 +10,9 @@
 + (NSArray *)pushover:(NSString *)appID;
 + (NSArray *)pushbullet:(NSString *)appID;
 + (NSArray *)ifttt:(NSString *)appID;
-+ (void)setPreferenceValue:(id)value forIFTTTSpecifier:(PSSpecifier *)specifier;
-+ (id)readIFTTTPreferenceValue:(PSSpecifier *)specifier;
++ (NSArray *)pusherReceiver:(NSString *)appID;
++ (void)setPreferenceValue:(id)value forBuiltInServiceSpecifier:(PSSpecifier *)specifier;
++ (id)readBuiltInServicePreferenceValue:(PSSpecifier *)specifier;
 + (void)setPreferenceValue:(id)value forCustomSpecifier:(PSSpecifier *)specifier;
 + (id)readCustomPreferenceValue:(PSSpecifier *)specifier;
 @end

@@ -76,7 +76,7 @@ static void setPreference(CFStringRef keyRef, CFPropertyListRef val, BOOL should
 		} else {
 			[_data[@"Disabled"] addObject:service];
 		}
-		_serviceImages[service] = [UIImage imageNamed:Xstr(@"Service_%@", service) inBundle:PUSHER_BUNDLE] ?: defaultImage;
+		_serviceImages[service] = [UIImage imageNamed:Xstr(@"BuiltInService_%@", service) inBundle:PUSHER_BUNDLE] ?: defaultImage;
 	}
 
 	// make deep mutable and preload service images
@@ -87,7 +87,7 @@ static void setPreference(CFStringRef keyRef, CFPropertyListRef val, BOOL should
 		} else {
 			[_data[@"Disabled"] addObject:customService];
 		}
-		_serviceImages[customService] = [UIImage imageNamed:Xstr(@"Service_%@", customService) inBundle:PUSHER_BUNDLE] ?: defaultImage;
+		_serviceImages[customService] = [UIImage imageNamed:Xstr(@"CustomService_%@", customService) inBundle:PUSHER_BUNDLE] ?: defaultImage;
 	}
 
 	[_data[@"Enabled"] sortUsingSelector:@selector(localizedCaseInsensitiveCompare:)];

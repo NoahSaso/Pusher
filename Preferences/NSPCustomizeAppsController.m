@@ -34,8 +34,10 @@ static void setPreference(CFStringRef keyRef, CFPropertyListRef val, BOOL should
 		if (Xeq(_service, PUSHER_SERVICE_IFTTT)) {
 			defaultDict[@"eventName"] = _defaultEventName;
 		}
-		if (_isCustomService || Xeq(_service, PUSHER_SERVICE_IFTTT)) {
+		if (_isCustomService || Xeq(_service, PUSHER_SERVICE_IFTTT) || Xeq(_service, PUSHER_SERVICE_PUSHER_RECEIVER)) {
 			defaultDict[@"includeIcon"] = _defaultIncludeIcon;
+		}
+		if (_isCustomService || Xeq(_service, PUSHER_SERVICE_IFTTT)) {
 			defaultDict[@"curateData"] = _defaultCurateData;
 		}
 		_customApps[appID] = defaultDict;
@@ -118,6 +120,9 @@ static void setPreference(CFStringRef keyRef, CFPropertyListRef val, BOOL should
 		_defaultEventName = [(prefs[[self.specifier propertyForKey:@"defaultEventNameKey"]] ?: @"") copy];
 		_defaultIncludeIcon = [(prefs[[self.specifier propertyForKey:@"defaultIncludeIconKey"]] ?: @NO) copy];
 		_defaultCurateData = [(prefs[[self.specifier propertyForKey:@"defaultCurateDataKey"]] ?: @YES) copy];
+	}
+	if (Xeq(_service, PUSHER_SERVICE_PUSHER_RECEIVER)) {
+		_defaultIncludeIcon = [(prefs[[self.specifier propertyForKey:@"defaultIncludeIconKey"]] ?: @YES) copy];
 	}
 	if (_isCustomService) {
 		NSDictionary *customService = (prefs[NSPPreferenceCustomServicesKey] ?: @{})[_service] ?: @{};
