@@ -24,6 +24,25 @@
 	}
 }
 
+- (void)viewWillAppear:(BOOL)animated {
+	[super viewWillAppear:animated];
+
+	// [self setTitle:_service];
+	if (!_imageTitleView) {
+		UILabel *label = [UILabel new];
+		label.text = _service;
+		label.font = [UIFont boldSystemFontOfSize:17];
+
+		UIImageView *imageView = [[UIImageView alloc] initWithImage:_image];
+
+		_imageTitleView = [[UIStackView alloc] initWithArrangedSubviews:@[imageView, label]];
+		_imageTitleView.alignment = UIStackViewAlignmentCenter;
+		_imageTitleView.spacing = 10.0;
+
+		self.navigationItem.titleView = _imageTitleView;
+	}
+}
+
 - (NSArray *)specifiers {
 	if (!_specifiers) {
 
@@ -64,8 +83,6 @@
 		[allSpecifiers addObjectsFromArray:@[sendTestNotificationGroup, sendTestNotification]];
 
 		_specifiers = [allSpecifiers copy];
-
-		[self setTitle:_service];
 	}
 
 	return _specifiers;
