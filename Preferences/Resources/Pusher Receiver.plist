@@ -4,6 +4,32 @@
 <dict>
 	<key>items</key>
 	<array>
+		<!-- Where to Download -->
+		<dict>
+			<key>cell</key>
+			<string>PSGroupCell</string>
+			<key>label</key>
+			<string>Where to Download</string>
+			<key>footerText</key>
+			<string>Pusher Receiver is an awesome browser extension made by burkybank. Use it! It's free.</string>
+		</dict>
+		<dict>
+			<key>cell</key>
+			<string>PSButtonCell</string>
+			<key>label</key>
+			<string>Open Firefox Extension</string>
+			<key>action</key>
+			<string>openPusherReceiverFirefoxExtension</string>
+		</dict>
+		<dict>
+			<key>cell</key>
+			<string>PSButtonCell</string>
+			<key>label</key>
+			<string>Open Chrome Extension</string>
+			<key>action</key>
+			<string>openPusherReceiverChromeExtension</string>
+		</dict>
+
 		<!-- Database -->
 		<dict>
 			<key>cell</key>

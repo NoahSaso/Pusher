@@ -8,11 +8,13 @@
 
 @implementation NSPServiceController
 
-- (id)initWithService:(NSString *)service isCustom:(BOOL)isCustom {
-	NSPServiceController *ret = [self init];
-	ret->_service = service;
-	ret->_isCustom = isCustom;
-	return ret;
+- (id)initWithService:(NSString *)service image:(UIImage *)image isCustom:(BOOL)isCustom {
+	if (self = [super init]) {
+		_service = service;
+		_image = image;
+		_isCustom = isCustom;
+	}
+	return self;
 }
 
 - (void)addObjectsFromArray:(NSArray *)source atIndex:(int)idx toArray:(NSMutableArray *)dest {
@@ -62,7 +64,7 @@
 		[allSpecifiers addObjectsFromArray:@[sendTestNotificationGroup, sendTestNotification]];
 
 		_specifiers = [allSpecifiers copy];
-		
+
 		[self setTitle:_service];
 	}
 
@@ -108,6 +110,14 @@
 
 - (void)openDateFormatInstructions {
 	Xurl(@"https://nsdateformatter.com");
+}
+
+- (void)openPusherReceiverFirefoxExtension {
+	Xurl(@"https://addons.mozilla.org/en-US/firefox/addon/pusher-receiver/");
+}
+
+- (void)openPusherReceiverChromeExtension {
+	Xurl(@"https://chrome.google.com/webstore/detail/pusher-receiver/cegndpdokeeegijbkidfcolhomffhibh");
 }
 
 @end

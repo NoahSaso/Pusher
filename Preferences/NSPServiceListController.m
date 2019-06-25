@@ -225,7 +225,7 @@ static void setPreference(CFStringRef keyRef, CFPropertyListRef val, BOOL should
 		if ([_loadedServiceControllers.allKeys containsObject:currService]) {
 			controller = _loadedServiceControllers[currService];
 		} else {
-			controller = [[NSPServiceController alloc] initWithService:currService isCustom:isCustomService];
+			controller = [[NSPServiceController alloc] initWithService:currService image:_serviceImages[currService] isCustom:isCustomService];
 			_loadedServiceControllers[currService] = controller;
 		}
 		[self pushController:controller];

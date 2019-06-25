@@ -3,7 +3,8 @@
 @interface NSPServiceController : PSListController {
   NSString *_service;
   BOOL _isCustom;
+  UIImage *_image;
 }
-- (id)initWithService:(NSString *)service isCustom:(BOOL)isCustom;
+- (id)initWithService:(NSString *)service image:(UIImage *)image isCustom:(BOOL)isCustom;
 - (void)addObjectsFromArray:(NSArray *)source atIndex:(int)idx toArray:(NSMutableArray *)dest;
 @end
