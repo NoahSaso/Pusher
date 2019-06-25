@@ -17,6 +17,7 @@ static void setPreference(CFStringRef keyRef, CFPropertyListRef val, BOOL should
 @implementation NSPServiceListController
 
 - (void)dealloc {
+	[_serviceImages release];
 	[_prefs release];
 	[_table release];
 	[_sections release];
@@ -65,6 +66,9 @@ static void setPreference(CFStringRef keyRef, CFPropertyListRef val, BOOL should
 	_services = [BUILTIN_PUSHER_SERVICES retain];
 	_customServices = [(NSDictionary *)(_prefs[NSPPreferenceCustomServicesKey] ?: @{}) mutableCopy];
 
+	UIImage *defaultImage = [UIImage imageNamed:DEFAULT_SERVICE_IMAGE_NAME inBundle:PUSHER_BUNDLE];
+	_serviceImages = [NSMutableDictionary new];
+
 	for (NSString *service in _services) {
 		NSString *enabledKey = Xstr(@"%@Enabled", service);
 		if (_prefs[enabledKey] && ((NSNumber *) _prefs[enabledKey]).boolValue) {
@@ -72,9 +76,10 @@ static void setPreference(CFStringRef keyRef, CFPropertyListRef val, BOOL should
 		} else {
 			[_data[@"Disabled"] addObject:service];
 		}
+		_serviceImages[service] = [UIImage imageNamed:Xstr(@"Service_%@", service) inBundle:PUSHER_BUNDLE] ?: defaultImage;
 	}
 
-	// make deep mutable
+	// make deep mutable and preload service images
 	for (NSString *customService in _customServices.allKeys) {
 		_customServices[customService] = [(_customServices[customService] ?: @{}) mutableCopy];
 		if (_customServices[customService] && _customServices[customService][@"Enabled"] && ((NSNumber *) _customServices[customService][@"Enabled"]).boolValue) {
@@ -82,6 +87,7 @@ static void setPreference(CFStringRef keyRef, CFPropertyListRef val, BOOL should
 		} else {
 			[_data[@"Disabled"] addObject:customService];
 		}
+		_serviceImages[customService] = [UIImage imageNamed:Xstr(@"Service_%@", customService) inBundle:PUSHER_BUNDLE] ?: defaultImage;
 	}
 
 	[_data[@"Enabled"] sortUsingSelector:@selector(localizedCaseInsensitiveCompare:)];
@@ -244,8 +250,10 @@ static void setPreference(CFStringRef keyRef, CFPropertyListRef val, BOOL should
 
 - (UITableViewCell *)tableView:(UITableView *)table cellForRowAtIndexPath:(NSIndexPath *)indexPath {
 	UITableViewCell *cell = [table dequeueReusableCellWithIdentifier:@"ServiceCell" forIndexPath:indexPath];
-	cell.textLabel.text = _data[_sections[indexPath.section]][indexPath.row];
+	NSString *service = _data[_sections[indexPath.section]][indexPath.row];
+	cell.textLabel.text = service;
 	cell.accessoryType = UITableViewCellAccessoryDisclosureIndicator;
+	cell.imageView.image = _serviceImages[service];
 	return cell;
 }
 
