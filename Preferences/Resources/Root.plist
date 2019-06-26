@@ -80,6 +80,8 @@
 			<string>PSLinkCell</string>
 			<key>bundle</key>
 			<string>AppList</string>
+			<key>icon</key>
+			<string>app_list</string>
 			<key>isController</key>
 			<string>1</string>
 			<key>label</key>
@@ -159,6 +161,8 @@
 			<string>PSSwitchCell</string>
 			<key>PostNotification</key>
 			<string>com.noahsaso.pusher/prefs</string>
+			<key>icon</key>
+			<string>wifi</string>
 			<key>default</key>
 			<false/>
 			<key>defaults</key>
@@ -173,6 +177,8 @@
 			<string>PSLinkCell</string>
 			<key>detail</key>
 			<string>NSPSNSListController</string>
+			<key>icon</key>
+			<string>sns</string>
 			<key>label</key>
 			<string>Sufficient Notification Settings</string>
 		</dict>
