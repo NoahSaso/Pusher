@@ -8,7 +8,7 @@
 			<key>cell</key>
 			<string>PSGroupCell</string>
 			<key>footerText</key>
-			<string>Each app has custom notification settings that determine where their notifications are allowed to show (in Settings —> Notifications). This menu allows you to make Pusher only send a notification if the app's notification settings have either all (AND) or at least one (OR) of the selected options below. Selecting AND requires all of the enabled options below to be enabled in the app's settings. Selecting OR requires only one of the enabled options below to be enabled in the app's settings.</string>
+			<string>Each app has custom notification settings that determine where their notifications are allowed to show (in Settings —> Notifications). This menu allows you to restrict Pusher to only send a notification if the app's notification settings have either all (AND) or at least one (OR) of the selected options below. Selecting AND requires all of the enabled options below to be enabled in the app's settings. Selecting OR requires only one of the enabled options below to be enabled in the app's settings.</string>
 		</dict>
 		<dict>
 			<key>cell</key>
@@ -39,7 +39,7 @@
 			<key>cell</key>
 			<string>PSGroupCell</string>
 			<key>footerText</key>
-			<string>When using OR, you will most likely want to require that Allow Notifications is enabled in addition to at least one of the other settings. This is because the device saves the rest of the settings even when you turn off Allow Notifications. For example, if you install a new app and don't allow push notifications, the rest of the settings still default to on. If you select OR, Lock Screen, and Sounds for example, even the apps that hide all notifications in the device settings will be sent through Pusher. This fixes that.</string>
+			<string>When using OR, you will probably want to require that Allow Notifications is enabled in the app's notification settings in addition to other settings. This is because the device saves the rest of the settings (e.g. Lock Screen, Badges, etc.) even when you turn off Allow Notifications in the app's notification settings. For example, if you install a new app and don't allow push notifications, the rest of the settings still default to on. If you select OR, Lock Screen, and Sounds below for example, even the apps that hide all notifications will be sent through Pusher. This fixes that. When this option is on, you will probably want to disable the 'Allow Notifications' switch below. If you are confused, leave this setting on.</string>
 		</dict>
 		<dict>
 			<key>cell</key>

@@ -19,7 +19,7 @@
 			<key>label</key>
 			<string>Open Firefox Extension</string>
 			<key>icon</key>
-			<string>firefox.png</string>
+			<string>firefox</string>
 			<key>action</key>
 			<string>openPusherReceiverFirefoxExtension</string>
 		</dict>
@@ -29,7 +29,7 @@
 			<key>label</key>
 			<string>Open Chrome Extension</string>
 			<key>icon</key>
-			<string>chrome.png</string>
+			<string>chrome</string>
 			<key>action</key>
 			<string>openPusherReceiverChromeExtension</string>
 		</dict>
@@ -39,7 +39,7 @@
 			<key>label</key>
 			<string>Developer: @burkybang</string>
 			<key>icon</key>
-			<string>twitter.png</string>
+			<string>twitter</string>
 			<key>action</key>
 			<string>openTwitterBurkybang</string>
 		</dict>

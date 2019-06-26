@@ -56,7 +56,7 @@
 	}
 
 	// load each time to override NSPRootListController
-	[self setPusherUIColor:_uiColor];
+	[self setPusherUIColor:_uiColor override:YES];
 }
 
 - (NSArray *)specifiers {

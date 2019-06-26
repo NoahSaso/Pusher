@@ -38,6 +38,8 @@
 			<string>PSLinkCell</string>
 			<key>detail</key>
 			<string>NSPServiceListController</string>
+			<key>icon</key>
+			<string>services</string>
 			<key>label</key>
 			<string>Services</string>
 		</dict>
@@ -188,7 +190,7 @@
 			<key>label</key>
 			<string>Developer: @NoahSaso</string>
 			<key>icon</key>
-			<string>twitter.png</string>
+			<string>twitter</string>
 			<key>action</key>
 			<string>openTwitterNoahSaso</string>
 		</dict>
