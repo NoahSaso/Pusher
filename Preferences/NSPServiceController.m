@@ -45,11 +45,13 @@
 		CCFlags flags = (CCFlags) (CCOnlyDistinctColors | CCAvoidWhite | CCAvoidBlack);
 		NSArray *imgColors = [_colorCube extractColorsFromImage:imageView.image flags:flags];
 		if (!imgColors.count) return;
-		[UISwitch appearanceWhenContainedInInstancesOfClasses:@[self.class]].tintColor = imgColors[0];
-		[UISwitch appearanceWhenContainedInInstancesOfClasses:@[self.class]].onTintColor = imgColors[0];
-		[UISegmentedControl appearanceWhenContainedInInstancesOfClasses:@[self.class]].tintColor = imgColors[0];
-		[UISlider appearanceWhenContainedInInstancesOfClasses:@[self.class]].tintColor = imgColors[0];
 	}
+
+	// load each time to override NSPRootListController
+	[UISwitch appearanceWhenContainedInInstancesOfClasses:@[self.class]].tintColor = imgColors[0];
+	[UISwitch appearanceWhenContainedInInstancesOfClasses:@[self.class]].onTintColor = imgColors[0];
+	[UISegmentedControl appearanceWhenContainedInInstancesOfClasses:@[self.class]].tintColor = imgColors[0];
+	[UISlider appearanceWhenContainedInInstancesOfClasses:@[self.class]].tintColor = imgColors[0];
 }
 
 - (NSArray *)specifiers {
