@@ -11,13 +11,15 @@
 			<key>label</key>
 			<string>Where to Download</string>
 			<key>footerText</key>
-			<string>Pusher Receiver is an awesome browser extension made by burkybank. Use it! It's free.</string>
+			<string>Pusher Receiver is an awesome browser extension made by @burkybang to display pushes as desktop notifications.</string>
 		</dict>
 		<dict>
 			<key>cell</key>
 			<string>PSButtonCell</string>
 			<key>label</key>
 			<string>Open Firefox Extension</string>
+			<key>icon</key>
+			<string>firefox.png</string>
 			<key>action</key>
 			<string>openPusherReceiverFirefoxExtension</string>
 		</dict>
@@ -26,8 +28,20 @@
 			<string>PSButtonCell</string>
 			<key>label</key>
 			<string>Open Chrome Extension</string>
+			<key>icon</key>
+			<string>chrome.png</string>
 			<key>action</key>
 			<string>openPusherReceiverChromeExtension</string>
+		</dict>
+		<dict>
+			<key>cell</key>
+			<string>PSButtonCell</string>
+			<key>label</key>
+			<string>Developer: @burkybang</string>
+			<key>icon</key>
+			<string>twitter.png</string>
+			<key>action</key>
+			<string>openTwitterBurkybang</string>
 		</dict>
 
 		<!-- Database -->

@@ -13,6 +13,7 @@
 		_service = service;
 		_image = image;
 		_isCustom = isCustom;
+		_colorCube = [CCColorCube new];
 	}
 	return self;
 }
@@ -24,8 +25,8 @@
 	}
 }
 
-- (void)viewWillAppear:(BOOL)animated {
-	[super viewWillAppear:animated];
+- (void)viewDidLoad {
+	[super viewDidLoad];
 
 	// [self setTitle:_service];
 	if (!_imageTitleView) {
@@ -40,6 +41,14 @@
 		_imageTitleView.spacing = 10.0;
 
 		self.navigationItem.titleView = _imageTitleView;
+
+		CCFlags flags = (CCFlags) (CCOnlyDistinctColors | CCAvoidWhite | CCAvoidBlack);
+		NSArray *imgColors = [_colorCube extractColorsFromImage:imageView.image flags:flags];
+		if (!imgColors.count) return;
+		[UISwitch appearanceWhenContainedInInstancesOfClasses:@[self.class]].tintColor = imgColors[0];
+		[UISwitch appearanceWhenContainedInInstancesOfClasses:@[self.class]].onTintColor = imgColors[0];
+		[UISegmentedControl appearanceWhenContainedInInstancesOfClasses:@[self.class]].tintColor = imgColors[0];
+		[UISlider appearanceWhenContainedInInstancesOfClasses:@[self.class]].tintColor = imgColors[0];
 	}
 }
 
@@ -135,6 +144,10 @@
 
 - (void)openPusherReceiverChromeExtension {
 	Xurl(@"https://chrome.google.com/webstore/detail/pusher-receiver/cegndpdokeeegijbkidfcolhomffhibh");
+}
+
+- (void)openTwitterBurkybang {
+	[self openTwitter:@"burkybang"];
 }
 
 @end

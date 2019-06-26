@@ -11,17 +11,35 @@
 		</dict>
 		<dict>
 			<key>cell</key>
-			<string>PSSwitchCell</string>
-			<key>PostNotification</key>
-			<string>com.noahsaso.pusher/prefs</string>
+			<string>PSSegmentCell</string>
 			<key>default</key>
 			<true/>
 			<key>defaults</key>
 			<string>com.noahsaso.pusher</string>
+			<key>PostNotification</key>
+			<string>com.noahsaso.pusher/prefs</string>
+			<key>detail</key>
+			<string>PSListItemsController</string>
 			<key>key</key>
 			<string>Enabled</string>
+			<key>validTitles</key>
+			<array>
+				<string>Disabled</string>
+				<string>Enabled</string>
+			</array>
+			<key>validValues</key>
+			<array>
+				<false/>
+				<true/>
+			</array>
+		</dict>
+		<dict>
+			<key>cell</key>
+			<string>PSLinkCell</string>
+			<key>detail</key>
+			<string>NSPServiceListController</string>
 			<key>label</key>
-			<string>Enabled</string>
+			<string>Services</string>
 		</dict>
 
 		<!--  Global App List -->
@@ -157,21 +175,7 @@
 			<string>Sufficient Notification Settings</string>
 		</dict>
 
-		<!--  Services -->
-		<dict>
-			<key>cell</key>
-			<string>PSGroupCell</string>
-		</dict>
-		<dict>
-			<key>cell</key>
-			<string>PSLinkCell</string>
-			<key>detail</key>
-			<string>NSPServiceListController</string>
-			<key>label</key>
-			<string>Services</string>
-		</dict>
-
-		<!--  Services -->
+		<!--  Support -->
 		<dict>
 			<key>cell</key>
 			<string>PSGroupCell</string>
@@ -182,11 +186,11 @@
 			<key>cell</key>
 			<string>PSButtonCell</string>
 			<key>label</key>
-			<string>@NoahSaso</string>
+			<string>Developer: @NoahSaso</string>
 			<key>icon</key>
 			<string>twitter.png</string>
 			<key>action</key>
-			<string>openTwitter</string>
+			<string>openTwitterNoahSaso</string>
 		</dict>
 	</array>
 	<key>title</key>

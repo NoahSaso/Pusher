@@ -5,10 +5,12 @@
 
 #define PUSHER_APP_ID CFSTR("com.noahsaso.pusher")
 
-#define PUSHER_MESSAGING_CENTER_NAME @"com.noahsaso.pusher/testpush"
-#define PUSHER_TEST_PUSH_MESSAGE_NAME @"sendTest"
+#define PUSHER_COLOR [UIColor colorWithRed:0.0 green:177/255.0 blue:79/255.0 alpha:1.0]
+
 #import <rocketbootstrap/rocketbootstrap.h>
 #import <AppSupport/CPDistributedMessagingCenter.h>
+#define PUSHER_MESSAGING_CENTER_NAME @"com.noahsaso.pusher/testpush"
+#define PUSHER_TEST_PUSH_MESSAGE_NAME @"sendTest"
 
 #define NSPPreferenceGlobalBLPrefix @"GlobalBL-"
 #define NSPPreferenceSNSPrefix @"SNS-"
