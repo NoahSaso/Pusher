@@ -1,6 +1,6 @@
-#import <Preferences/PSListController.h>
+#import "NSPPSListControllerWithColoredUI.h"
 
-@interface NSPCustomAppController : PSListController {
+@interface NSPCustomAppController : NSPPSListControllerWithColoredUI {
   NSString *_service;
   NSString *_appID;
   NSString *_appTitle;

@@ -1,7 +1,7 @@
-#import <Preferences/PSViewController.h>
+#import "NSPPSViewControllerWithColoredUI.h"
 #import <AppList/AppList.h>
 
-@interface NSPCustomizeAppsController : PSViewController <UITableViewDelegate, UITableViewDataSource> {
+@interface NSPCustomizeAppsController : NSPPSViewControllerWithColoredUI <UITableViewDelegate, UITableViewDataSource> {
   UITableView *_table;
   NSArray *_sections;
   NSMutableDictionary *_data;

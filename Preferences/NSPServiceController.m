@@ -14,6 +14,7 @@
 		_image = image;
 		_isCustom = isCustom;
 		_colorCube = [CCColorCube new];
+		_uiColor = nil;
 	}
 	return self;
 }
@@ -41,17 +42,21 @@
 		_imageTitleView.spacing = 10.0;
 
 		self.navigationItem.titleView = _imageTitleView;
+	}
+}
 
+- (void)viewWillAppear:(BOOL)animated {
+	[super viewWillAppear:animated];
+
+	if (!_uiColor) {
 		CCFlags flags = (CCFlags) (CCOnlyDistinctColors | CCAvoidWhite | CCAvoidBlack);
-		NSArray *imgColors = [_colorCube extractColorsFromImage:imageView.image flags:flags];
+		NSArray *imgColors = [_colorCube extractColorsFromImage:_image flags:flags];
 		if (!imgColors.count) return;
+		_uiColor = [imgColors[0] copy];
 	}
 
 	// load each time to override NSPRootListController
-	[UISwitch appearanceWhenContainedInInstancesOfClasses:@[self.class]].tintColor = imgColors[0];
-	[UISwitch appearanceWhenContainedInInstancesOfClasses:@[self.class]].onTintColor = imgColors[0];
-	[UISegmentedControl appearanceWhenContainedInInstancesOfClasses:@[self.class]].tintColor = imgColors[0];
-	[UISlider appearanceWhenContainedInInstancesOfClasses:@[self.class]].tintColor = imgColors[0];
+	[self setPusherUIColor:_uiColor];
 }
 
 - (NSArray *)specifiers {

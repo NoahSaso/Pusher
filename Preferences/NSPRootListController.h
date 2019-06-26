@@ -1,8 +1,5 @@
-#import <Preferences/PSListController.h>
+#import "NSPPSListControllerWithColoredUI.h"
 
-@interface NSPRootListController : PSListController {
-  UIColor *_priorBarTintColor;
-  UIColor *_priorTintColor;
-}
+@interface NSPRootListController : NSPPSListControllerWithColoredUI
 - (void)openTwitter:(NSString *)username;
 @end

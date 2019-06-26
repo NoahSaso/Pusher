@@ -1,4 +1,4 @@
-#import <Preferences/PSListController.h>
+#import "NSPPSListControllerWithColoredUI.h"
 
-@interface NSPSNSListController : PSListController
+@interface NSPSNSListController : NSPPSListControllerWithColoredUI
 @end

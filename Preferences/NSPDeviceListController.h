@@ -1,7 +1,7 @@
-#import <Preferences/PSListController.h>
+#import "NSPPSListControllerWithColoredUI.h"
 #import "../global.h"
 
-@interface NSPDeviceListController : PSListController {
+@interface NSPDeviceListController : NSPPSListControllerWithColoredUI {
   NSMutableArray *_serviceDevices;
   NSDictionary *_prefs;
   UIBarButtonItem *_updateBn;

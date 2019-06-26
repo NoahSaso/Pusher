@@ -1,9 +1,9 @@
-#import <Preferences/PSViewController.h>
+#import "NSPPSViewControllerWithColoredUI.h"
 
 #define PUSHER_BUNDLE [NSBundle bundleWithPath:@"/Library/PreferenceBundles/Pusher.bundle"]
 #define DEFAULT_SERVICE_IMAGE_NAME @"DefaultService"
 
-@interface NSPServiceListController : PSViewController <UITableViewDelegate, UITableViewDataSource> {
+@interface NSPServiceListController : NSPPSViewControllerWithColoredUI <UITableViewDelegate, UITableViewDataSource> {
   NSDictionary *_prefs;
   UITableView *_table;
   NSArray *_sections;
