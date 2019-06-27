@@ -5,7 +5,7 @@
 	<key>CFBundleDevelopmentRegion</key>
 	<string>English</string>
 	<key>CFBundleExecutable</key>
-	<string>Pusher</string>
+	<string>PusherFlipswitch</string>
 	<key>CFBundleIdentifier</key>
 	<string>com.noahsaso.pusher</string>
 	<key>CFBundleDisplayName</key>
