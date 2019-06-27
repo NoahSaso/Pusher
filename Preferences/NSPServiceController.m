@@ -19,13 +19,6 @@
 	return self;
 }
 
-- (void)addObjectsFromArray:(NSArray *)source atIndex:(int)idx toArray:(NSMutableArray *)dest {
-	for (id object in source) {
-		[dest insertObject:object atIndex:idx];
-		idx += 1;
-	}
-}
-
 - (void)viewDidLoad {
 	[super viewDidLoad];
 
@@ -61,7 +54,6 @@
 
 - (NSArray *)specifiers {
 	if (!_specifiers) {
-
 		NSMutableArray *allSpecifiers = nil;
 		NSArray *sharedSpecifiers = nil;
 
@@ -90,6 +82,32 @@
 		if (!inserted) {
 			[allSpecifiers addObjectsFromArray:sharedSpecifiers];
 		}
+
+		NSArray *specialCells = @[@(PSGroupCell), @(PSButtonCell), @(PSLinkCell)];
+
+		NSArray *globalSpecifiers = [self loadSpecifiersFromPlistName:@"GlobalAndServices" target:self];
+		for (PSSpecifier *specifier in globalSpecifiers) {
+			[specifier setProperty:_service forKey:@"service"];
+			if ([specialCells containsObject:@(specifier.cellType)]) { // don't set these properties on certain specifiers
+				if (specifier.cellType == PSLinkCell) {
+					[specifier setProperty:@(_isCustom) forKey:@"isCustomService"];
+				}
+				continue;
+			}
+			[specifier setProperty:@NO forKey:@"isCustomApp"];
+			[specifier setProperty:[specifier propertyForKey:@"key"] forKey:@"globalKey"];
+			if (_isCustom) {
+				specifier->setter = @selector(setPreferenceValue:forCustomSpecifier:);
+				specifier->getter = @selector(readCustomPreferenceValue:);
+				[specifier setProperty:[specifier propertyForKey:@"customServiceKey"] forKey:@"key"];
+			} else {
+				specifier->setter = @selector(setPreferenceValue:forBuiltInServiceSpecifier:);
+				specifier->getter = @selector(readBuiltInServicePreferenceValue:);
+				[specifier setProperty:Xstr(@"%@%@", _service, [specifier propertyForKey:@"key"]) forKey:@"key"];
+			}
+			specifier->target = NSPSharedSpecifiers.class;
+		}
+		[allSpecifiers addObjectsFromArray:globalSpecifiers];
 
 		PSSpecifier *sendTestNotificationGroup = [PSSpecifier emptyGroupSpecifier];
 		PSSpecifier *sendTestNotification = [PSSpecifier preferenceSpecifierNamed:@"Send Test Notification" target:self set:nil get:nil detail:nil cell:PSButtonCell edit:nil];

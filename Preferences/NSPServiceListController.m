@@ -66,7 +66,7 @@ static void setPreference(CFStringRef keyRef, CFPropertyListRef val, BOOL should
 	_services = [BUILTIN_PUSHER_SERVICES retain];
 	_customServices = [(NSDictionary *)(_prefs[NSPPreferenceCustomServicesKey] ?: @{}) mutableCopy];
 
-	UIImage *defaultImage = [UIImage imageNamed:DEFAULT_SERVICE_IMAGE_NAME inBundle:PUSHER_BUNDLE];
+	_defaultImage = [UIImage imageNamed:DEFAULT_SERVICE_IMAGE_NAME inBundle:PUSHER_BUNDLE];
 	_serviceImages = [NSMutableDictionary new];
 
 	for (NSString *service in _services) {
@@ -76,7 +76,7 @@ static void setPreference(CFStringRef keyRef, CFPropertyListRef val, BOOL should
 		} else {
 			[_data[@"Disabled"] addObject:service];
 		}
-		_serviceImages[service] = [UIImage imageNamed:Xstr(@"BuiltInService_%@", service) inBundle:PUSHER_BUNDLE] ?: defaultImage;
+		_serviceImages[service] = [UIImage imageNamed:Xstr(@"BuiltInService_%@", service) inBundle:PUSHER_BUNDLE] ?: _defaultImage;
 	}
 
 	// make deep mutable and preload service images
@@ -87,7 +87,7 @@ static void setPreference(CFStringRef keyRef, CFPropertyListRef val, BOOL should
 		} else {
 			[_data[@"Disabled"] addObject:customService];
 		}
-		_serviceImages[customService] = [UIImage imageNamed:Xstr(@"CustomService_%@", customService) inBundle:PUSHER_BUNDLE] ?: defaultImage;
+		_serviceImages[customService] = [UIImage imageNamed:Xstr(@"CustomService_%@", customService) inBundle:PUSHER_BUNDLE] ?: _defaultImage;
 	}
 
 	[_data[@"Enabled"] sortUsingSelector:@selector(localizedCaseInsensitiveCompare:)];
@@ -200,6 +200,7 @@ static void setPreference(CFStringRef keyRef, CFPropertyListRef val, BOOL should
 		} mutableCopy];
 		[_data[@"Disabled"] addObject:newServiceName];
 	  [_data[@"Disabled"] sortUsingSelector:@selector(localizedCaseInsensitiveCompare:)];
+		_serviceImages[newServiceName] = [UIImage imageNamed:Xstr(@"CustomService_%@", newServiceName) inBundle:PUSHER_BUNDLE] ?: _defaultImage;
 		[_table reloadSections:[NSIndexSet indexSetWithIndex:1] withRowAnimation:UITableViewRowAnimationAutomatic];
 		[self saveCustomServices];
 	};

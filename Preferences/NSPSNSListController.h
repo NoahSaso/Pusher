@@ -2,5 +2,9 @@
 #import "../global.h"
 #import <Custom/defines.h>
 
-@interface NSPSNSListController : NSPPSListControllerWithColoredUI
+@interface NSPSNSListController : NSPPSListControllerWithColoredUI {
+  NSString *_service;
+  BOOL _isCustomService;
+  BOOL _isService;
+}
 @end

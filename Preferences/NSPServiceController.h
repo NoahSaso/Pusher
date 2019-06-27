@@ -10,5 +10,4 @@
   UIColor *_uiColor;
 }
 - (id)initWithService:(NSString *)service image:(UIImage *)image isCustom:(BOOL)isCustom;
-- (void)addObjectsFromArray:(NSArray *)source atIndex:(int)idx toArray:(NSMutableArray *)dest;
 @end

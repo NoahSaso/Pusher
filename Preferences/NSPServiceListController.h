@@ -15,6 +15,7 @@
   UIBarButtonItem *_addNewServiceBarButtonItem;
   NSMutableDictionary *_customServices;
   NSMutableDictionary *_serviceImages;
+  UIImage *_defaultImage;
 }
 - (void)showTutorial;
 - (void)saveCustomServices;

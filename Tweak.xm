@@ -143,6 +143,9 @@ static void pusherPrefsChanged() {
 
 		servicePrefs[@"isCustomService"] = @YES;
 		servicePrefs[@"appList"] = getTrueKeysWithPrefix(prefs, NSPPreferenceCustomServiceBLPrefix(service), YES);
+		servicePrefs[@"snsIsAnd"] = servicePrefs[@"SufficientNotificationSettingsIsAnd"];
+		servicePrefs[@"snsRequireANWithOR"] = servicePrefs[@"SNSORRequireAllowNotifications"];
+		servicePrefs[@"sns"] = getTrueKeysWithPrefix(customService, NSPPreferenceSNSPrefix, NO);
 
 		NSString *customAppsKey = NSPPreferenceCustomServiceCustomAppsKey(service);
 
@@ -189,6 +192,11 @@ static void pusherPrefsChanged() {
 		NSString *customAppsKey = Xstr(@"%@CustomApps", service);
 		NSString *appListIsBlacklistKey = Xstr(@"%@AppListIsBlacklist", service);
 		NSString *dbNameKey = Xstr(@"%@DBName", service);
+		NSString *whenToPushKey = Xstr(@"%@WhenToPush", service);
+		NSString *onWifiOnlyKey = Xstr(@"%@OnWiFiOnly", service);
+		NSString *snsIsAndKey = Xstr(@"%@SufficientNotificationSettingsIsAnd", service);
+		NSString *snsRequireANWithORKey = Xstr(@"%@SNSORRequireAllowNotifications", service);
+		NSString *snsPrefix = Xstr(@"%@%@", service, NSPPreferenceSNSPrefix);
 
 		servicePrefs[@"appList"] = getTrueKeysWithPrefix(prefs, appListPrefix, YES);
 		val = prefs[appListIsBlacklistKey];
@@ -206,6 +214,15 @@ static void pusherPrefsChanged() {
 		val = prefs[dateFormatKey];
 		servicePrefs[@"dateFormat"] = [(val ?: @"") copy];
 		servicePrefs[@"url"] = getServiceURL(service, @{ @"eventName": eventName, @"dbName": dbName });
+		val = prefs[whenToPushKey];
+		servicePrefs[@"whenToPush"] = [(val ?: @(PUSHER_WHEN_TO_PUSH_LOCKED)) copy];
+		val = prefs[onWifiOnlyKey];
+		servicePrefs[@"onWiFiOnly"] = [(val ?: @NO) copy];
+		val = prefs[snsIsAndKey];
+		servicePrefs[@"snsIsAnd"] = [(val ?: @YES) copy];
+		val = prefs[snsRequireANWithORKey];
+		servicePrefs[@"snsRequireANWithOR"] = [(val ?: @YES) copy];
+		servicePrefs[@"sns"] = getTrueKeysWithPrefix(prefs, snsPrefix);
 
 		if (Xeq(service, PUSHER_SERVICE_IFTTT)) {
 			NSString *includeIconKey = Xstr(@"%@IncludeIcon", service);
@@ -312,35 +329,8 @@ static void pusherPrefsChanged() {
 	XLog(@"Reloaded");
 }
 
-static BOOL prefsSayNo(BBServer *server, BBBulletin *bulletin) {
-	XLog(@"---Bulletin:--- %@", bulletin.sectionID);
-	if (!pusherEnabled) {
-		XLog(@"pusherEnabled: %d", pusherEnabled);
-		return YES;
-	}
-
-	BBSectionInfo *sectionInfo = [server _sectionInfoForSectionID:bulletin.sectionID effective:YES];
-	XLog(@"sectionInfo.pushSettings: %lu", sectionInfo.pushSettings);
-	if (!sectionInfo) {
-		XLog(@"sectionInfo nil");
-		return YES;
-	}
-
-	BOOL deviceIsLocked = ((SBLockScreenManager *) [%c(SBLockScreenManager) sharedInstance]).isUILocked;
-	BOOL onWiFi = [[%c(SBWiFiManager) sharedInstance] currentNetworkName] != nil;
-	if ((pusherOnWiFiOnly && !onWiFi)
-				|| (pusherWhenToPush == PUSHER_WHEN_TO_PUSH_LOCKED && !deviceIsLocked)
-				|| (pusherWhenToPush == PUSHER_WHEN_TO_PUSH_UNLOCKED && deviceIsLocked)
-				|| globalAppList == nil || ![globalAppList isKindOfClass:NSArray.class]) {
-		XLog(@"pusherOnWiFiOnly: %d, onWiFi: %d", pusherOnWiFiOnly, onWiFi);
-		XLog(@"pusherWhenToPush: %d, deviceIsLocked: %d", pusherWhenToPush, deviceIsLocked);
-		XLog(@"globalAppList nil?: %d", globalAppList == nil);
-		return YES;
-	}
-
-	// Sufficient
-
-	if (!pusherSNSIsAnd && pusherSNSRequireANWithOR && !sectionInfo.allowsNotifications) {
+static BOOL snsSaysNo(NSArray *sns, BBSectionInfo *sectionInfo, BOOL isAnd, BOOL requireANWithOR) {
+	if (!isAnd && requireANWithOR && !sectionInfo.allowsNotifications) {
 		XLog(@"OR and requires allow and not allow");
 		return YES;
 	}
@@ -363,17 +353,47 @@ static BOOL prefsSayNo(BBServer *server, BBBulletin *bulletin) {
 			sufficient = sectionInfo.showsMessagePreview;
 		}
 		// AND, so if any one is insufficient, just return right away
-		if (pusherSNSIsAnd && !sufficient) {
+		if (isAnd && !sufficient) {
 			XLog(@"AND and not sufficient: %@", key);
 			return YES;
 		// OR, so just one sufficient is enough
-		} else if (!pusherSNSIsAnd && sufficient) {
+		} else if (!isAnd && sufficient) {
 			XLog(@"OR and sufficient: %@", key);
-			break;
+			return NO;
 		}
 	}
 
-	// End Sufficient
+	return NO;
+}
+
+static BOOL prefsSayNo(BBServer *server, BBBulletin *bulletin) {
+	XLog(@"---Bulletin:--- %@", bulletin.sectionID);
+	if (!pusherEnabled) {
+		XLog(@"pusherEnabled: %d", pusherEnabled);
+		return YES;
+	}
+
+	BOOL deviceIsLocked = ((SBLockScreenManager *) [%c(SBLockScreenManager) sharedInstance]).isUILocked;
+	BOOL onWiFi = [[%c(SBWiFiManager) sharedInstance] currentNetworkName] != nil;
+	if ((pusherOnWiFiOnly && !onWiFi)
+				|| (pusherWhenToPush == PUSHER_WHEN_TO_PUSH_LOCKED && !deviceIsLocked)
+				|| (pusherWhenToPush == PUSHER_WHEN_TO_PUSH_UNLOCKED && deviceIsLocked)
+				|| globalAppList == nil || ![globalAppList isKindOfClass:NSArray.class]) {
+		XLog(@"pusherOnWiFiOnly: %d, onWiFi: %d", pusherOnWiFiOnly, onWiFi);
+		XLog(@"pusherWhenToPush: %d, deviceIsLocked: %d", pusherWhenToPush, deviceIsLocked);
+		XLog(@"globalAppList nil?: %d", globalAppList == nil);
+		return YES;
+	}
+
+	BBSectionInfo *sectionInfo = [server _sectionInfoForSectionID:bulletin.sectionID effective:YES];
+	if (!sectionInfo) {
+		XLog(@"sectionInfo nil");
+		return YES;
+	}
+
+	if (snsSaysNo(pusherSNS, sectionInfo, pusherSNSIsAnd, pusherSNSRequireANWithOR)) {
+		return YES;
+	}
 
 	for (NSString *service in pusherEnabledServices.allKeys) {
 		NSDictionary *servicePrefs = pusherEnabledServices[service];
@@ -465,8 +485,22 @@ static BOOL prefsSayNo(BBServer *server, BBBulletin *bulletin) {
 	if (!isTest) {
 		NSArray *serviceAppList = servicePrefs[@"appList"];
 		BOOL appListContainsApp = [serviceAppList containsObject:appID.lowercaseString];
-		if (((NSNumber *) servicePrefs[@"appListIsBlacklist"]).boolValue == appListContainsApp) {
+		if (servicePrefs[@"appListIsBlacklist"] && ((NSNumber *) servicePrefs[@"appListIsBlacklist"]).boolValue == appListContainsApp) {
 			XLog(@"[S:%@] Blocked by app list: %@", service, appID);
+			return;
+		}
+
+		NSArray *sns = servicePrefs[@"sns"];
+		BOOL isAnd = servicePrefs[@"snsIsAnd"] && ((NSNumber *) servicePrefs[@"snsIsAnd"]).boolValue;
+		BOOL requireANWithOR = servicePrefs[@"snsRequireANWithOR"] && ((NSNumber *) servicePrefs[@"snsRequireANWithOR"]).boolValue;
+		BBSectionInfo *sectionInfo = [self _sectionInfoForSectionID:bulletin.sectionID effective:YES];
+		if (!sectionInfo) {
+			XLog(@"[S:%@,A:%@] sectionInfo nil", service, appID);
+			return;
+		}
+		XLog(@"[S:%@,A:%@] Doing SNS", service, appID);
+		if (snsSaysNo(sns, sectionInfo, isAnd, requireANWithOR)) {
+			XLog(@"[S:%@,A:%@] SNS said no", service, appID);
 			return;
 		}
 	}

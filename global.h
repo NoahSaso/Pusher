@@ -96,6 +96,8 @@ typedef enum {
 
 @interface PSSpecifier (Pusher)
 + (id)emptyGroupSpecifier;
+- (void)performSetterWithValue:(id)arg1;
+- (id)specifierForID:(id)arg1;
 @end
 
 @interface SBLockScreenManager
