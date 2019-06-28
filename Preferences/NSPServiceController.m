@@ -90,6 +90,15 @@
 		NSArray *globalSpecifiers = [self loadSpecifiersFromPlistName:@"GlobalAndServices" target:self];
 		for (PSSpecifier *specifier in globalSpecifiers) {
 			[specifier setProperty:_service forKey:@"service"];
+			if (specifier.cellType == PSSegmentCell) {
+				NSMutableArray *values = [specifier.values mutableCopy];
+				NSMutableArray *titles = [NSMutableArray arrayWithObject:@"Default"];
+				for (id v in values) {
+					[titles addObject:specifier.titleDictionary[v]];
+				}
+				[values insertObject:@(-1) atIndex:0];
+				[specifier setValues:values titles:titles];
+			}
 			if ([specialCells containsObject:@(specifier.cellType)]) { // don't set these properties on certain specifiers
 				if (specifier.cellType == PSLinkCell) {
 					[specifier setProperty:@(_isCustom) forKey:@"isCustomService"];
@@ -98,6 +107,7 @@
 			}
 			[specifier setProperty:@NO forKey:@"isCustomApp"];
 			[specifier setProperty:[specifier propertyForKey:@"key"] forKey:@"globalKey"];
+			[specifier setProperty:@(PUSHER_SEGMENT_CELL_DEFAULT) forKey:@"default"];
 			if (_isCustom) {
 				specifier->setter = @selector(setPreferenceValue:forCustomSpecifier:);
 				specifier->getter = @selector(readCustomPreferenceValue:);

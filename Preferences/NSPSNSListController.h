@@ -6,5 +6,6 @@
   NSString *_service;
   BOOL _isCustomService;
   BOOL _isService;
+  PSSpecifier *_synchronizeSpecifier;
 }
 @end

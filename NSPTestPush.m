@@ -32,17 +32,17 @@
 	}
 
 	BBBulletin *bulletin = [BBBulletin new];
-	bulletin.title = @"Title";
-	bulletin.subtitle = @"Subtitle";
-	bulletin.message = @"Message";
+	bulletin.title = PUSHER_TEST_NOTIFICATION_TITLE;
+	bulletin.subtitle = PUSHER_TEST_NOTIFICATION_SUBTITLE;
+	bulletin.message = PUSHER_TEST_NOTIFICATION_MESSAGE;
 	bulletin.date = [NSDate date];
-	bulletin.sectionID = @"com.apple.Preferences";
+	bulletin.sectionID = PUSHER_TEST_NOTIFICATION_SECTION_ID;
 
 	NSURL *attachmentURL = [NSURL fileURLWithPath:Xstr(@"%@/icon@3x.png", PUSHER_BUNDLE_PATH)];
 	BBAttachmentMetadata *attachment = [[BBAttachmentMetadata alloc] _initWithUUID:@"TestImage" type:1 URL:attachmentURL];
 	[bulletin setPrimaryAttachment:attachment];
 
-	[bbServer sendToPusherService:service bulletin:bulletin appID:@"com.apple.Preferences" appName:@"Settings" title:@"Title" message:@"Subtitle\nMessage" isTest:YES];
+	[bbServer sendToPusherService:service bulletin:bulletin appID:bulletin.sectionID appName:PUSHER_TEST_NOTIFICATION_APP_NAME title:bulletin.title message:Xstr(@"%@\n%@", bulletin.subtitle, bulletin.message) isTest:YES];
 
 	return @{ @"success": @YES };
 }

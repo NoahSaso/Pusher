@@ -15,9 +15,20 @@
 #define NSPPreferenceGlobalBLPrefix @"GlobalBL-"
 #define NSPPreferenceSNSPrefix @"SNS-"
 
+#define PUSHER_SEGMENT_CELL_DEFAULT -1
+
+#define PUSHER_WHAT_NETWORK_ALWAYS 0
+#define PUSHER_WHAT_NETWORK_WIFI_ONLY 1
+
 #define PUSHER_WHEN_TO_PUSH_LOCKED 0
 #define PUSHER_WHEN_TO_PUSH_EITHER 1
 #define PUSHER_WHEN_TO_PUSH_UNLOCKED 2
+
+#define PUSHER_TEST_NOTIFICATION_TITLE @"Title"
+#define PUSHER_TEST_NOTIFICATION_SUBTITLE @"Subtitle"
+#define PUSHER_TEST_NOTIFICATION_MESSAGE @"Message"
+#define PUSHER_TEST_NOTIFICATION_APP_NAME @"Settings"
+#define PUSHER_TEST_NOTIFICATION_SECTION_ID @"com.apple.Preferences"
 
 typedef NS_OPTIONS(NSUInteger, BBActualSectionInfoPushSettings) {
 	BBActualSectionInfoPushSettingsBadges = 1 << 3, // was 0
@@ -96,9 +107,10 @@ typedef enum {
 #import <SpringBoard/SBApplicationController.h>
 
 @interface PSSpecifier (Pusher)
-+ (id)emptyGroupSpecifier;
+@property (nonatomic, retain) NSArray *values;
 - (void)performSetterWithValue:(id)arg1;
-- (id)specifierForID:(id)arg1;
+- (BOOL)hasValidSetter;
+- (void)setValues:(id)arg1 titles:(id)arg2;
 @end
 
 @interface SBLockScreenManager

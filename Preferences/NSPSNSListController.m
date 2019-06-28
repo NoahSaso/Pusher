@@ -1,6 +1,11 @@
 #import "NSPSNSListController.h"
 #import "NSPSharedSpecifiers.h"
 
+static id getPreference(CFStringRef keyRef) {
+  CFPropertyListRef val = CFPreferencesCopyValue(keyRef, PUSHER_APP_ID, kCFPreferencesCurrentUser, kCFPreferencesAnyHost);
+  return (__bridge id) val;
+}
+
 @implementation NSPSNSListController
 
 - (NSArray *)specifiers {
@@ -11,6 +16,7 @@
 	return _specifiers;
 }
 
+// runs after specifiers
 - (void)viewDidLoad {
 	[super viewDidLoad];
 
@@ -18,14 +24,43 @@
 	if (_isService) {
 		_service = [[self.specifier propertyForKey:@"service"] retain];
 		_isCustomService = [self.specifier propertyForKey:@"isCustomService"] && ((NSNumber *)[self.specifier propertyForKey:@"isCustomService"]).boolValue;
+
+		// synchronized if all values are nil
+		BOOL synchronizedWithGlobal = YES;
 		for (PSSpecifier *specifier in self.specifiers) {
 			[specifier setProperty:_service forKey:@"service"];
 			if (!_isCustomService) {
 				[specifier setProperty:[specifier propertyForKey:@"key"] forKey:@"globalKey"];
 				[specifier setProperty:Xstr(@"%@%@", _service, [specifier propertyForKey:@"key"]) forKey:@"key"];
 			}
+			// if finds value that is truthy, not all are synchronized globally
+			if (synchronizedWithGlobal && getPreference((__bridge CFStringRef) [specifier propertyForKey:@"key"])) {
+				synchronizedWithGlobal = NO;
+			}
+		}
+
+		PSSpecifier *synchronizedGroup = [PSSpecifier emptyGroupSpecifier];
+		[synchronizedGroup setProperty:@"Synchronizes all values with the global preferences. Modifying any of these settings will override that preference, but synchronizing will remove the override and follow the global preferences again." forKey:@"footerText"];
+
+		_synchronizeSpecifier = [PSSpecifier preferenceSpecifierNamed:(synchronizedWithGlobal ? @"Synchronized" : @"Synchronize With Global") target:self set:nil get:nil detail:nil cell:PSButtonCell edit:nil];
+		[_synchronizeSpecifier setButtonAction:@selector(synchronizeWithGlobal:)];
+		[_synchronizeSpecifier setProperty:@(!synchronizedWithGlobal) forKey:@"enabled"];
+
+		[self insertSpecifier:synchronizedGroup atIndex:0];
+		[self insertSpecifier:_synchronizeSpecifier atIndex:1];
+	}
+}
+
+- (void)synchronizeWithGlobal:(PSSpecifier *)specifier {
+	for (PSSpecifier *specifier in self.specifiers) {
+		if ([specifier hasValidSetter]) { // only if has setter because group specifiers dont matter for example
+			[specifier performSetterWithValue:nil];
+			[self reloadSpecifier:specifier animated:YES];
 		}
 	}
+	[specifier setName:@"Synchronized"];
+	[specifier setProperty:@NO forKey:@"enabled"];
+	[self reloadSpecifier:specifier animated:YES];
 }
 
 - (void)setPreferenceValue:(id)value specifier:(PSSpecifier *)specifier {
@@ -46,6 +81,12 @@
 		}
 	}
 	if (!_isService) { return; }
+	// enable synchronize button if we change a value
+	if (_synchronizeSpecifier) {
+		[_synchronizeSpecifier setName:@"Synchronize With Global"];
+		[_synchronizeSpecifier setProperty:@YES forKey:@"enabled"];
+		[self reloadSpecifier:_synchronizeSpecifier animated:YES];
+	}
 	if (_isCustomService) {
 		[NSPSharedSpecifiers setPreferenceValue:value forCustomSpecifier:specifier];
 	} else {
