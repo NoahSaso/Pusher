@@ -235,7 +235,11 @@ static void setPreference(CFStringRef keyRef, CFPropertyListRef val, BOOL should
 	} else {
     NSMutableDictionary *customServices = [(getPreference((__bridge CFStringRef) NSPPreferenceCustomServicesKey) ?: @{}) mutableCopy];
     NSMutableDictionary *customService = [(customServices[service] ?: @{}) mutableCopy];
-    customService[[specifier propertyForKey:@"key"]] = value;
+    if (value) {
+      customService[[specifier propertyForKey:@"key"]] = value;
+    } else {
+      [customService removeObjectForKey:[specifier propertyForKey:@"key"]];
+    }
     customServices[service] = customService;
     setPreference((__bridge CFStringRef) NSPPreferenceCustomServicesKey, (__bridge CFPropertyListRef) customServices, YES);
   }
@@ -250,12 +254,17 @@ static void setPreference(CFStringRef keyRef, CFPropertyListRef val, BOOL should
     return customApp[[specifier propertyForKey:@"key"]];
   }
   NSDictionary *customServices = getPreference((__bridge CFStringRef) NSPPreferenceCustomServicesKey) ?: @{};
-  id value = customServices[service][[specifier propertyForKey:@"key"]];
-  NSString *globalKey = [specifier propertyForKey:@"globalKey"];
-  if (!value && globalKey) {
-    value = getPreference((__bridge CFStringRef) globalKey);
+  id d = [specifier propertyForKey:@"default"];
+  if (!customServices[service]) {
+    return d;
+  } else {
+    id value = customServices[service][[specifier propertyForKey:@"key"]];
+    NSString *globalKey = [specifier propertyForKey:@"globalKey"];
+    if (!value && globalKey) {
+      value = getPreference((__bridge CFStringRef) globalKey);
+    }
+    return value ?: d;
   }
-  return value ?: [specifier propertyForKey:@"default"];
 }
 
 @end

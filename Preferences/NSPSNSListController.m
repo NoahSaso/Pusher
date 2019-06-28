@@ -29,13 +29,22 @@ static id getPreference(CFStringRef keyRef) {
 		BOOL synchronizedWithGlobal = YES;
 		for (PSSpecifier *specifier in self.specifiers) {
 			[specifier setProperty:_service forKey:@"service"];
+			[specifier setProperty:[specifier propertyForKey:@"key"] forKey:@"globalKey"];
 			if (!_isCustomService) {
-				[specifier setProperty:[specifier propertyForKey:@"key"] forKey:@"globalKey"];
 				[specifier setProperty:Xstr(@"%@%@", _service, [specifier propertyForKey:@"key"]) forKey:@"key"];
 			}
 			// if finds value that is truthy, not all are synchronized globally
-			if (synchronizedWithGlobal && getPreference((__bridge CFStringRef) [specifier propertyForKey:@"key"])) {
-				synchronizedWithGlobal = NO;
+			if (synchronizedWithGlobal) {
+				BOOL foundTruthy = NO;
+				if (_isCustomService) {
+					NSDictionary *customServices = getPreference((__bridge CFStringRef) NSPPreferenceCustomServicesKey) ?: @{};
+					if (customServices[_service]) {
+						foundTruthy = customServices[_service][[specifier propertyForKey:@"key"]];
+					}
+				} else {
+					foundTruthy = getPreference((__bridge CFStringRef) [specifier propertyForKey:@"key"]);
+				}
+				synchronizedWithGlobal = !foundTruthy;
 			}
 		}
 
@@ -52,10 +61,10 @@ static id getPreference(CFStringRef keyRef) {
 }
 
 - (void)synchronizeWithGlobal:(PSSpecifier *)specifier {
-	for (PSSpecifier *specifier in self.specifiers) {
-		if ([specifier hasValidSetter]) { // only if has setter because group specifiers dont matter for example
-			[specifier performSetterWithValue:nil];
-			[self reloadSpecifier:specifier animated:YES];
+	for (PSSpecifier *spec in self.specifiers) {
+		if ([spec propertyForKey:@"key"]) { // only if has key because group specifiers dont matter for example
+			[spec performSetterWithValue:nil];
+			[self reloadSpecifier:spec animated:YES];
 		}
 	}
 	[specifier setName:@"Synchronized"];
