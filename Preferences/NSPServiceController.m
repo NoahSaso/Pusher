@@ -98,6 +98,7 @@
 				}
 				[values insertObject:@(-1) atIndex:0];
 				[specifier setValues:values titles:titles];
+				[specifier setProperty:@(PUSHER_SEGMENT_CELL_DEFAULT) forKey:@"default"];
 			}
 			if ([specialCells containsObject:@(specifier.cellType)]) { // don't set these properties on certain specifiers
 				if (specifier.cellType == PSLinkCell) {
@@ -107,7 +108,6 @@
 			}
 			[specifier setProperty:@NO forKey:@"isCustomApp"];
 			[specifier setProperty:[specifier propertyForKey:@"key"] forKey:@"globalKey"];
-			[specifier setProperty:@(PUSHER_SEGMENT_CELL_DEFAULT) forKey:@"default"];
 			if (_isCustom) {
 				specifier->setter = @selector(setPreferenceValue:forCustomSpecifier:);
 				specifier->getter = @selector(readCustomPreferenceValue:);
