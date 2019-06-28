@@ -382,6 +382,11 @@ static BOOL prefsSayNo(BBServer *server, BBBulletin *bulletin) {
 		return YES;
 	}
 
+	if (Xeq(bulletin.title, @"Title") && Xeq(bulletin.subtitle, @"Subtitle") && Xeq(bulletin.message, @"Message") && Xeq(bulletin.sectionID, @"com.apple.Preferences")) {
+		XLog(@"Test notification result banner");
+		return YES;
+	}
+
 	BOOL deviceIsLocked = ((SBLockScreenManager *) [%c(SBLockScreenManager) sharedInstance]).isUILocked;
 	BOOL onWiFi = [[%c(SBWiFiManager) sharedInstance] currentNetworkName] != nil;
 	if ((pusherOnWiFiOnly && !onWiFi)
