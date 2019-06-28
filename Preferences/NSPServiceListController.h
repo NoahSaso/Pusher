@@ -1,6 +1,8 @@
 #import "NSPPSViewControllerWithColoredUI.h"
+#import "../global.h"
+#import <Custom/defines.h>
+#import <notify.h>
 
-#define PUSHER_BUNDLE [NSBundle bundleWithPath:@"/Library/PreferenceBundles/Pusher.bundle"]
 #define DEFAULT_SERVICE_IMAGE_NAME @"DefaultService"
 
 @interface NSPServiceListController : NSPPSViewControllerWithColoredUI <UITableViewDelegate, UITableViewDataSource> {

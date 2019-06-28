@@ -2,9 +2,9 @@
 
 #define PUSHER_PREFS_FILE @"/var/mobile/Library/Preferences/com.noahsaso.pusher.plist"
 #define PUSHER_PREFS_NOTIFICATION CFSTR("com.noahsaso.pusher/prefs")
-
 #define PUSHER_APP_ID CFSTR("com.noahsaso.pusher")
-
+#define PUSHER_BUNDLE_PATH @"/Library/PreferenceBundles/Pusher.bundle"
+#define PUSHER_BUNDLE [NSBundle bundleWithPath:PUSHER_BUNDLE_PATH]
 #define PUSHER_COLOR [UIColor colorWithRed:0.0 green:177/255.0 blue:79/255.0 alpha:1.0]
 
 #import <rocketbootstrap/rocketbootstrap.h>
@@ -108,7 +108,8 @@ typedef enum {
 
 @interface BBAttachmentMetadata : NSObject
 @property (nonatomic,readonly) long long type;
-@property (nonatomic,copy,readonly) NSURL * URL;
+@property (nonatomic,copy,readonly) NSURL *URL;
+- (id)_initWithUUID:(id)arg1 type:(long long)arg2 URL:(id)arg3;
 @end
 
 @interface BBBulletin (Pusher)

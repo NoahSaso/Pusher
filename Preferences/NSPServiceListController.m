@@ -1,10 +1,6 @@
 #import "NSPServiceListController.h"
 #import "NSPServiceController.h"
 
-#import "../global.h"
-#import <Custom/defines.h>
-#import <notify.h>
-
 static void setPreference(CFStringRef keyRef, CFPropertyListRef val, BOOL shouldNotify) {
 	CFPreferencesSetValue(keyRef, val, PUSHER_APP_ID, kCFPreferencesCurrentUser, kCFPreferencesAnyHost);
 	CFPreferencesSynchronize(PUSHER_APP_ID, kCFPreferencesCurrentUser, kCFPreferencesAnyHost);

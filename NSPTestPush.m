@@ -37,6 +37,11 @@
 	bulletin.message = @"Message";
 	bulletin.date = [NSDate date];
 	bulletin.sectionID = @"com.apple.Preferences";
+
+	NSURL *attachmentURL = [NSURL fileURLWithPath:Xstr(@"%@/icon@3x.png", PUSHER_BUNDLE_PATH)];
+	BBAttachmentMetadata *attachment = [[BBAttachmentMetadata alloc] _initWithUUID:@"TestImage" type:1 URL:attachmentURL];
+	[bulletin setPrimaryAttachment:attachment];
+
 	[bbServer sendToPusherService:service bulletin:bulletin appID:@"com.apple.Preferences" appName:@"Settings" title:@"Title" message:@"Subtitle\nMessage" isTest:YES];
 
 	return @{ @"success": @YES };
