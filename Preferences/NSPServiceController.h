@@ -1,7 +1,8 @@
 #import "NSPRootListController.h"
 #import "CCColorCube.h"
+#import <UserNotifications/UserNotifications.h>
 
-@interface NSPServiceController : NSPRootListController { // extend so can use twitter function
+@interface NSPServiceController : NSPRootListController <UNUserNotificationCenterDelegate> { // extend so can use twitter function
   NSString *_service;
   BOOL _isCustom;
   UIImage *_image;
@@ -10,4 +11,5 @@
   UIColor *_uiColor;
 }
 - (id)initWithService:(NSString *)service image:(UIImage *)image isCustom:(BOOL)isCustom;
+- (void)displayNotification:(NSString *)message;
 @end

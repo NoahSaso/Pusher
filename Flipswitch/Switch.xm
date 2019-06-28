@@ -14,7 +14,7 @@
 @implementation PusherSwitch
 
 - (NSString *)titleForSwitchIdentifier:(NSString *)switchIdentifier {
-	return @"Pusher";
+	return kName;
 }
 
 - (FSSwitchState)stateForSwitchIdentifier:(NSString *)switchIdentifier {

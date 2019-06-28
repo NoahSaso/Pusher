@@ -22,6 +22,8 @@
 - (void)viewDidLoad {
 	[super viewDidLoad];
 
+	UNUserNotificationCenter.currentNotificationCenter.delegate = self;
+
 	// [self setTitle:_service];
 	if (!_imageTitleView) {
 		UILabel *label = [UILabel new];
@@ -133,14 +135,32 @@
 	NSDictionary *reply;
 	reply = [messagingCenter sendMessageAndReceiveReplyName:PUSHER_TEST_PUSH_MESSAGE_NAME userInfo:@{ @"service": _service }];
 
-	UIAlertController *alert = nil;
 	if (reply[@"success"] && ((NSNumber *)reply[@"success"]).boolValue) {
-		alert = Xalert(@"Sent test notification");
+		[self displayNotification:@"Sent test notification"];
 	} else {
-		alert = Xalert(@"Failed to send");
+		[self displayNotification:@"Failed to send test notification"];
 	}
-	[alert addAction:XalertBtn(@"Ok")];
-	[self presentViewController:alert animated:YES completion:nil];
+}
+
+- (void)displayNotification:(NSString *)message {
+	UNMutableNotificationContent *content = [UNMutableNotificationContent new];
+	content.title = kName;
+	content.body = message;
+
+	UNNotificationRequest *request = [UNNotificationRequest requestWithIdentifier:@"TestNotificationResult" content:content trigger:nil];
+
+	[UNUserNotificationCenter.currentNotificationCenter addNotificationRequest:request withCompletionHandler:^(NSError *error) {
+		// XLog(@"addNotificationRequest error: %@", error.description);
+		if (error) {
+			UIAlertController *alert = Xalert(message);
+			[alert addAction:XalertBtn(@"Ok")];
+			[self presentViewController:alert animated:YES completion:nil];
+		}
+	}];
+}
+
+- (void)userNotificationCenter:(UNUserNotificationCenter *)center willPresentNotification:(UNNotification *)notification withCompletionHandler:(void (^)(UNNotificationPresentationOptions))completionHandler {
+	completionHandler(UNNotificationPresentationOptionSound | UNNotificationPresentationOptionAlert | UNNotificationPresentationOptionBadge);
 }
 
 - (void)openPushoverAppBuild {
