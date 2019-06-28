@@ -38,30 +38,51 @@ static BBServer *bbServerInstance = nil;
 
 static NSMutableArray *recentNotificationTitles = [NSMutableArray new];
 
-// returns array of all keys that begin with the given prefix that have a boolean value of true in the dictionary
-static NSArray *getTrueKeysWithPrefix(NSDictionary *prefs, NSString *prefix, NSArray *backups, BOOL makeLowercase) {
+// returns array of all lowercase keys that begin with the given prefix that have a boolean value of true in the dictionary
+static NSArray *getAppIDsWithPrefix(NSDictionary *prefs, NSString *prefix) {
 	NSMutableArray *keys = [NSMutableArray new];
 	for (id key in prefs.allKeys) {
 		if (![key isKindOfClass:NSString.class]) { continue; }
 		if ([key hasPrefix:prefix]) {
-			NSString *subKey = [key substringFromIndex:prefix.length];
-			if ([backups ])
 			if (((NSNumber *) prefs[key]).boolValue) {
-				[keys addObject:(makeLowercase ? subKey.lowercaseString : subKey)];
+				NSString *subKey = [key substringFromIndex:prefix.length];
+				[keys addObject:subKey.lowercaseString];
 			}
 		}
 	}
-	NSArray *ret = [keys copy];
-	[keys release];
-	return ret;
+	return keys;
 }
 
-static NSArray *getTrueKeysWithPrefix(NSDictionary *prefs, NSString *prefix, NSArray *backups) {
-	return getTrueKeysWithPrefix(prefs, prefix, backups, NO);
+static NSArray *getSNSKeys(NSDictionary *prefs, NSString *prefix, NSDictionary *backupPrefs, NSString *backupPrefix) {
+	NSMutableArray *keys = [NSMutableArray new];
+	NSDictionary *pusherDefaultSNSKeys = PUSHER_SNS_KEYS;
+	for (NSString *snsKey in pusherDefaultSNSKeys.allKeys) {
+		NSString *key = Xstr(@"%@%@", prefix, snsKey);
+		id val = prefs[key];
+		if (val) {
+			if (((NSNumber *) val).boolValue) {
+				[keys addObject:snsKey];
+			}
+			continue;
+		} else if (!val && backupPrefs) {
+			NSString *backupKey = Xstr(@"%@%@", backupPrefix, snsKey);
+			if (backupPrefs[backupKey]) {
+				if (((NSNumber *) backupPrefs[backupKey]).boolValue) {
+					[keys addObject:snsKey];
+				}
+				continue;
+			}
+		}
+		// check default if val is nil, not if it's set to false
+		if (!val && pusherDefaultSNSKeys[snsKey] && ((NSNumber *) pusherDefaultSNSKeys[snsKey]).boolValue) {
+			[keys addObject:snsKey];
+		}
+	}
+	return keys;
 }
 
-static NSArray *getTrueKeysWithPrefix(NSDictionary *prefs, NSString *prefix) {
-	return getTrueKeysWithPrefix(prefs, prefix, @[]);
+static NSArray *getSNSKeys(NSDictionary *prefs, NSString *prefix) {
+	return getSNSKeys(prefs, prefix, nil, nil);
 }
 
 static NSString *getServiceURL(NSString *service, NSDictionary *options) {
@@ -136,8 +157,8 @@ static void pusherPrefsChanged() {
 	pusherSNSIsAnd = val ? ((NSNumber *) val).boolValue : YES;
 	val = prefs[@"SNSORRequireAllowNotifications"];
 	pusherSNSRequireANWithOR = val ? ((NSNumber *) val).boolValue : YES;
-	globalAppList = getTrueKeysWithPrefix(prefs, NSPPreferenceGlobalBLPrefix, @[], YES);
-	pusherSNS = getTrueKeysWithPrefix(prefs, NSPPreferenceSNSPrefix);
+	globalAppList = getAppIDsWithPrefix(prefs, NSPPreferenceGlobalBLPrefix);
+	pusherSNS = getSNSKeys(prefs, NSPPreferenceSNSPrefix);
 
 	if (pusherEnabledServices == nil) {
 		pusherEnabledServices = [NSMutableDictionary new];
@@ -152,12 +173,12 @@ static void pusherPrefsChanged() {
 		NSMutableDictionary *servicePrefs = [customService mutableCopy];
 
 		servicePrefs[@"isCustomService"] = @YES;
-		servicePrefs[@"appList"] = getTrueKeysWithPrefix(prefs, NSPPreferenceCustomServiceBLPrefix(service), @[], YES);
+		servicePrefs[@"appList"] = getAppIDsWithPrefix(prefs, NSPPreferenceCustomServiceBLPrefix(service));
 		servicePrefs[@"whenToPush"] = (!servicePrefs[@"whenToPush"] || ((NSNumber *) servicePrefs[@"whenToPush"]).intValue == PUSHER_SEGMENT_CELL_DEFAULT) ? @(pusherWhenToPush) : servicePrefs[@"whenToPush"];
 		servicePrefs[@"whatNetwork"] = (!servicePrefs[@"whatNetwork"] || ((NSNumber *) servicePrefs[@"whatNetwork"]).intValue == PUSHER_SEGMENT_CELL_DEFAULT) ? @(pusherWhatNetwork) : servicePrefs[@"whatNetwork"];
 		servicePrefs[@"snsIsAnd"] = servicePrefs[@"SufficientNotificationSettingsIsAnd"] ?: @(pusherSNSIsAnd);
 		servicePrefs[@"snsRequireANWithOR"] = servicePrefs[@"SNSORRequireAllowNotifications"] ?: @(pusherSNSRequireANWithOR);
-		servicePrefs[@"sns"] = getTrueKeysWithPrefix(customService, NSPPreferenceSNSPrefix, pusherSNS);
+		servicePrefs[@"sns"] = getSNSKeys(customService, NSPPreferenceSNSPrefix, prefs, NSPPreferenceSNSPrefix);
 
 		NSString *customAppsKey = NSPPreferenceCustomServiceCustomAppsKey(service);
 
@@ -210,7 +231,7 @@ static void pusherPrefsChanged() {
 		NSString *snsRequireANWithORKey = Xstr(@"%@SNSORRequireAllowNotifications", service);
 		NSString *snsPrefix = Xstr(@"%@%@", service, NSPPreferenceSNSPrefix);
 
-		servicePrefs[@"appList"] = getTrueKeysWithPrefix(prefs, appListPrefix, @[], YES);
+		servicePrefs[@"appList"] = getAppIDsWithPrefix(prefs, appListPrefix);
 		val = prefs[appListIsBlacklistKey];
 		servicePrefs[@"appListIsBlacklist"] = [(val ?: @YES) copy];
 		val = prefs[tokenKey];
@@ -236,7 +257,7 @@ static void pusherPrefsChanged() {
 		servicePrefs[@"snsIsAnd"] = [(val ?: @YES) copy];
 		val = prefs[snsRequireANWithORKey];
 		servicePrefs[@"snsRequireANWithOR"] = [(val ?: @YES) copy];
-		servicePrefs[@"sns"] = getTrueKeysWithPrefix(prefs, snsPrefix, pusherSNS);
+		servicePrefs[@"sns"] = getSNSKeys(prefs, snsPrefix, prefs, NSPPreferenceSNSPrefix);
 
 		if (Xeq(service, PUSHER_SERVICE_IFTTT)) {
 			NSString *includeIconKey = Xstr(@"%@IncludeIcon", service);
@@ -252,6 +273,10 @@ static void pusherPrefsChanged() {
 
 			NSString *includeImageKey = Xstr(@"%@IncludeImage", service);
 			servicePrefs[@"includeImage"] = prefs[includeImageKey] ?: @YES;
+
+			for (id s in servicePrefs[@"sns"]) {
+				XLog(@"SSSSSSSSSSSSSSSSSSSSS: %@", s);
+			}
 		}
 
 		// devices
@@ -377,7 +402,7 @@ static BOOL snsSaysNo(NSArray *sns, BBSectionInfo *sectionInfo, BOOL isAnd, BOOL
 		// OR, so just one sufficient is enough
 		} else if (!isAnd && sufficient) {
 			XLog(@"OR and sufficient: %@", key);
-			return NO;
+			break;
 		}
 	}
 

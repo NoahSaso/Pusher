@@ -44,6 +44,8 @@ typedef NS_OPTIONS(NSUInteger, BBActualSectionInfoPushSettings) {
 // #define PUSHER_SUFFICIENT_SOUNDS_KEY @"Sounds"
 #define PUSHER_SUFFICIENT_SHOWS_PREVIEWS_KEY @"ShowsPreviews"
 
+#define PUSHER_SNS_KEYS @{ PUSHER_SUFFICIENT_ALLOW_NOTIFICATIONS_KEY: @YES, PUSHER_SUFFICIENT_LOCK_SCREEN_KEY: @NO, PUSHER_SUFFICIENT_NOTIFICATION_CENTER_KEY: @NO, PUSHER_SUFFICIENT_BANNERS_KEY: @NO, PUSHER_SUFFICIENT_BADGES_KEY: @NO, PUSHER_SUFFICIENT_SHOWS_PREVIEWS_KEY: @NO }
+
 #define NSPPreferenceCustomServicesKey @"CustomServices"
 #define NSPPreferenceCustomServiceCustomAppsKey(service) Xstr(@"CustomService_%@_CustomApps", service)
 #define NSPPreferenceCustomServiceBLPrefix(service) Xstr(@"CustomServiceBL_%@-", service)
