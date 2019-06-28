@@ -85,6 +85,7 @@ typedef enum {
 #define NSPPreferencePusherReceiverBLPrefix @"Pusher ReceiverBL-"
 #define NSPPreferencePusherReceiverCustomAppsKey @"Pusher ReceiverCustomApps"
 #define NSPPreferencePusherReceiverIncludeIconKey @"Pusher ReceiverIncludeIcon"
+#define NSPPreferencePusherReceiverIncludeImageKey @"Pusher ReceiverIncludeImage"
 
 #define BUILTIN_PUSHER_SERVICES @[ PUSHER_SERVICE_PUSHOVER, PUSHER_SERVICE_PUSHBULLET, PUSHER_SERVICE_IFTTT, PUSHER_SERVICE_PUSHER_RECEIVER ]
 
@@ -105,8 +106,14 @@ typedef enum {
 @property(readonly) BOOL isUILocked;
 @end
 
+@interface BBAttachmentMetadata : NSObject
+@property (nonatomic,readonly) long long type;
+@property (nonatomic,copy,readonly) NSURL * URL;
+@end
+
 @interface BBBulletin (Pusher)
 @property (nonatomic, readonly) BOOL showsSubtitle;
+@property (nonatomic, copy) BBAttachmentMetadata *primaryAttachment;
 @end
 
 @interface BBServer : NSObject

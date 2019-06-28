@@ -74,6 +74,7 @@ static void setPreference(CFStringRef keyRef, CFPropertyListRef val, BOOL should
   PSSpecifier *includeIcon = [PSSpecifier preferenceSpecifierNamed:@"Include Icon" target:self set:@selector(setPreferenceValue:forCustomSpecifier:) get:@selector(readCustomPreferenceValue:) detail:nil cell:PSSwitchCell edit:nil];
   [includeIcon setProperty:@"includeIcon" forKey:@"key"];
   [includeIcon setProperty:@YES forKey:@"enabled"];
+  [includeIcon setProperty:@NO forKey:@"default"];
   [includeIcon setProperty:@(isCustomApp) forKey:@"isCustomApp"];
   [includeIcon setProperty:service forKey:@"service"];
 
@@ -170,11 +171,20 @@ static void setPreference(CFStringRef keyRef, CFPropertyListRef val, BOOL should
   [includeIcon setProperty:NSPPreferencePusherReceiverCustomAppsKey forKey:@"customAppsKey"];
   [includeIcon setProperty:@"includeIcon" forKey:@"customAppsPrefsKey"];
 
+  PSSpecifier *includeImage = [PSSpecifier preferenceSpecifierNamed:@"Include Image" target:self set:@selector(setPreferenceValue:forBuiltInServiceSpecifier:) get:@selector(readBuiltInServicePreferenceValue:) detail:nil cell:PSSwitchCell edit:nil];
+  [includeImage setProperty:NSPPreferencePusherReceiverIncludeImageKey forKey:@"key"];
+  [includeImage setProperty:@YES forKey:@"enabled"];
+  [includeImage setProperty:@YES forKey:@"default"];
+  [includeImage setProperty:@(isCustomApp) forKey:@"isCustomApp"];
+  [includeImage setProperty:NSPPreferencePusherReceiverCustomAppsKey forKey:@"customAppsKey"];
+  [includeImage setProperty:@"includeImage" forKey:@"customAppsPrefsKey"];
+
   if (isCustomApp) {
     [includeIcon setProperty:appID forKey:@"customAppID"];
+    [includeImage setProperty:appID forKey:@"customAppID"];
   }
 
-  return @[includeIcon];
+  return @[includeIcon, includeImage];
 }
 
 + (void)setPreferenceValue:(id)value forBuiltInServiceSpecifier:(PSSpecifier *)specifier {

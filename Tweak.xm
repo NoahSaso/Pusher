@@ -103,6 +103,11 @@ static PusherAuthorizationType getServiceAuthType(NSString *service, NSDictionar
 	return PusherAuthorizationTypeReplaceKey; // ifttt key
 }
 
+static NSString *base64RepresentationForImage(UIImage *image) {
+	NSData *iconData = UIImagePNGRepresentation(image);
+	return [iconData base64EncodedStringWithOptions:NSDataBase64EncodingEndLineWithLineFeed];
+}
+
 static void pusherPrefsChanged() {
 	XLog(@"Reloading prefs");
 
@@ -235,6 +240,9 @@ static void pusherPrefsChanged() {
 		if (Xeq(service, PUSHER_SERVICE_PUSHER_RECEIVER)) {
 			NSString *includeIconKey = Xstr(@"%@IncludeIcon", service);
 			servicePrefs[@"includeIcon"] = prefs[includeIconKey] ?: @YES;
+
+			NSString *includeImageKey = Xstr(@"%@IncludeImage", service);
+			servicePrefs[@"includeImage"] = prefs[includeImageKey] ?: @YES;
 		}
 
 		// devices
@@ -299,6 +307,7 @@ static void pusherPrefsChanged() {
 
 			if (Xeq(service, PUSHER_SERVICE_PUSHER_RECEIVER)) {
 				customAppIDPref[@"includeIcon"] = customAppPrefs[@"includeIcon"] ?: @YES;
+				customAppIDPref[@"includeImage"] = customAppPrefs[@"includeImage"] ?: @YES;
 			}
 
 			if (Xeq(service, PUSHER_SERVICE_IFTTT)) {
@@ -431,7 +440,7 @@ static BOOL prefsSayNo(BBServer *server, BBBulletin *bulletin) {
 
 %new
 - (void)sendBulletinToPusher:(BBBulletin *)bulletin {
-	if (bulletin == nil || prefsSayNo(self, bulletin)) {
+	if (!bulletin || prefsSayNo(self, bulletin)) {
 		XLog(@"Prefs say no. bulletin nil? %d", bulletin == nil);
 		return;
 	}
@@ -508,24 +517,18 @@ static BOOL prefsSayNo(BBServer *server, BBBulletin *bulletin) {
 	NSDictionary *customApps = servicePrefs[@"customApps"];
 
 	NSArray *devices = servicePrefs[@"devices"];
-	if ([customApps.allKeys containsObject:appID] && customApps[appID][@"devices"]) {
-		devices = customApps[appID][@"devices"];
-	}
 	NSArray *sounds = servicePrefs[@"sounds"];
-	if ([customApps.allKeys containsObject:appID] && customApps[appID][@"sounds"]) {
-		sounds = customApps[appID][@"sounds"];
-	}
 	NSString *url = servicePrefs[@"url"];
-	if ([customApps.allKeys containsObject:appID] && customApps[appID][@"url"]) {
-		url = customApps[appID][@"url"];
-	}
 	NSNumber *includeIcon = servicePrefs[@"includeIcon"] ?: @NO;
-	if ([customApps.allKeys containsObject:appID] && customApps[appID][@"includeIcon"]) {
-		includeIcon = customApps[appID][@"includeIcon"];
-	}
+	NSNumber *includeImage = servicePrefs[@"includeImage"] ?: @YES;
 	NSNumber *curateData = servicePrefs[@"curateData"] ?: @YES;
-	if ([customApps.allKeys containsObject:appID] && customApps[appID][@"curateData"]) {
-		curateData = customApps[appID][@"curateData"];
+	if ([customApps.allKeys containsObject:appID]) {
+		devices = customApps[appID][@"devices"] ?: devices;
+		sounds = customApps[appID][@"sounds"] ?: sounds;
+		url = customApps[appID][@"url"] ?: url;
+		includeIcon = customApps[appID][@"includeIcon"] ?: includeIcon;
+		includeImage = customApps[appID][@"includeImage"] ?: includeImage;
+		curateData = customApps[appID][@"curateData"] ?: curateData;
 	}
 	// Send
 	PusherAuthorizationType authType = getServiceAuthType(service, servicePrefs);
@@ -538,7 +541,8 @@ static BOOL prefsSayNo(BBServer *server, BBBulletin *bulletin) {
 		@"bulletin": bulletin,
 		@"dateFormat": XStrDefault(servicePrefs[@"dateFormat"], @"MMM d, h:mm a"),
 		@"includeIcon": includeIcon,
-		@"curateData": curateData
+		@"includeImage": includeImage,
+		@"curateData": curateData,
 	}];
 	NSDictionary *credentials = [self getPusherCredentialsForService:service withDictionary:@{
 		@"token": servicePrefs[@"token"] ?: @"",
@@ -605,6 +609,17 @@ static BOOL prefsSayNo(BBServer *server, BBBulletin *bulletin) {
 		data[@"icon"] = [self base64IconDataForBundleID:bulletin.sectionID];
 	}
 
+	if (dictionary[@"includeImage"] && ((NSNumber *)dictionary[@"includeImage"]).boolValue) {
+		BBAttachmentMetadata *metadata = bulletin.primaryAttachment;
+		if (metadata && metadata.type == 1 && metadata.URL) { // I assume image type is 1
+			NSURL *URL = metadata.URL;
+			UIImage *image = [UIImage imageWithContentsOfFile:URL.path];
+			if (image) {
+				data[@"image"] = base64RepresentationForImage(image);
+			}
+		}
+	}
+
 	if (Xeq(service, PUSHER_SERVICE_IFTTT)) {
 		if (dictionary[@"curateData"] && ((NSNumber *)dictionary[@"curateData"]).boolValue) {
 			return @{ @"value1": dictionary[@"title"], @"value2": dictionary[@"message"], @"value3": data[@"icon"] ?: dateStr };
@@ -623,12 +638,7 @@ static BOOL prefsSayNo(BBServer *server, BBBulletin *bulletin) {
 %new
 - (NSString *)base64IconDataForBundleID:(NSString *)bundleID {
 	SBApplicationIcon *icon = [((SBIconController *)[%c(SBIconController) sharedInstance]).model expectedIconForDisplayIdentifier:bundleID];
-	UIImage *image = [icon generateIconImage:2];
-
-	NSData *iconData = UIImagePNGRepresentation(image);
-	NSString *base64Representation = [iconData base64EncodedStringWithOptions:NSDataBase64EncodingEndLineWithLineFeed];
-
-	return base64Representation;
+	return base64RepresentationForImage([icon generateIconImage:2]);
 }
 
 %new
