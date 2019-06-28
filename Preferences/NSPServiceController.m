@@ -146,9 +146,9 @@
 	reply = [messagingCenter sendMessageAndReceiveReplyName:PUSHER_TEST_PUSH_MESSAGE_NAME userInfo:@{ @"service": _service }];
 
 	if (reply[@"success"] && ((NSNumber *)reply[@"success"]).boolValue) {
-		[self displayNotification:@"Sent test notification"];
+		[self displayNotification:Xstr(@"%@Sent", PUSHER_TEST_PUSH_RESULT_PREFIX)];
 	} else {
-		[self displayNotification:@"Failed to send test notification"];
+		[self displayNotification:Xstr(@"%@Failed to Send", PUSHER_TEST_PUSH_RESULT_PREFIX)];
 	}
 }
 

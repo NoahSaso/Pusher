@@ -30,6 +30,8 @@
 #define PUSHER_TEST_NOTIFICATION_APP_NAME @"Settings"
 #define PUSHER_TEST_NOTIFICATION_SECTION_ID @"com.apple.Preferences"
 
+#define PUSHER_TEST_PUSH_RESULT_PREFIX @"Test Notification Result: "
+
 typedef NS_OPTIONS(NSUInteger, BBActualSectionInfoPushSettings) {
 	BBActualSectionInfoPushSettingsBadges = 1 << 3, // was 0
 	BBActualSectionInfoPushSettingsSounds = 1 << 4, // was 1

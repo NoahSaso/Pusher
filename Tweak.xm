@@ -273,10 +273,6 @@ static void pusherPrefsChanged() {
 
 			NSString *includeImageKey = Xstr(@"%@IncludeImage", service);
 			servicePrefs[@"includeImage"] = prefs[includeImageKey] ?: @YES;
-
-			for (id s in servicePrefs[@"sns"]) {
-				XLog(@"SSSSSSSSSSSSSSSSSSSSS: %@", s);
-			}
 		}
 
 		// devices
@@ -429,8 +425,8 @@ static BOOL prefsSayNo(BBServer *server, BBBulletin *bulletin) {
 		return YES;
 	}
 
-	if (Xeq(bulletin.title, PUSHER_TEST_NOTIFICATION_TITLE) && Xeq(bulletin.subtitle, PUSHER_TEST_NOTIFICATION_SUBTITLE) && Xeq(bulletin.message, PUSHER_TEST_NOTIFICATION_MESSAGE) && Xeq(bulletin.sectionID, PUSHER_TEST_NOTIFICATION_SECTION_ID)) {
-		XLog(@"Test notification result banner");
+	if (Xeq(bulletin.sectionID, PUSHER_TEST_NOTIFICATION_SECTION_ID) && Xeq(bulletin.title, @"Pusher") && [bulletin.message hasPrefix:PUSHER_TEST_PUSH_RESULT_PREFIX]) {
+		XLog(@"Not forwarding test notification result banner");
 		return YES;
 	}
 
