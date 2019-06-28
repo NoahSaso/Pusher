@@ -167,6 +167,8 @@
 			<string>Pusher Receiver</string>
 			<key>defaultIncludeIconKey</key>
 			<string>Pusher ReceiverIncludeIcon</string>
+			<key>defaultIncludeImageKey</key>
+			<string>Pusher ReceiverIncludeImage</string>
 		</dict>
 
 		<!-- Options -->

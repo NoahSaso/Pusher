@@ -78,11 +78,19 @@ static void setPreference(CFStringRef keyRef, CFPropertyListRef val, BOOL should
   [includeIcon setProperty:@(isCustomApp) forKey:@"isCustomApp"];
   [includeIcon setProperty:service forKey:@"service"];
 
+  PSSpecifier *includeImage = [PSSpecifier preferenceSpecifierNamed:@"Include Image" target:self set:@selector(setPreferenceValue:forCustomSpecifier:) get:@selector(readCustomPreferenceValue:) detail:nil cell:PSSwitchCell edit:nil];
+  [includeImage setProperty:@"includeImage" forKey:@"key"];
+  [includeImage setProperty:@YES forKey:@"enabled"];
+  [includeImage setProperty:@NO forKey:@"default"];
+  [includeImage setProperty:@(isCustomApp) forKey:@"isCustomApp"];
+  [includeImage setProperty:service forKey:@"service"];
+
   if (isCustomApp) {
     [includeIcon setProperty:appID forKey:@"customAppID"];
+    [includeImage setProperty:appID forKey:@"customAppID"];
   }
 
-  return @[includeIcon];
+  return @[includeIcon, includeImage];
 }
 
 + (NSArray *)getCustomShared:(NSString *)service {

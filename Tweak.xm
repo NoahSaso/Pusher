@@ -519,8 +519,8 @@ static BOOL prefsSayNo(BBServer *server, BBBulletin *bulletin) {
 	NSArray *devices = servicePrefs[@"devices"];
 	NSArray *sounds = servicePrefs[@"sounds"];
 	NSString *url = servicePrefs[@"url"];
-	NSNumber *includeIcon = servicePrefs[@"includeIcon"] ?: @NO;
-	NSNumber *includeImage = servicePrefs[@"includeImage"] ?: @YES;
+	NSNumber *includeIcon = servicePrefs[@"includeIcon"] ?: @NO; // default NO for custom services, default check for built in services done earlier so should never get to this NO
+	NSNumber *includeImage = servicePrefs[@"includeImage"] ?: @NO; // default NO for custom services, default check for built in services done earlier so should never get to this NO
 	NSNumber *curateData = servicePrefs[@"curateData"] ?: @YES;
 	if ([customApps.allKeys containsObject:appID]) {
 		devices = customApps[appID][@"devices"] ?: devices;

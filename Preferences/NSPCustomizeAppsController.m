@@ -37,6 +37,9 @@ static void setPreference(CFStringRef keyRef, CFPropertyListRef val, BOOL should
 		if (_isCustomService || Xeq(_service, PUSHER_SERVICE_IFTTT) || Xeq(_service, PUSHER_SERVICE_PUSHER_RECEIVER)) {
 			defaultDict[@"includeIcon"] = _defaultIncludeIcon;
 		}
+		if (_isCustomService || Xeq(_service, PUSHER_SERVICE_PUSHER_RECEIVER)) {
+			defaultDict[@"includeImage"] = _defaultIncludeImage;
+		}
 		if (_isCustomService || Xeq(_service, PUSHER_SERVICE_IFTTT)) {
 			defaultDict[@"curateData"] = _defaultCurateData;
 		}
@@ -123,10 +126,12 @@ static void setPreference(CFStringRef keyRef, CFPropertyListRef val, BOOL should
 	}
 	if (Xeq(_service, PUSHER_SERVICE_PUSHER_RECEIVER)) {
 		_defaultIncludeIcon = [(prefs[[self.specifier propertyForKey:@"defaultIncludeIconKey"]] ?: @YES) copy];
+		_defaultIncludeImage = [(prefs[[self.specifier propertyForKey:@"defaultIncludeImageKey"]] ?: @YES) copy];
 	}
 	if (_isCustomService) {
 		NSDictionary *customService = (prefs[NSPPreferenceCustomServicesKey] ?: @{})[_service] ?: @{};
 		_defaultIncludeIcon = [(customService[[self.specifier propertyForKey:@"defaultIncludeIconKey"]] ?: @NO) copy];
+		_defaultIncludeImage = [(customService[[self.specifier propertyForKey:@"defaultIncludeImageKey"]] ?: @NO) copy];
 	}
 
 	_sections = [@[@"", @"Apps"] retain];
@@ -198,8 +203,12 @@ static void setPreference(CFStringRef keyRef, CFPropertyListRef val, BOOL should
 	return _sections.count;
 }
 
-- (NSString *)tableView:(UITableView *)tableView titleForHeaderInSection:(NSInteger)section {
-	return _sections[section];
+- (NSString *)tableView:(UITableView *)table titleForHeaderInSection:(NSInteger)section {
+	NSString *title = _sections[section];
+	if (Xeq(title, @"Apps") && [self tableView:table numberOfRowsInSection:section] == 0) {
+		title = @"No Apps";
+	}
+	return title;
 }
 
 - (UITableViewCell *)tableView:(UITableView *)table cellForRowAtIndexPath:(NSIndexPath *)indexPath {
@@ -232,6 +241,7 @@ static void setPreference(CFStringRef keyRef, CFPropertyListRef val, BOOL should
 		[_data[_sections[indexPath.section]] removeObjectAtIndex:indexPath.row];
 		[self saveAppState];
 		[table deleteRowsAtIndexPaths:@[indexPath] withRowAnimation:UITableViewRowAnimationAutomatic];
+		[table reloadSections:[NSIndexSet indexSetWithIndex:indexPath.section] withRowAnimation:UITableViewRowAnimationAutomatic];
 	}];
 	return @[deleteAction];
 }
