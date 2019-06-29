@@ -11,27 +11,17 @@
 		</dict>
 		<dict>
 			<key>cell</key>
-			<string>PSSegmentCell</string>
+			<string>PSSwitchCell</string>
+			<key>PostNotification</key>
+			<string>com.noahsaso.pusher/prefs</string>
 			<key>default</key>
 			<true/>
 			<key>defaults</key>
 			<string>com.noahsaso.pusher</string>
-			<key>PostNotification</key>
-			<string>com.noahsaso.pusher/prefs</string>
-			<key>detail</key>
-			<string>PSListItemsController</string>
 			<key>key</key>
 			<string>Enabled</string>
-			<key>validTitles</key>
-			<array>
-				<string>Disabled</string>
-				<string>Enabled</string>
-			</array>
-			<key>validValues</key>
-			<array>
-				<false/>
-				<true/>
-			</array>
+			<key>label</key>
+			<string>Enabled</string>
 		</dict>
 		<dict>
 			<key>cell</key>
