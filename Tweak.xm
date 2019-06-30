@@ -43,11 +43,9 @@ static NSArray *getAppIDsWithPrefix(NSDictionary *prefs, NSString *prefix) {
 	NSMutableArray *keys = [NSMutableArray new];
 	for (id key in prefs.allKeys) {
 		if (![key isKindOfClass:NSString.class]) { continue; }
-		if ([key hasPrefix:prefix]) {
-			if (((NSNumber *) prefs[key]).boolValue) {
-				NSString *subKey = [key substringFromIndex:prefix.length];
-				[keys addObject:subKey.lowercaseString];
-			}
+		if ([key hasPrefix:prefix] && ((NSNumber *) prefs[key]).boolValue) {
+			NSString *subKey = [key substringFromIndex:prefix.length];
+			[keys addObject:subKey.lowercaseString];
 		}
 	}
 	return keys;

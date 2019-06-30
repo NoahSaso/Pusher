@@ -1,11 +1,11 @@
 #import "NSPAppSelectionController.h"
-#import "NSPALApplicationTableDataSource.h"
+#import "NSPAppSelectionALApplicationTableDataSource.h"
 
 #import "../global.h"
 #import <Custom/defines.h>
 #import <notify.h>
 
-@implementation NSPALApplicationTableDataSource
+@implementation NSPAppSelectionALApplicationTableDataSource
 
 - (UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath {
 	UITableViewCell *cell = [super tableView:tableView cellForRowAtIndexPath:indexPath];
@@ -28,8 +28,8 @@
 	[super viewDidLoad];
 
 	_appList = [ALApplicationList sharedApplicationList];
-	_appListDataSource = [NSPALApplicationTableDataSource new];
-	_appListDataSource.sectionDescriptors = [NSPALApplicationTableDataSource standardSectionDescriptors];
+	_appListDataSource = [NSPAppSelectionALApplicationTableDataSource new];
+	_appListDataSource.sectionDescriptors = [NSPAppSelectionALApplicationTableDataSource standardSectionDescriptors];
 	_appListDataSource.appSelectionController = self;
 
 	self.tableView.dataSource = _appListDataSource;
@@ -59,7 +59,7 @@
 	} else {
 		[self.selectedAppIDs addObject:displayIdentifier];
 	}
-	[table reloadRowsAtIndexPaths:@[indexPath] withRowAnimation:UITableViewRowAnimationNone];
+	[table reloadRowsAtIndexPaths:@[indexPath] withRowAnimation:UITableViewRowAnimationFade];
 }
 
 @end

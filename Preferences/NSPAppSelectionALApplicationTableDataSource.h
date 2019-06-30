@@ -4,6 +4,6 @@
 
 @class NSPAppSelectionController;
 
-@interface NSPALApplicationTableDataSource : ALApplicationTableDataSource
+@interface NSPAppSelectionALApplicationTableDataSource : ALApplicationTableDataSource
 @property (nonatomic, retain) NSPAppSelectionController *appSelectionController;
 @end

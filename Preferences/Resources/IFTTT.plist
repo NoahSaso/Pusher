@@ -70,47 +70,14 @@
 		<dict>
 			<key>cell</key>
 			<string>PSLinkCell</string>
-			<key>bundle</key>
-			<string>AppList</string>
-			<key>isController</key>
-			<string>1</string>
+			<key>detail</key>
+			<string>NSPAppListController</string>
+			<key>icon</key>
+			<string>app_list</string>
 			<key>label</key>
 			<string>App List</string>
-			<key>ALAllowsSelection</key>
-			<string>1</string>
-			<key>ALChangeNotification</key>
-			<string>com.noahsaso.pusher/prefs</string>
-			<key>ALSectionDescriptors</key>
-			<array>
-				<dict>
-					<key>cell-class-name</key>
-					<string>ALSwitchCell</string>
-					<key>icon-size</key>
-					<string>29</string>
-					<key>predicate</key>
-					<string>isSystemApplication = TRUE</string>
-					<key>suppress-hidden-apps</key>
-					<string>1</string>
-					<key>title</key>
-					<string>System Applications</string>
-				</dict>
-				<dict>
-					<key>cell-class-name</key>
-					<string>ALSwitchCell</string>
-					<key>icon-size</key>
-					<string>29</string>
-					<key>predicate</key>
-					<string>isSystemApplication = FALSE</string>
-					<key>suppress-hidden-apps</key>
-					<string>1</string>
-					<key>title</key>
-					<string>User Applications</string>
-				</dict>
-			</array>
 			<key>ALSettingsKeyPrefix</key>
 			<string>IFTTTBL-</string>
-			<key>ALSettingsPath</key>
-			<string>/var/mobile/Library/Preferences/com.noahsaso.pusher.plist</string>
 		</dict>
 		<dict>
 			<key>cell</key>

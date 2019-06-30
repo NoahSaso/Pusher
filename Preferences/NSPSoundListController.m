@@ -20,7 +20,7 @@ static void setPreference(CFStringRef keyRef, CFPropertyListRef val, BOOL should
 
 	// Create buttons
 	_updateBn = [[UIBarButtonItem alloc] initWithTitle:@"Update" style:UIBarButtonItemStylePlain target:self action:@selector(updateSounds)];
-	_activityIndicator = [[UIActivityIndicatorView alloc] initWithActivityIndicatorStyle:UIActivityIndicatorViewStyleWhite];
+	_activityIndicator = [[UIActivityIndicatorView alloc] initWithActivityIndicatorStyle:UIActivityIndicatorViewStyleGray];
 	_activityIndicatorBn = [[UIBarButtonItem alloc] initWithCustomView:_activityIndicator];
 
 	_prefsKey = [[self.specifier propertyForKey:@"prefsKey"] retain];

@@ -1,11 +1,11 @@
 #import <Preferences/PSViewController.h>
 #import <AppList/AppList.h>
-#import "NSPALApplicationTableDataSource.h"
+#import "NSPAppSelectionALApplicationTableDataSource.h"
 #import "NSPCustomizeAppsController.h"
 
 @interface NSPAppSelectionController : UITableViewController <UITableViewDelegate> {
   ALApplicationList *_appList;
-  NSPALApplicationTableDataSource *_appListDataSource;
+  NSPAppSelectionALApplicationTableDataSource *_appListDataSource;
 }
 @property (nonatomic, retain) NSMutableArray *selectedAppIDs;
 @property (nonatomic, retain) NSPCustomizeAppsController *customizeAppsController;
