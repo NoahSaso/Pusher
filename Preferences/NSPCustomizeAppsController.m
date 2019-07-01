@@ -73,9 +73,6 @@ static void setPreference(CFStringRef keyRef, CFPropertyListRef val, BOOL should
 
 	_appList = [ALApplicationList sharedApplicationList];
 
-	_label = [[self.specifier.name componentsSeparatedByString:@" ("][0] retain];
-	[self updateTitle];
-
 	_service = [[self.specifier propertyForKey:@"service"] retain];
 	_isCustomService = [self.specifier propertyForKey:@"isCustomService"] && ((NSNumber *)[self.specifier propertyForKey:@"isCustomService"]).boolValue;
 	_prefsKey = [(_isCustomService ? NSPPreferenceCustomServiceCustomAppsKey(_service) : NSPPreferenceBuiltInServiceCustomAppsKey(_service)) retain];
@@ -114,6 +111,9 @@ static void setPreference(CFStringRef keyRef, CFPropertyListRef val, BOOL should
 		if (!prefs) { prefs = @{}; }
 		CFRelease(keyList);
 	}
+
+	_label = [[self.specifier.name componentsSeparatedByString:@" ("][0] retain];
+	[self updateTitle];
 
 	_customApps = [(prefs[_prefsKey] ?: @{}) mutableCopy];
 
