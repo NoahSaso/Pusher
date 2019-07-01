@@ -29,23 +29,11 @@ static int countAppIDsWithPrefix(NSDictionary *prefs, NSString *prefix) {
 		NSMutableArray *allSpecifiers = [[self loadSpecifiersFromPlistName:@"Root" target:self] mutableCopy];
 		NSArray *globalServices = [self loadSpecifiersFromPlistName:@"GlobalAndServices" target:self];
 
-		// Get preferences for counting
-		CFPreferencesSynchronize(PUSHER_APP_ID, kCFPreferencesCurrentUser, kCFPreferencesAnyHost);
-		CFArrayRef keyList = CFPreferencesCopyKeyList(PUSHER_APP_ID, kCFPreferencesCurrentUser, kCFPreferencesAnyHost);
-		NSDictionary *prefs = @{};
-		if (keyList) {
-			prefs = (NSDictionary *)CFPreferencesCopyMultiple(keyList, PUSHER_APP_ID, kCFPreferencesCurrentUser, kCFPreferencesAnyHost);
-			if (!prefs) { prefs = @{}; }
-			CFRelease(keyList);
-		}
-
 		int idx = 0;
 		for (PSSpecifier *specifier in allSpecifiers) {
 			if (specifier.cellType == PSGroupCell && Xeq(specifier.identifier, @"Support")) {
 				[self addObjectsFromArray:globalServices atIndex:idx toArray:allSpecifiers];
-			} else if (specifier.cellType == PSLinkCell && Xeq(specifier.name, @"App List")) {
-				specifier.name = Xstr(@"%@ (%d total)", specifier.name, countAppIDsWithPrefix(prefs, [specifier propertyForKey:@"ALSettingsKeyPrefix"]));
-				[specifier setProperty:self forKey:@"psListRef"];
+				break;
 			}
 			idx += 1;
 		}
@@ -54,6 +42,28 @@ static int countAppIDsWithPrefix(NSDictionary *prefs, NSString *prefix) {
 	}
 
 	return _specifiers;
+}
+
+- (void)viewDidLoad {
+	[super viewDidLoad];
+
+	// Get preferences for counting
+	CFPreferencesSynchronize(PUSHER_APP_ID, kCFPreferencesCurrentUser, kCFPreferencesAnyHost);
+	CFArrayRef keyList = CFPreferencesCopyKeyList(PUSHER_APP_ID, kCFPreferencesCurrentUser, kCFPreferencesAnyHost);
+	NSDictionary *prefs = @{};
+	if (keyList) {
+		prefs = (NSDictionary *)CFPreferencesCopyMultiple(keyList, PUSHER_APP_ID, kCFPreferencesCurrentUser, kCFPreferencesAnyHost);
+		if (!prefs) { prefs = @{}; }
+		CFRelease(keyList);
+	}
+
+	for (PSSpecifier *specifier in self.specifiers) {
+		if (specifier.cellType == PSLinkCell && Xeq(specifier.name, @"Global App List")) {
+			specifier.name = Xstr(@"%@ (%d total)", specifier.name, countAppIDsWithPrefix(prefs, [specifier propertyForKey:@"ALSettingsKeyPrefix"]));
+			[specifier setProperty:self forKey:@"psListRef"];
+			break;
+		}
+	}
 }
 
 - (void)openTwitter:(NSString *)username {
