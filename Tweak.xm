@@ -220,7 +220,7 @@ static void pusherPrefsChanged() {
 		NSString *soundsKey = Xstr(@"%@Sounds", service);
 		NSString *eventNameKey = Xstr(@"%@EventName", service);
 		NSString *dateFormatKey = Xstr(@"%@DateFormat", service);
-		NSString *customAppsKey = Xstr(@"%@CustomApps", service);
+		NSString *customAppsKey = NSPPreferenceBuiltInServiceCustomAppsKey(service);
 		NSString *appListIsBlacklistKey = Xstr(@"%@AppListIsBlacklist", service);
 		NSString *dbNameKey = Xstr(@"%@DBName", service);
 		NSString *whenToPushKey = Xstr(@"%@WhenToPush", service);

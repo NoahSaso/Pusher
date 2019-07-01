@@ -22,9 +22,12 @@
   NSMutableDictionary *_loadedAppControllers;
 
   BOOL _isCustomService;
+
+  NSString *_label;
 }
 - (void)addAppIDs:(NSArray *)appIDs;
 - (void)setAppDefaults:(NSString *)appID;
 - (void)saveAppState;
 - (void)sortAppIDArray:(NSMutableArray *)array;
+- (void)updateTitle;
 @end

@@ -68,7 +68,7 @@
 		}
 	}
 
-	_label = [self.specifier.name componentsSeparatedByString:@" ("][0];
+	_label = [[self.specifier.name componentsSeparatedByString:@" ("][0] retain];
 	[self updateTitle];
 
 	[_table reloadData];

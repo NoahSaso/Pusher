@@ -57,6 +57,7 @@ static void setPreference(CFStringRef keyRef, CFPropertyListRef val, BOOL should
 			[_customApps removeObjectForKey:appID];
 		}
 	}
+	[self updateTitle];
 	setPreference((__bridge CFStringRef) _prefsKey, (__bridge CFPropertyListRef) _customApps, YES);
 }
 
@@ -72,9 +73,12 @@ static void setPreference(CFStringRef keyRef, CFPropertyListRef val, BOOL should
 
 	_appList = [ALApplicationList sharedApplicationList];
 
+	_label = [[self.specifier.name componentsSeparatedByString:@" ("][0] retain];
+	[self updateTitle];
+
 	_service = [[self.specifier propertyForKey:@"service"] retain];
 	_isCustomService = [self.specifier propertyForKey:@"isCustomService"] && ((NSNumber *)[self.specifier propertyForKey:@"isCustomService"]).boolValue;
-	_prefsKey = [(_isCustomService ? NSPPreferenceCustomServiceCustomAppsKey(_service) : Xstr(@"%@CustomApps", _service)) retain];
+	_prefsKey = [(_isCustomService ? NSPPreferenceCustomServiceCustomAppsKey(_service) : NSPPreferenceBuiltInServiceCustomAppsKey(_service)) retain];
 
 	_lastTargetAppID = nil;
 	_lastTargetIndexPath = nil;
@@ -145,6 +149,14 @@ static void setPreference(CFStringRef keyRef, CFPropertyListRef val, BOOL should
 	[self sortAppIDArray:_data[@"Apps"]];
 
 	[_table reloadData];
+}
+
+- (void)updateTitle {
+	self.specifier.name = Xstr(@"%@ (%lu total)", _label, _customApps.count);
+	PSListController *listController = (PSListController *)[self.specifier propertyForKey:@"psListRef"];
+	if (listController) {
+		[listController reloadSpecifier:self.specifier];
+	}
 }
 
 - (void)sortAppIDArray:(NSMutableArray *)array {

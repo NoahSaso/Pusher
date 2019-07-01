@@ -6,17 +6,7 @@
 #import <Custom/defines.h>
 #import <notify.h>
 
-static int countAppIDsWithPrefix(NSString *prefix) {
-  // Get preferences for counting
-	CFPreferencesSynchronize(PUSHER_APP_ID, kCFPreferencesCurrentUser, kCFPreferencesAnyHost);
-	CFArrayRef keyList = CFPreferencesCopyKeyList(PUSHER_APP_ID, kCFPreferencesCurrentUser, kCFPreferencesAnyHost);
-	NSDictionary *prefs = @{};
-	if (keyList) {
-		prefs = (NSDictionary *)CFPreferencesCopyMultiple(keyList, PUSHER_APP_ID, kCFPreferencesCurrentUser, kCFPreferencesAnyHost);
-		if (!prefs) { prefs = @{}; }
-		CFRelease(keyList);
-	}
-
+static int countAppIDsWithPrefix(NSDictionary *prefs, NSString *prefix) {
   int count = 0;
 	for (id key in prefs.allKeys) {
 		if (![key isKindOfClass:NSString.class]) { continue; }
@@ -88,10 +78,27 @@ static int countAppIDsWithPrefix(NSString *prefix) {
 			sharedSpecifiers = [NSPSharedSpecifiers get:_service];
 		}
 
+		// Get preferences for counting
+		CFPreferencesSynchronize(PUSHER_APP_ID, kCFPreferencesCurrentUser, kCFPreferencesAnyHost);
+		CFArrayRef keyList = CFPreferencesCopyKeyList(PUSHER_APP_ID, kCFPreferencesCurrentUser, kCFPreferencesAnyHost);
+		NSDictionary *prefs = @{};
+		if (keyList) {
+			prefs = (NSDictionary *)CFPreferencesCopyMultiple(keyList, PUSHER_APP_ID, kCFPreferencesCurrentUser, kCFPreferencesAnyHost);
+			if (!prefs) { prefs = @{}; }
+			CFRelease(keyList);
+		}
+
 		for (PSSpecifier *specifier in allSpecifiers) {
-			if (specifier.cellType == PSLinkCell && Xeq(specifier.name, @"App List")) {
-				specifier.name = Xstr(@"%@ (%d total)", specifier.name, countAppIDsWithPrefix([specifier propertyForKey:@"ALSettingsKeyPrefix"]));
-				[specifier setProperty:self forKey:@"psListRef"];
+			if (specifier.cellType == PSLinkCell) {
+				if (Xeq(specifier.name, @"App List")) {
+					specifier.name = Xstr(@"%@ (%d total)", specifier.name, countAppIDsWithPrefix(prefs, [specifier propertyForKey:@"ALSettingsKeyPrefix"]));
+					[specifier setProperty:self forKey:@"psListRef"];
+				} else if (Xeq(specifier.name, @"App Customization")) {
+					NSString *prefsKey = _isCustom ? NSPPreferenceCustomServiceCustomAppsKey(_service) : NSPPreferenceBuiltInServiceCustomAppsKey(_service);
+					NSArray *customApps = (NSArray *) prefs[prefsKey];
+					specifier.name = Xstr(@"%@ (%lu total)", specifier.name, customApps ? customApps.count : 0);
+					[specifier setProperty:self forKey:@"psListRef"];
+				}
 			}
 		}
 
