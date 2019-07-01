@@ -112,10 +112,10 @@ static void setPreference(CFStringRef keyRef, CFPropertyListRef val, BOOL should
 		CFRelease(keyList);
 	}
 
+	_customApps = [(prefs[_prefsKey] ?: @{}) mutableCopy];
+
 	_label = [[self.specifier.name componentsSeparatedByString:@" ("][0] retain];
 	[self updateTitle];
-
-	_customApps = [(prefs[_prefsKey] ?: @{}) mutableCopy];
 
 	if (Xeq(_service, PUSHER_SERVICE_PUSHOVER) || Xeq(_service, PUSHER_SERVICE_PUSHBULLET)) {
 		_defaultDevices = [(prefs[[self.specifier propertyForKey:@"defaultDevicesKey"]] ?: @[]) copy];
