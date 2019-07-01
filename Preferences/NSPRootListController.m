@@ -4,6 +4,17 @@
 #import <Custom/defines.h>
 #import <notify.h>
 
+static int countAppIDsWithPrefix(NSDictionary *prefs, NSString *prefix) {
+  int count = 0;
+	for (id key in prefs.allKeys) {
+		if (![key isKindOfClass:NSString.class]) { continue; }
+		if ([key hasPrefix:prefix] && ((NSNumber *) prefs[key]).boolValue) {
+      count += 1;
+		}
+	}
+	return count;
+}
+
 @implementation NSPRootListController
 
 - (void)addObjectsFromArray:(NSArray *)source atIndex:(int)idx toArray:(NSMutableArray *)dest {
@@ -18,11 +29,23 @@
 		NSMutableArray *allSpecifiers = [[self loadSpecifiersFromPlistName:@"Root" target:self] mutableCopy];
 		NSArray *globalServices = [self loadSpecifiersFromPlistName:@"GlobalAndServices" target:self];
 
+		// Get preferences for counting
+		CFPreferencesSynchronize(PUSHER_APP_ID, kCFPreferencesCurrentUser, kCFPreferencesAnyHost);
+		CFArrayRef keyList = CFPreferencesCopyKeyList(PUSHER_APP_ID, kCFPreferencesCurrentUser, kCFPreferencesAnyHost);
+		NSDictionary *prefs = @{};
+		if (keyList) {
+			prefs = (NSDictionary *)CFPreferencesCopyMultiple(keyList, PUSHER_APP_ID, kCFPreferencesCurrentUser, kCFPreferencesAnyHost);
+			if (!prefs) { prefs = @{}; }
+			CFRelease(keyList);
+		}
+
 		int idx = 0;
 		for (PSSpecifier *specifier in allSpecifiers) {
 			if (specifier.cellType == PSGroupCell && Xeq(specifier.identifier, @"Support")) {
 				[self addObjectsFromArray:globalServices atIndex:idx toArray:allSpecifiers];
-				break;
+			} else if (specifier.cellType == PSLinkCell && Xeq(specifier.name, @"App List")) {
+				specifier.name = Xstr(@"%@ (%d total)", specifier.name, countAppIDsWithPrefix(prefs, [specifier propertyForKey:@"ALSettingsKeyPrefix"]));
+				[specifier setProperty:self forKey:@"psListRef"];
 			}
 			idx += 1;
 		}
