@@ -10,8 +10,10 @@
   NSPAppListALApplicationTableDataSource *_appListDataSource;
   NSString *_prefix;
   NSString *_label;
+  NSDictionary *_prefs;
 }
 @property (nonatomic, retain) NSMutableArray *selectedAppIDs;
 - (void)updatePreferencesForAppID:(NSString *)appID selected:(BOOL)selected;
 - (void)updateTitle;
+- (void)showTutorial;
 @end

@@ -5,6 +5,15 @@
 #import <Custom/defines.h>
 #import <notify.h>
 
+static void setPreference(CFStringRef keyRef, CFPropertyListRef val, BOOL shouldNotify) {
+	CFPreferencesSetValue(keyRef, val, PUSHER_APP_ID, kCFPreferencesCurrentUser, kCFPreferencesAnyHost);
+	CFPreferencesSynchronize(PUSHER_APP_ID, kCFPreferencesCurrentUser, kCFPreferencesAnyHost);
+  if (shouldNotify) {
+    // Reload stuff
+    notify_post("com.noahsaso.pusher/prefs");
+  }
+}
+
 @implementation NSPAppListALApplicationTableDataSource
 
 - (UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath {
@@ -27,7 +36,7 @@
 - (void)viewDidLoad {
 	[super viewDidLoad];
 
-	_table = [[UITableView alloc] initWithFrame:self.view.bounds style:UITableViewStyleGrouped];
+	_table = [[UITableView alloc] initWithFrame:self.view.bounds style:UITableViewStylePlain];
 	[_table registerClass:UITableViewCell.class forCellReuseIdentifier:@"AppCell"];
 	_table.delegate = self;
 	[self.view addSubview:_table];
@@ -52,17 +61,17 @@
 	// Get preferences
 	CFPreferencesSynchronize(PUSHER_APP_ID, kCFPreferencesCurrentUser, kCFPreferencesAnyHost);
 	CFArrayRef keyList = CFPreferencesCopyKeyList(PUSHER_APP_ID, kCFPreferencesCurrentUser, kCFPreferencesAnyHost);
-	NSDictionary *prefs = @{};
+	_prefs = @{};
 	if (keyList) {
-		prefs = (NSDictionary *)CFPreferencesCopyMultiple(keyList, PUSHER_APP_ID, kCFPreferencesCurrentUser, kCFPreferencesAnyHost);
-		if (!prefs) { prefs = @{}; }
+		_prefs = (NSDictionary *)CFPreferencesCopyMultiple(keyList, PUSHER_APP_ID, kCFPreferencesCurrentUser, kCFPreferencesAnyHost);
+		if (!_prefs) { _prefs = @{}; }
 		CFRelease(keyList);
 	}
 
 	self.selectedAppIDs = [NSMutableArray new];
-	for (id key in prefs.allKeys) {
+	for (id key in _prefs.allKeys) {
 		if (![key isKindOfClass:NSString.class]) { continue; }
-		if ([key hasPrefix:_prefix] && ((NSNumber *) prefs[key]).boolValue) {
+		if ([key hasPrefix:_prefix] && ((NSNumber *) _prefs[key]).boolValue) {
 			NSString *subKey = [key substringFromIndex:_prefix.length];
 			[self.selectedAppIDs addObject:subKey];
 		}
@@ -124,6 +133,59 @@
 	[self updatePreferencesForAppID:displayIdentifier selected:![self.selectedAppIDs containsObject:displayIdentifier]];
 
 	[table reloadRowsAtIndexPaths:@[indexPath] withRowAnimation:UITableViewRowAnimationFade];
+}
+
+- (void)viewDidAppear:(BOOL)animated {
+	[super viewDidAppear:animated];
+	if (!_prefs[@"AppListTutorialShown"] || !((NSNumber *) _prefs[@"AppListTutorialShown"]).boolValue) {
+		[self showTutorial];
+	}
+}
+
+- (void)showTutorial {
+	UIWindow *window = [UIApplication sharedApplication].keyWindow;
+	UIView *tutorialView = [[UIView alloc] initWithFrame:window.bounds];
+	tutorialView.alpha = 0.f;
+	tutorialView.backgroundColor = [UIColor colorWithWhite:0.f alpha:0.9f];
+
+	// Label setup
+	UILabel *label = [UILabel new];
+	label.font = [UIFont fontWithName:@"HelveticaNeue-Thin" size:UIFont.systemFontSize * 1.5f];
+	label.textColor = UIColor.whiteColor;
+	label.text = @"Tap on the apps you want to be in the list, and checkmarks will indicate which apps are selected. The Blacklist / Whitelist setting in the previous menu determines what function this app list serves.\n\nTap anywhere to continue.";
+	label.lineBreakMode = NSLineBreakByWordWrapping;
+	label.numberOfLines = 0;
+	label.translatesAutoresizingMaskIntoConstraints = NO;
+	label.textAlignment = NSTextAlignmentCenter;
+	[tutorialView addSubview:label];
+
+	// Constraints
+	[label addConstraint:[NSLayoutConstraint constraintWithItem:label attribute:NSLayoutAttributeWidth relatedBy:NSLayoutRelationEqual toItem:nil attribute:NSLayoutAttributeNotAnAttribute multiplier:1 constant:270]];
+	[label addConstraint:[NSLayoutConstraint constraintWithItem:label attribute:NSLayoutAttributeHeight relatedBy:NSLayoutRelationEqual toItem:nil attribute:NSLayoutAttributeNotAnAttribute multiplier:1 constant:tutorialView.frame.size.height]];
+	[label.centerXAnchor constraintEqualToAnchor:label.superview.centerXAnchor].active = YES;
+	[label.centerYAnchor constraintEqualToAnchor:label.superview.centerYAnchor].active = YES;
+
+	[window addSubview:tutorialView];
+	[UIView animateWithDuration:0.3 animations:^{ tutorialView.alpha = 1.f; }];
+
+	// Add touch action after a second
+	UITapGestureRecognizer *tapGestureRecognizer = [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(dismissTutorial:)];
+	dispatch_after(dispatch_time(DISPATCH_TIME_NOW, 1.f * NSEC_PER_SEC), dispatch_get_main_queue(), ^{
+		// Dismiss gesture
+		[tutorialView addGestureRecognizer:tapGestureRecognizer];
+	});
+
+	CFStringRef tutorialKeyRef = CFSTR("AppListTutorialShown");
+	setPreference(tutorialKeyRef, (__bridge CFNumberRef) @YES, NO);
+	CFRelease(tutorialKeyRef);
+	NSMutableDictionary *mutablePrefs = [_prefs mutableCopy];
+	mutablePrefs[@"AppListTutorialShown"] = @YES;
+	_prefs = [mutablePrefs copy];
+}
+
+- (void)dismissTutorial:(UITapGestureRecognizer *)tapGestureRecognizer {
+	UIView *tutorialView = tapGestureRecognizer.view;
+	[UIView animateWithDuration:0.3 animations:^{ tutorialView.alpha = 0.f; } completion:^(BOOL finished){ [tutorialView removeFromSuperview]; }];
 }
 
 @end

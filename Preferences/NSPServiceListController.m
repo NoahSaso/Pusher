@@ -103,10 +103,10 @@ static void setPreference(CFStringRef keyRef, CFPropertyListRef val, BOOL should
 	UIWindow *window = [UIApplication sharedApplication].keyWindow;
 	UIView *tutorialView = [[UIView alloc] initWithFrame:window.bounds];
 	tutorialView.alpha = 0.f;
-	tutorialView.backgroundColor = [UIColor colorWithWhite:0.f alpha:0.8f];
+	tutorialView.backgroundColor = [UIColor colorWithWhite:0.f alpha:0.9f];
 
 	// Label setup
-	UILabel *label = [[UILabel alloc] init];
+	UILabel *label = [UILabel new];
 	label.font = [UIFont fontWithName:@"HelveticaNeue-Thin" size:UIFont.systemFontSize * 1.5f];
 	label.textColor = UIColor.whiteColor;
 	label.text = @"After setting up your services, remember to enable them by using the 'Edit' button in the top right of this page and dragging your services to the 'Enabled' section at the top.\n\nTap anywhere to continue.";
@@ -135,6 +135,9 @@ static void setPreference(CFStringRef keyRef, CFPropertyListRef val, BOOL should
 	CFStringRef tutorialKeyRef = CFSTR("ServiceListTutorialShown");
 	setPreference(tutorialKeyRef, (__bridge CFNumberRef) @YES, NO);
 	CFRelease(tutorialKeyRef);
+	NSMutableDictionary *mutablePrefs = [_prefs mutableCopy];
+	mutablePrefs[@"ServiceListTutorialShown"] = @YES;
+	_prefs = [mutablePrefs copy];
 }
 
 - (void)dismissTutorial:(UITapGestureRecognizer *)tapGestureRecognizer {
