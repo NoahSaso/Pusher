@@ -3,7 +3,7 @@ ARCHS = arm64 arm64e
 include $(THEOS)/makefiles/common.mk
 
 BUNDLE_NAME = Pusher
-Pusher_FILES = NSPRootListController.m NSPDeviceListController.m NSPServiceListController.m NSPServiceController.m NSPSharedSpecifiers.m NSPCustomAppController.m NSPCustomizeAppsController.m NSPAppSelectionController.m NSPSoundListController.m NSPSNSListController.m CCLocalMaximum.m CCColorCube.m NSPPSViewControllerWithColoredUI.m NSPPSListControllerWithColoredUI.m NSPAppListController.m
+Pusher_FILES = NSPRootListController.m NSPDeviceListController.m NSPServiceListController.m NSPServiceController.m NSPSharedSpecifiers.m NSPCustomAppController.m NSPCustomizeAppsController.m NSPAppSelectionController.m NSPSoundListController.m NSPSNSListController.m CCLocalMaximum.m CCColorCube.m NSPPSViewControllerWithColoredUI.m NSPPSListControllerWithColoredUI.m NSPAppListController.m NSPLogController.m
 Pusher_INSTALL_PATH = /Library/PreferenceBundles
 Pusher_FRAMEWORKS = UIKit
 Pusher_PRIVATE_FRAMEWORKS = Preferences AppSupport

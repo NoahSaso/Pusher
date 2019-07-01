@@ -80,6 +80,21 @@
 			<key>label</key>
 			<string>Sufficient Notification Settings</string>
 		</dict>
+
+		<dict>
+			<key>cell</key>
+			<string>PSGroupCell</string>
+		</dict>
+		<dict>
+			<key>cell</key>
+			<string>PSLinkCell</string>
+			<key>detail</key>
+			<string>NSPLogController</string>
+			<key>icon</key>
+			<string>log</string>
+			<key>label</key>
+			<string>Log</string>
+		</dict>
 	</array>
 	<key>title</key>
 	<string>Pusher</string>
