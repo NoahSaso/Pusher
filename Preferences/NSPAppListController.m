@@ -68,7 +68,7 @@
 		}
 	}
 
-	_label = [self.specifier propertyForKey:@"label"];
+	_label = [self.specifier.name componentsSeparatedByString:@" ("][0];
 	[self updateTitle];
 
 	[_table reloadData];
@@ -76,6 +76,11 @@
 
 - (void)updateTitle {
 	self.navigationItem.title = Xstr(@"%@ (%lu total)", _label, self.selectedAppIDs.count);
+	self.specifier.name = self.navigationItem.title;
+	PSListController *listController = (PSListController *)[self.specifier propertyForKey:@"psListRef"];
+	if (listController) {
+		[listController reloadSpecifier:self.specifier];
+	}
 }
 
 - (void)updateSearchResultsForSearchController:(UISearchController *)searchController {

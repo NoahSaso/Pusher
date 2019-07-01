@@ -1,4 +1,5 @@
 #import <Preferences/PSViewController.h>
+#import <Preferences/PSListController.h>
 #import <AppList/AppList.h>
 #import "NSPAppListALApplicationTableDataSource.h"
 #import "NSPCustomizeAppsController.h"

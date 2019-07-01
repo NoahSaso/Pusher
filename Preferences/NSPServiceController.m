@@ -6,6 +6,27 @@
 #import <Custom/defines.h>
 #import <notify.h>
 
+static int countAppIDsWithPrefix(NSString *prefix) {
+  // Get preferences for counting
+	CFPreferencesSynchronize(PUSHER_APP_ID, kCFPreferencesCurrentUser, kCFPreferencesAnyHost);
+	CFArrayRef keyList = CFPreferencesCopyKeyList(PUSHER_APP_ID, kCFPreferencesCurrentUser, kCFPreferencesAnyHost);
+	NSDictionary *prefs = @{};
+	if (keyList) {
+		prefs = (NSDictionary *)CFPreferencesCopyMultiple(keyList, PUSHER_APP_ID, kCFPreferencesCurrentUser, kCFPreferencesAnyHost);
+		if (!prefs) { prefs = @{}; }
+		CFRelease(keyList);
+	}
+
+  int count = 0;
+	for (id key in prefs.allKeys) {
+		if (![key isKindOfClass:NSString.class]) { continue; }
+		if ([key hasPrefix:prefix] && ((NSNumber *) prefs[key]).boolValue) {
+      count += 1;
+		}
+	}
+	return count;
+}
+
 @implementation NSPServiceController
 
 - (id)initWithService:(NSString *)service image:(UIImage *)image isCustom:(BOOL)isCustom {
@@ -65,6 +86,13 @@
 		} else {
 			allSpecifiers = [[self loadSpecifiersFromPlistName:_service target:self] mutableCopy];
 			sharedSpecifiers = [NSPSharedSpecifiers get:_service];
+		}
+
+		for (PSSpecifier *specifier in allSpecifiers) {
+			if (specifier.cellType == PSLinkCell && Xeq(specifier.name, @"App List")) {
+				specifier.name = Xstr(@"%@ (%d total)", specifier.name, countAppIDsWithPrefix([specifier propertyForKey:@"ALSettingsKeyPrefix"]));
+				[specifier setProperty:self forKey:@"psListRef"];
+			}
 		}
 
 		BOOL insertOnNext = NO;

@@ -84,6 +84,8 @@
 			<string>PSLinkCell</string>
 			<key>label</key>
 			<string>App Customization</string>
+			<key>icon</key>
+			<string>app_list</string>
 			<key>detail</key>
 			<string>NSPCustomizeAppsController</string>
 			<key>service</key>

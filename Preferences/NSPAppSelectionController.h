@@ -3,7 +3,7 @@
 #import "NSPAppSelectionALApplicationTableDataSource.h"
 #import "NSPCustomizeAppsController.h"
 
-@interface NSPAppSelectionController : UITableViewController <UITableViewDelegate> {
+@interface NSPAppSelectionController : UITableViewController <UITableViewDelegate, UISearchResultsUpdating> {
   ALApplicationList *_appList;
   NSPAppSelectionALApplicationTableDataSource *_appListDataSource;
 }

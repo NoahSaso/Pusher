@@ -240,8 +240,18 @@ static void setPreference(CFStringRef keyRef, CFPropertyListRef val, BOOL should
 	UITableViewRowAction *deleteAction = [UITableViewRowAction rowActionWithStyle:UITableViewRowActionStyleDestructive title:@"Delete" handler:^(UITableViewRowAction *action, NSIndexPath *indexPath) {
 		[_data[_sections[indexPath.section]] removeObjectAtIndex:indexPath.row];
 		[self saveAppState];
+
+		// do all this fancy transition stuff to animate header to 'No Apps' if last one deleted (unnecessary but user experience is TOP priority!11!!!1)
+		[CATransaction begin];
+		[table beginUpdates];
+		if (((NSArray *) _data[_sections[indexPath.section]]).count == 0) {
+			[CATransaction setCompletionBlock:^{
+				[table reloadData];
+			}];
+		}
 		[table deleteRowsAtIndexPaths:@[indexPath] withRowAnimation:UITableViewRowAnimationAutomatic];
-		[table reloadSections:[NSIndexSet indexSetWithIndex:indexPath.section] withRowAnimation:UITableViewRowAnimationAutomatic];
+		[table endUpdates];
+		[CATransaction commit];
 	}];
 	return @[deleteAction];
 }

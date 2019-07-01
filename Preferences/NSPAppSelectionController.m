@@ -19,7 +19,7 @@
 @implementation NSPAppSelectionController
 
 - (void)dealloc {
-	[_appListDataSource.tableView release];
+	[self.tableView release];
 	[_appListDataSource dealloc];
 	[super dealloc];
 }
@@ -35,6 +35,13 @@
 	self.tableView.dataSource = _appListDataSource;
 	_appListDataSource.tableView = self.tableView;
 
+	UISearchController *searchController = [[UISearchController alloc] initWithSearchResultsController:nil];
+	searchController.searchResultsUpdater = self;
+	searchController.hidesNavigationBarDuringPresentation = NO;
+	searchController.dimsBackgroundDuringPresentation = NO;
+	[searchController.searchBar sizeToFit];
+	self.tableView.tableHeaderView = searchController.searchBar;
+
 	self.selectedAppIDs = [NSMutableArray new];
 
 	self.navigationItem.title = @"Add Apps";
@@ -49,6 +56,26 @@
 - (void)doneSelecting {
 	[self.customizeAppsController addAppIDs:self.selectedAppIDs];
 	[self dismiss];
+}
+
+- (void)updateSearchResultsForSearchController:(UISearchController *)searchController {
+	NSString *filter = searchController.searchBar.text;
+
+	NSMutableArray *sectionDescriptors = [NSPAppSelectionALApplicationTableDataSource.standardSectionDescriptors mutableCopy];
+	if (XIS_EMPTY(filter)) {
+		_appListDataSource.sectionDescriptors = sectionDescriptors;
+	} else {
+		NSMutableArray *filteredSectionDescriptors = [NSMutableArray new];
+		for (NSDictionary *sectionDescriptor in sectionDescriptors) {
+			NSMutableDictionary *filteredSectionDescriptor = [sectionDescriptor mutableCopy];
+			filteredSectionDescriptor[ALSectionDescriptorPredicateKey] = Xstr(@"%@ AND displayName CONTAINS[cd] '%@'", filteredSectionDescriptor[ALSectionDescriptorPredicateKey], filter);
+			XLog(@"filteredSectionDescriptor[ALSectionDescriptorPredicateKey] = %@", filteredSectionDescriptor[ALSectionDescriptorPredicateKey]);
+			[filteredSectionDescriptors addObject:filteredSectionDescriptor];
+		}
+		_appListDataSource.sectionDescriptors = filteredSectionDescriptors;
+	}
+
+	[self.tableView reloadSections:[NSIndexSet indexSetWithIndexesInRange:NSMakeRange(0, 2)] withRowAnimation:UITableViewRowAnimationNone];
 }
 
 - (void)tableView:(UITableView *)table didSelectRowAtIndexPath:(NSIndexPath *)indexPath {
