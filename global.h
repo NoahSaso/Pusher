@@ -3,6 +3,8 @@
 #define PUSHER_PREFS_FILE @"/var/mobile/Library/Preferences/com.noahsaso.pusher.plist"
 #define PUSHER_PREFS_NOTIFICATION CFSTR("com.noahsaso.pusher/prefs")
 #define PUSHER_APP_ID CFSTR("com.noahsaso.pusher")
+#define PUSHER_LOG_PREFS_NOTIFICATION CFSTR("com.noahsaso.pusher~log/prefs")
+#define PUSHER_LOG_ID CFSTR("com.noahsaso.pusher~log")
 #define PUSHER_BUNDLE_PATH @"/Library/PreferenceBundles/Pusher.bundle"
 #define PUSHER_BUNDLE [NSBundle bundleWithPath:PUSHER_BUNDLE_PATH]
 #define PUSHER_COLOR [UIColor colorWithRed:0.0 green:177/255.0 blue:79/255.0 alpha:1.0]
