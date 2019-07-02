@@ -13,6 +13,9 @@
   NSString *_logEnabledKey;
   BOOL _logEnabled;
   NSMutableArray *_expandedIndexPaths;
+  int _clearLogRow;
+  int _logEnabledSwitchRow;
+  int _firstLogSection;
 }
 - (void)updateLog;
 - (void)updateLogEnabled:(UISwitch *)logEnabledSwitch;

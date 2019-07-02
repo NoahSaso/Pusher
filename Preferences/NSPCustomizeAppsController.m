@@ -190,6 +190,9 @@ static void setPreference(CFStringRef keyRef, CFPropertyListRef val, BOOL should
 	// Non-App
 	if (indexPath.section == 0) {
 		NSPAppSelectionController *appSelectionController = [NSPAppSelectionController new];
+		appSelectionController.title = @"Add Apps";
+		appSelectionController.rightButtonTitle = @"Add";
+		appSelectionController.selectingMultiple = YES;
 		appSelectionController.customizeAppsController = self;
 		UINavigationController *navController = [[UINavigationController alloc] initWithRootViewController:appSelectionController];
 		[self presentViewController:navController animated:YES completion:nil];

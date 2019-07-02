@@ -1,4 +1,5 @@
 #import "NSPLogController.h"
+#import "NSPAppSelectionController.h"
 
 static NSPLogController *logControllerSharedInstance = nil;
 static void logsUpdated() {
@@ -70,26 +71,38 @@ static NSDictionary *getLogPreferences() {
 	NSDictionary *prefs = getLogPreferences();
 
 	if (_sections) {
-		[_sections removeAllObjects];
-		[_sections addObject:@"Settings"];
-	} else {
-		_sections = [@[@"Settings"] mutableCopy];
+		[_sections release];
 	}
+	_sections = [@[
+		@"Settings",
+		@"Filters"
+	] mutableCopy];
 
 	if (_data) {
-		[_data removeAllObjects];
-		_data[_sections[0]] = @[
+		[_data release];
+	}
+	_data = [@{
+		_sections[0]: [@[
 			@"Logger Enabled",
 			@"Clear Existing Logs"
-		];
+		] mutableCopy],
+		_sections[1]: @[
+			@"Network Response",
+			@"App"
+		]
+	} mutableCopy];
+
+	if (_global) {
+		// remove enabled switch because global can't be disabled
+		[_data[_sections[0]] removeObjectAtIndex:0];
+		_logEnabledSwitchRow = -1;
+		_clearLogRow = 0;
 	} else {
-		_data = [@{
-			_sections[0]: @[
-				@"Logger Enabled",
-				@"Clear Existing Logs"
-			]
-		} mutableCopy];
+		_logEnabledSwitchRow = 0;
+		_clearLogRow = 1;
 	}
+
+	_firstLogSection = _data.count;
 
 	_expandedIndexPaths = [NSMutableArray new];
 
@@ -131,7 +144,7 @@ static NSDictionary *getLogPreferences() {
 	[tableView deselectRowAtIndexPath:indexPath animated:YES];
 
 	// Clear log button
-	if (indexPath.section == 0 && indexPath.row == 1) {
+	if (indexPath.section == 0 && indexPath.row == _clearLogRow) {
 		if (_global) {
 			NSDictionary *prefs = getLogPreferences();
 			for (id key in prefs.allKeys) {
@@ -148,13 +161,22 @@ static NSDictionary *getLogPreferences() {
 		}
 
 		int numSections = [self numberOfSectionsInTableView:tableView];
-		if (numSections > 1) {
+		if (numSections >= _firstLogSection) {
 			[tableView beginUpdates];
 			[self updateLog];
-			[tableView deleteSections:[NSIndexSet indexSetWithIndexesInRange:NSMakeRange(1, numSections - 1)] withRowAnimation:UITableViewRowAnimationAutomatic];
+			[tableView deleteSections:[NSIndexSet indexSetWithIndexesInRange:NSMakeRange(1, numSections - _firstLogSection)] withRowAnimation:UITableViewRowAnimationAutomatic];
 			[tableView endUpdates];
 		}
-	} else if (indexPath.section > 0) {
+	} else if (indexPath.section == 1 && indexPath.row == 1) {
+		// app filter
+		NSPAppSelectionController *appSelectionController = [NSPAppSelectionController new];
+		appSelectionController.title = @"Select an App";
+		appSelectionController.selectingMultiple = NO;
+		[appSelectionController add]
+		appSelectionController.customizeAppsController = self;
+		UINavigationController *navController = [[UINavigationController alloc] initWithRootViewController:appSelectionController];
+		[self presentViewController:navController animated:YES completion:nil];
+	} else if (indexPath.section >= _firstLogSection) {
 		if ([_expandedIndexPaths containsObject:indexPath]) {
 			[_expandedIndexPaths removeObject:indexPath];
 		} else {
@@ -179,14 +201,25 @@ static NSDictionary *getLogPreferences() {
 - (UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath {
 	UITableViewCell *cell = [tableView dequeueReusableCellWithIdentifier:@"LogCell" forIndexPath:indexPath];
 	cell.textLabel.text = _data[_sections[indexPath.section]][indexPath.row];
-	BOOL expands = [_expandedIndexPaths containsObject:indexPath];
-	cell.textLabel.numberOfLines = expands ? 0 : 1;
-	cell.textLabel.lineBreakMode = expands ? NSLineBreakByWordWrapping : NSLineBreakByTruncatingTail;
+	BOOL expanded = [_expandedIndexPaths containsObject:indexPath];
+	cell.textLabel.numberOfLines = expanded ? 0 : 1;
+	cell.textLabel.lineBreakMode = expanded ? NSLineBreakByWordWrapping : NSLineBreakByTruncatingTail;
+
+	CGSize textSize = [cell.textLabel.text sizeWithAttributes:@{NSFontAttributeName: cell.textLabel.font}];
+	BOOL isTruncated = textSize.width > cell.contentView.bounds.size.width;
+	if ((indexPath.section == 0 && indexPath.row == _clearLogRow)
+			|| (indexPath.section == 1 && indexPath.row > 0)
+			|| (indexPath.section >= _firstLogSection && !expanded && isTruncated)) {
+		cell.accessoryType = UITableViewCellAccessoryDisclosureIndicator;
+	} else {
+		cell.accessoryType = UITableViewCellAccessoryNone;
+	}
+
 	UISwitch *logEnabledSwitch = (UISwitch *) cell.accessoryView;
-	if (indexPath.section == 0 && indexPath.row == 0) {
+	if (indexPath.section == 0 && indexPath.row == _logEnabledSwitchRow) {
 		if (!logEnabledSwitch || ![logEnabledSwitch isKindOfClass:UISwitch.class]) {
 			logEnabledSwitch = [UISwitch new];
-			logEnabledSwitch.on = _logEnabled;	
+			logEnabledSwitch.on = _logEnabled;
 			[logEnabledSwitch addTarget:self action:@selector(updateLogEnabled:) forControlEvents:UIControlEventValueChanged];
 			cell.accessoryView = logEnabledSwitch;
 		}

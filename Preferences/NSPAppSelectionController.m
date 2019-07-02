@@ -44,9 +44,11 @@
 
 	self.selectedAppIDs = [NSMutableArray new];
 
-	self.navigationItem.title = @"Add Apps";
+	self.navigationItem.title = self.title;
 	self.navigationItem.leftBarButtonItem = [[UIBarButtonItem alloc] initWithTitle:@"Cancel" style:UIBarButtonItemStylePlain target:self action:@selector(dismiss)];
-	self.navigationItem.rightBarButtonItem = [[UIBarButtonItem alloc] initWithTitle:@"Add" style:UIBarButtonItemStylePlain target:self action:@selector(doneSelecting)];
+	if (self.selectingMultiple) {
+		self.navigationItem.rightBarButtonItem = [[UIBarButtonItem alloc] initWithTitle:self.rightButtonTitle style:UIBarButtonItemStylePlain target:self action:@selector(doneSelecting)];
+	}
 }
 
 - (void)dismiss {
