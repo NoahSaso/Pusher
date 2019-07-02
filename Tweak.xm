@@ -38,6 +38,30 @@ static BBServer *bbServerInstance = nil;
 
 static NSMutableArray *recentNotificationTitles = [NSMutableArray new];
 
+static NSString *stringForObject(id object) {
+	NSString *str = @"";
+	if ([object isKindOfClass:NSArray.class]) {
+		NSArray *array = (NSArray *) object;
+		str = @"[";
+		for (id val in object) {
+			str = Xstr(@"\n\t%@", stringForObject(val));
+		}
+		str = Xstr(@"%@\n]", str);
+	} else if ([object isKindOfClass:NSDictionary.class]) {
+		NSDictionary *dict = (NSDictionary *) object;
+		str = @"{";
+		for (id key in dict.allKeys) {
+			str = Xstr(@"\n\t%@: %@", key, stringForObject(dict[key]));
+		}
+		str = Xstr(@"%@\n}", str);
+	} else {
+		str = Xstr(@"%@", object); // find out what %@ actually does and directly call that method
+	}
+	return str;
+}
+
+static void addToLog(NSString *service, )
+
 // returns array of all lowercase keys that begin with the given prefix that have a boolean value of true in the dictionary
 static NSArray *getAppIDsWithPrefix(NSDictionary *prefs, NSString *prefix) {
 	NSMutableArray *keys = [NSMutableArray new];
