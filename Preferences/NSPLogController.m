@@ -130,9 +130,11 @@ static NSDictionary *getLogPreferences() {
 
 		int numSections = [self numberOfSectionsInTableView:tableView];
 		if (numSections > 1) {
+			[tableView beginUpdates];
+			[self updateLog];
 			[tableView deleteSections:[NSIndexSet indexSetWithIndexesInRange:NSMakeRange(1, numSections - 1)] withRowAnimation:UITableViewRowAnimationTop];
+			[tableView endUpdates];
 		}
-		[self updateLog];
 	}
 }
 
