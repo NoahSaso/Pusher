@@ -12,7 +12,9 @@
   NSString *_logKey;
   NSString *_logEnabledKey;
   BOOL _logEnabled;
+  NSMutableArray *_expandedIndexPaths;
 }
 - (void)updateLog;
 - (void)updateLogEnabled:(UISwitch *)logEnabledSwitch;
+- (void)updateLogAndReload;
 @end

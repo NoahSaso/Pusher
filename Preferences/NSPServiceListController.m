@@ -6,7 +6,7 @@ static void setPreference(CFStringRef keyRef, CFPropertyListRef val, BOOL should
 	CFPreferencesSynchronize(PUSHER_APP_ID, kCFPreferencesCurrentUser, kCFPreferencesAnyHost);
   if (shouldNotify) {
     // Reload stuff
-    notify_post("com.noahsaso.pusher/prefs");
+    notify_post(PUSHER_PREFS_NOTIFICATION);
   }
 }
 
@@ -166,7 +166,7 @@ static void setPreference(CFStringRef keyRef, CFPropertyListRef val, BOOL should
 			}
 		}
 		[self saveCustomServices]; // will notify post
-		// notify_post("com.noahsaso.pusher/prefs");
+		// notify_post(PUSHER_PREFS_NOTIFICATION);
 	}
 }
 
@@ -376,7 +376,7 @@ static void setPreference(CFStringRef keyRef, CFPropertyListRef val, BOOL should
 		}
 
 		CFPreferencesSetMultiple((__bridge CFDictionaryRef)newPrefs, (__bridge CFArrayRef)keysToRemove, PUSHER_APP_ID, kCFPreferencesCurrentUser, kCFPreferencesAnyHost);
-		notify_post("com.noahsaso.pusher/prefs");
+		notify_post(PUSHER_PREFS_NOTIFICATION);
 
 		NSString *currSection = ((NSNumber *) _customServices[newServiceName][@"Enabled"]).boolValue ? @"Enabled" : @"Disabled";
 		[_data[currSection] removeObject:currService];

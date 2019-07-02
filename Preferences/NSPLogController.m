@@ -1,5 +1,12 @@
 #import "NSPLogController.h"
 
+static NSPLogController *logControllerSharedInstance = nil;
+static void logsUpdated() {
+	if (logControllerSharedInstance && [logControllerSharedInstance isKindOfClass:NSPLogController.class] && [logControllerSharedInstance respondsToSelector:@selector(updateLogAndReload)]) {
+		[logControllerSharedInstance updateLogAndReload];
+	}
+}
+
 static NSDictionary *getLogPreferences() {
 	CFPreferencesSynchronize(PUSHER_LOG_ID, kCFPreferencesCurrentUser, kCFPreferencesAnyHost);
 	CFArrayRef keyList = CFPreferencesCopyKeyList(PUSHER_LOG_ID, kCFPreferencesCurrentUser, kCFPreferencesAnyHost);
@@ -15,6 +22,7 @@ static NSDictionary *getLogPreferences() {
 @implementation NSPLogController
 
 - (void)dealloc {
+	logControllerSharedInstance = nil;
 	[_table release];
 	[super dealloc];
 }
@@ -22,10 +30,14 @@ static NSDictionary *getLogPreferences() {
 - (void)viewDidLoad {
 	[super viewDidLoad];
 
+	logControllerSharedInstance = self;
+	CFNotificationCenterAddObserver(CFNotificationCenterGetDarwinNotifyCenter(), NULL, (CFNotificationCallback)logsUpdated, CFSTR(PUSHER_LOG_PREFS_NOTIFICATION), NULL, CFNotificationSuspensionBehaviorCoalesce);
+
 	_table = [[UITableView alloc] initWithFrame:self.view.bounds style:UITableViewStyleGrouped];
 	[_table registerClass:UITableViewCell.class forCellReuseIdentifier:@"LogCell"];
 	_table.delegate = self;
 	_table.dataSource = self;
+	_table.rowHeight = UITableViewAutomaticDimension;
 	[self.view addSubview:_table];
 
 	_service = [[self.specifier propertyForKey:@"service"] ?: @"" retain];
@@ -47,7 +59,12 @@ static NSDictionary *getLogPreferences() {
 	_logEnabled = logEnabledSwitch.isOn;
 	CFPreferencesSetValue((__bridge CFStringRef) _logEnabledKey, (__bridge CFNumberRef) @(_logEnabled), PUSHER_APP_ID, kCFPreferencesCurrentUser, kCFPreferencesAnyHost);
 	CFPreferencesSynchronize(PUSHER_APP_ID, kCFPreferencesCurrentUser, kCFPreferencesAnyHost);
-	notify_post("com.noahsaso.pusher/prefs");
+	notify_post(PUSHER_PREFS_NOTIFICATION);
+}
+
+- (void)updateLogAndReload {
+	[self updateLog];
+	[_table reloadData];
 }
 
 - (void)updateLog {
@@ -55,12 +72,17 @@ static NSDictionary *getLogPreferences() {
 
 	if (_sections) {
 		[_sections removeAllObjects];
+		[_sections addObject:@"Settings"];
 	} else {
 		_sections = [@[@"Settings"] mutableCopy];
 	}
 
 	if (_data) {
 		[_data removeAllObjects];
+		_data[_sections[0]] = @[
+			@"Logger Enabled",
+			@"Clear Existing Logs"
+		];
 	} else {
 		_data = [@{
 			_sections[0]: @[
@@ -69,6 +91,8 @@ static NSDictionary *getLogPreferences() {
 			]
 		} mutableCopy];
 	}
+
+	_expandedIndexPaths = [NSMutableArray new];
 
 	NSArray *prefsLog = nil;
 	if (_global) {
@@ -104,10 +128,6 @@ static NSDictionary *getLogPreferences() {
 	}
 }
 
-- (BOOL)tableView:(UITableView *)tableView shouldHighlightRowAtIndexPath:(NSIndexPath *)indexPath {
-	return indexPath.section == 0 && indexPath.row == 1;
-}
-
 - (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath {
 	[tableView deselectRowAtIndexPath:indexPath animated:YES];
 
@@ -132,9 +152,16 @@ static NSDictionary *getLogPreferences() {
 		if (numSections > 1) {
 			[tableView beginUpdates];
 			[self updateLog];
-			[tableView deleteSections:[NSIndexSet indexSetWithIndexesInRange:NSMakeRange(1, numSections - 1)] withRowAnimation:UITableViewRowAnimationTop];
+			[tableView deleteSections:[NSIndexSet indexSetWithIndexesInRange:NSMakeRange(1, numSections - 1)] withRowAnimation:UITableViewRowAnimationAutomatic];
 			[tableView endUpdates];
 		}
+	} else if (indexPath.section > 0) {
+		if ([_expandedIndexPaths containsObject:indexPath]) {
+			[_expandedIndexPaths removeObject:indexPath];
+		} else {
+			[_expandedIndexPaths addObject:indexPath];
+		}
+		[tableView reloadRowsAtIndexPaths:@[indexPath] withRowAnimation:UITableViewRowAnimationAutomatic];
 	}
 }
 
@@ -153,6 +180,7 @@ static NSDictionary *getLogPreferences() {
 - (UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath {
 	UITableViewCell *cell = [tableView dequeueReusableCellWithIdentifier:@"LogCell" forIndexPath:indexPath];
 	cell.textLabel.text = _data[_sections[indexPath.section]][indexPath.row];
+	cell.textLabel.lineBreakMode = [_expandedIndexPaths containsObject:indexPath] ? NSLineBreakByWordWrapping : NSLineBreakByTruncatingTail;
 	UISwitch *logEnabledSwitch = (UISwitch *) cell.accessoryView;
 	if (indexPath.section == 0 && indexPath.row == 0) {
 		if (!logEnabledSwitch || ![logEnabledSwitch isKindOfClass:UISwitch.class]) {

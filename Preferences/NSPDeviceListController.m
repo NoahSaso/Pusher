@@ -9,7 +9,7 @@ static void setPreference(CFStringRef keyRef, CFPropertyListRef val, BOOL should
 	CFPreferencesSynchronize(PUSHER_APP_ID, kCFPreferencesCurrentUser, kCFPreferencesAnyHost);
   if (shouldNotify) {
     // Reload stuff
-    notify_post("com.noahsaso.pusher/prefs");
+    notify_post(PUSHER_PREFS_NOTIFICATION);
   }
 }
 
@@ -124,7 +124,7 @@ static void setPreference(CFStringRef keyRef, CFPropertyListRef val, BOOL should
 		for (NSDictionary *device in [self sortedDeviceList:_serviceDevices]) {
 			PSSpecifier *switchSpecifier = [PSSpecifier preferenceSpecifierNamed:device[@"name"] target:self set:@selector(setPreferenceValue:forDeviceSpecifier:) get:@selector(readDevicePreferenceValue:) detail:nil cell:PSSwitchCell edit:nil];
 			switchSpecifier.identifier = device[@"id"];
-			[switchSpecifier setProperty:@"com.noahsaso.pusher/prefs" forKey:@"PostNotification"];
+			[switchSpecifier setProperty:@PUSHER_PREFS_NOTIFICATION forKey:@"PostNotification"];
 			[switchSpecifier setProperty:@YES forKey:@"enabled"];
 			[switchSpecifier setProperty:@"com.noahsaso.pusher" forKey:@"defaults"];
 			[switchSpecifier setProperty:@NO forKey:@"default"];

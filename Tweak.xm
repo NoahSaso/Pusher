@@ -2,6 +2,7 @@
 #import <Custom/defines.h>
 #import "NSPTestPush.h"
 #import <SystemConfiguration/CaptiveNetwork.h>
+#import <notify.h>
 
 @interface UIImage (UIApplicationIconPrivate)
 /*
@@ -125,7 +126,7 @@ static void addToLogIfEnabled(NSString *service, BBBulletin *bulletin, NSString 
 
 	CFPreferencesSetValue((__bridge CFStringRef) logKey, (__bridge CFPropertyListRef) logSections, PUSHER_LOG_ID, kCFPreferencesCurrentUser, kCFPreferencesAnyHost);
 	CFPreferencesSynchronize(PUSHER_LOG_ID, kCFPreferencesCurrentUser, kCFPreferencesAnyHost);
-
+	notify_post(PUSHER_LOG_PREFS_NOTIFICATION);
 }
 
 static void addToLogIfEnabled(NSString *service, BBBulletin *bulletin, NSString *appName, NSString *label) {
@@ -640,7 +641,7 @@ static BOOL prefsSayNo(BBServer *server, BBBulletin *bulletin) {
 		XLog(@"Prevented loop from same app");
 		return;
 	}
-	addToLogIfEnabled(service, bulletin, appName, @"Processing notification");
+	addToLogIfEnabled(service, bulletin, appName, Xstr(@"Processing %@", appID));
 	NSDictionary *servicePrefs = pusherServicePrefs[service];
 	if (!isTest) {
 		NSArray *serviceAppList = servicePrefs[@"appList"];
@@ -931,7 +932,7 @@ static BOOL prefsSayNo(BBServer *server, BBBulletin *bulletin) {
 
 %ctor {
 	CFPreferencesSynchronize(PUSHER_APP_ID, kCFPreferencesCurrentUser, kCFPreferencesAnyHost);
-	CFNotificationCenterAddObserver(CFNotificationCenterGetDarwinNotifyCenter(), NULL, (CFNotificationCallback)pusherPrefsChanged, PUSHER_PREFS_NOTIFICATION, NULL, CFNotificationSuspensionBehaviorCoalesce);
+	CFNotificationCenterAddObserver(CFNotificationCenterGetDarwinNotifyCenter(), NULL, (CFNotificationCallback)pusherPrefsChanged, CFSTR(PUSHER_PREFS_NOTIFICATION), NULL, CFNotificationSuspensionBehaviorCoalesce);
 	pusherPrefsChanged();
 	%init;
 	[NSPTestPush load];

@@ -10,7 +10,7 @@ static void setPreference(CFStringRef keyRef, CFPropertyListRef val, BOOL should
 	CFPreferencesSynchronize(PUSHER_APP_ID, kCFPreferencesCurrentUser, kCFPreferencesAnyHost);
   if (shouldNotify) {
     // Reload stuff
-    notify_post("com.noahsaso.pusher/prefs");
+    notify_post(PUSHER_PREFS_NOTIFICATION);
   }
 }
 
@@ -123,7 +123,7 @@ static void setPreference(CFStringRef keyRef, CFPropertyListRef val, BOOL should
 	NSString *key = Xstr(@"%@%@", _prefix, appID);
 	CFPreferencesSetValue((__bridge CFStringRef) key, @(selected), PUSHER_APP_ID, kCFPreferencesCurrentUser, kCFPreferencesAnyHost);
 	CFPreferencesSynchronize(PUSHER_APP_ID, kCFPreferencesCurrentUser, kCFPreferencesAnyHost);
-	notify_post("com.noahsaso.pusher/prefs");
+	notify_post(PUSHER_PREFS_NOTIFICATION);
 }
 
 - (void)tableView:(UITableView *)table didSelectRowAtIndexPath:(NSIndexPath *)indexPath {

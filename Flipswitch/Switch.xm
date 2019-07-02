@@ -29,7 +29,7 @@
 		break;
 	default:
 		[[NSUserDefaults standardUserDefaults] setObject:@(newState == FSSwitchStateOn) forKey:@"Enabled" inDomain:(__bridge NSString *)PUSHER_APP_ID];
-		CFNotificationCenterPostNotification(CFNotificationCenterGetDarwinNotifyCenter(), PUSHER_PREFS_NOTIFICATION, NULL, NULL, YES);
+		CFNotificationCenterPostNotification(CFNotificationCenterGetDarwinNotifyCenter(), CFSTR(PUSHER_PREFS_NOTIFICATION), NULL, NULL, YES);
 		break;
 	}
 	return;
