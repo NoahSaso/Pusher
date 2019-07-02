@@ -37,7 +37,6 @@ static NSDictionary *getLogPreferences() {
 	[_table registerClass:UITableViewCell.class forCellReuseIdentifier:@"LogCell"];
 	_table.delegate = self;
 	_table.dataSource = self;
-	_table.rowHeight = UITableViewAutomaticDimension;
 	[self.view addSubview:_table];
 
 	_service = [[self.specifier propertyForKey:@"service"] ?: @"" retain];
@@ -180,7 +179,9 @@ static NSDictionary *getLogPreferences() {
 - (UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath {
 	UITableViewCell *cell = [tableView dequeueReusableCellWithIdentifier:@"LogCell" forIndexPath:indexPath];
 	cell.textLabel.text = _data[_sections[indexPath.section]][indexPath.row];
-	cell.textLabel.lineBreakMode = [_expandedIndexPaths containsObject:indexPath] ? NSLineBreakByWordWrapping : NSLineBreakByTruncatingTail;
+	BOOL expands = [_expandedIndexPaths containsObject:indexPath];
+	cell.textLabel.numberOfLines = expands ? 0 : 1;
+	cell.textLabel.lineBreakMode = expands ? NSLineBreakByWordWrapping : NSLineBreakByTruncatingTail;
 	UISwitch *logEnabledSwitch = (UISwitch *) cell.accessoryView;
 	if (indexPath.section == 0 && indexPath.row == 0) {
 		if (!logEnabledSwitch || ![logEnabledSwitch isKindOfClass:UISwitch.class]) {
