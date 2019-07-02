@@ -67,7 +67,7 @@ static NSString *stringForObject(id object) {
 	return stringForObject(object, @"");
 }
 
-static void addToLogIfEnabled(NSString *service, BBBulletin *bulletin, NSString *appName, NSString *text) {
+static void addToLogIfEnabled(NSString *service, BBBulletin *bulletin, NSString *appName, NSString *label, id object) {
 
 	if (pusherEnabledLogs && ![pusherEnabledLogs containsObject:service]) {
 		XLog(@"[S:%@] Log Disabled", service);
@@ -100,7 +100,7 @@ static void addToLogIfEnabled(NSString *service, BBBulletin *bulletin, NSString 
 
 	if (!existingLogSection || replaceIdx == -1) {
 		existingLogSection = [@{
-			@"name": Xstr(@"%@: %@", appName, bulletin.sectionID),
+			@"name": Xstr(@"%@: %@", appName, bulletin.date),
 			@"timestamp": bulletin.date,
 			@"logs": @[]
 		} mutableCopy];
@@ -108,7 +108,16 @@ static void addToLogIfEnabled(NSString *service, BBBulletin *bulletin, NSString 
 	}
 
 	NSMutableArray *logs = [(existingLogSection[@"logs"] ?: @[]) mutableCopy];
-	[logs addObject:text];
+
+	NSString *logItem = nil;
+	// if only one passed, only do one of them
+	if ((label && !object) || (!label && object)) {
+		logItem = label ?: stringForObject(object);
+	} else {
+		logItem = Xstr(@"%@: %@", label, stringForObject(object));
+	}
+	[logs addObject:logItem];
+
 	existingLogSection[@"logs"] = logs;
 
 	if (replaceIdx > -1) {
@@ -118,6 +127,10 @@ static void addToLogIfEnabled(NSString *service, BBBulletin *bulletin, NSString 
 	CFPreferencesSetValue((__bridge CFStringRef) logKey, (__bridge CFPropertyListRef) logSections, PUSHER_LOG_ID, kCFPreferencesCurrentUser, kCFPreferencesAnyHost);
 	CFPreferencesSynchronize(PUSHER_LOG_ID, kCFPreferencesCurrentUser, kCFPreferencesAnyHost);
 
+}
+
+static void addToLogIfEnabled(NSString *service, BBBulletin *bulletin, NSString *appName, NSString *label) {
+	addToLogIfEnabled(service, bulletin, appName, label, nil);
 }
 
 // returns array of all lowercase keys that begin with the given prefix that have a boolean value of true in the dictionary
@@ -464,10 +477,9 @@ static void pusherPrefsChanged() {
 	XLog(@"Reloaded");
 }
 
-static BOOL snsSaysNo(NSArray *sns, BBSectionInfo *sectionInfo, BOOL isAnd, BOOL requireANWithOR) {
+static NSString *snsSaysNo(NSArray *sns, BBSectionInfo *sectionInfo, BOOL isAnd, BOOL requireANWithOR) {
 	if (!isAnd && requireANWithOR && !sectionInfo.allowsNotifications) {
-		XLog(@"OR and requires allow and not allow");
-		return YES;
+		return @"'OR' and 'Require Allow Notifications with OR' both on, but Allow Notifications is disabled in this app's settings.";
 	}
 
 	for (NSString *key in sns) {
@@ -489,8 +501,7 @@ static BOOL snsSaysNo(NSArray *sns, BBSectionInfo *sectionInfo, BOOL isAnd, BOOL
 		}
 		// AND, so if any one is insufficient, just return right away
 		if (isAnd && !sufficient) {
-			XLog(@"AND and not sufficient: %@", key);
-			return YES;
+			return Xstr(@"'AND' but %@ incorrect", key);
 		// OR, so just one sufficient is enough
 		} else if (!isAnd && sufficient) {
 			XLog(@"OR and sufficient: %@", key);
@@ -498,20 +509,27 @@ static BOOL snsSaysNo(NSArray *sns, BBSectionInfo *sectionInfo, BOOL isAnd, BOOL
 		}
 	}
 
-	return NO;
+	// none passed as sufficient before so insufficient if OR
+	if (!isAnd) {
+		XLog(@"OR and insufficient");
+		return @"'OR' and none were correct";
+	}
+
+	return nil;
 }
 
-static BOOL deviceConditionsSayNo(int whenToPush, int whatNetwork) {
+static NSString *deviceConditionsSayNo(int whenToPush, int whatNetwork) {
 	BOOL deviceIsLocked = ((SBLockScreenManager *) [%c(SBLockScreenManager) sharedInstance]).isUILocked;
-	BOOL onWiFi = [[%c(SBWiFiManager) sharedInstance] currentNetworkName] != nil;
-	if ((whatNetwork == PUSHER_WHAT_NETWORK_WIFI_ONLY && !onWiFi)
-				|| (whenToPush == PUSHER_WHEN_TO_PUSH_LOCKED && !deviceIsLocked)
-				|| (whenToPush == PUSHER_WHEN_TO_PUSH_UNLOCKED && deviceIsLocked)) {
-		XLog(@"whatNetwork: %d, onWiFi: %d", whatNetwork, onWiFi);
-		XLog(@"whenToPush: %d, deviceIsLocked: %d", whenToPush, deviceIsLocked);
-		return YES;
+	NSString *wifiName = [[%c(SBWiFiManager) sharedInstance] currentNetworkName];
+	BOOL onWiFi = wifiName != nil;
+	if (whatNetwork == PUSHER_WHAT_NETWORK_WIFI_ONLY && !onWiFi) {
+		return @"What Network set to WiFi Only but not on WiFi";
 	}
-	return NO;
+	if ((whenToPush == PUSHER_WHEN_TO_PUSH_LOCKED && !deviceIsLocked)
+			|| (whenToPush == PUSHER_WHEN_TO_PUSH_UNLOCKED && deviceIsLocked)) {
+		return Xstr(@"When to Push set to %@ but device %@locked", (whenToPush == PUSHER_WHEN_TO_PUSH_LOCKED ? @"Locked" : (whenToPush == PUSHER_WHEN_TO_PUSH_UNLOCKED ? @"Unlocked" : @"Always")), deviceIsLocked ? @"" : @"un");
+	}
+	return nil;
 }
 
 static BOOL prefsSayNo(BBServer *server, BBBulletin *bulletin) {
@@ -623,11 +641,14 @@ static BOOL prefsSayNo(BBServer *server, BBBulletin *bulletin) {
 		XLog(@"Prevented loop from same app");
 		return;
 	}
+	addToLogIfEnabled(service, bulletin, appName, @"Processing notification");
 	NSDictionary *servicePrefs = pusherServicePrefs[service];
 	if (!isTest) {
 		NSArray *serviceAppList = servicePrefs[@"appList"];
 		BOOL appListContainsApp = [serviceAppList containsObject:appID.lowercaseString];
-		if (servicePrefs[@"appListIsBlacklist"] && ((NSNumber *) servicePrefs[@"appListIsBlacklist"]).boolValue == appListContainsApp) {
+		id appListIsBlacklist = servicePrefs[@"appListIsBlacklist"];
+		if (appListIsBlacklist && ((NSNumber *) appListIsBlacklist).boolValue == appListContainsApp) {
+			addToLogIfEnabled(service, bulletin, appName, Xstr(@"Blocked by app list (%@)", ((NSNumber *) appListIsBlacklist).boolValue ? @"blacklist" : @"whitelist"));
 			XLog(@"[S:%@] Blocked by app list: %@", service, appID);
 			return;
 		}
@@ -641,16 +662,20 @@ static BOOL prefsSayNo(BBServer *server, BBBulletin *bulletin) {
 			return;
 		}
 		XLog(@"[S:%@,A:%@] Doing SNS", service, appID);
-		if (snsSaysNo(sns, sectionInfo, isAnd, requireANWithOR)) {
-			XLog(@"[S:%@,A:%@] SNS said no", service, appID);
+		NSString *snsResponse = snsSaysNo(sns, sectionInfo, isAnd, requireANWithOR);
+		if (snsResponse) {
+			addToLogIfEnabled(service, bulletin, appName, snsResponse);
+			XLog(@"[S:%@,A:%@] SNS said no: %@", service, appID, snsResponse);
 			return;
 		}
 
 		int serviceWhenToPush = ((NSNumber *) servicePrefs[@"whenToPush"]).intValue;
 		int serviceWhatNetwork = ((NSNumber *) servicePrefs[@"whatNetwork"]).intValue;
 		XLog(@"[S:%@,A:%@] Doing Device Conditions", service, appID);
-		if (deviceConditionsSayNo(serviceWhenToPush, serviceWhatNetwork)) {
-			XLog(@"[S:%@,A:%@] Device Conditions said no", service, appID);
+		NSString *deviceConditionsResponse = deviceConditionsSayNo(serviceWhenToPush, serviceWhatNetwork);
+		if (deviceConditionsResponse) {
+			addToLogIfEnabled(service, bulletin, appName, deviceConditionsResponse);
+			XLog(@"[S:%@,A:%@] Device Conditions said no: %@", service, appID, deviceConditionsResponse);
 			return;
 		}
 	}
@@ -693,8 +718,11 @@ static BOOL prefsSayNo(BBServer *server, BBBulletin *bulletin) {
 		@"headerName": authType == PusherAuthorizationTypeHeader ? XStrDefault(servicePrefs[@"paramName"], @"Access-Token") : @""
 	}];
 	NSString *method = XStrDefault(servicePrefs[@"method"], @"POST");
-	[self makePusherRequest:url infoDict:infoDict credentials:credentials authType:authType method:method logString:Xstr(@"[S:%@,A:%@]", service, appName)];
+	[self makePusherRequest:url infoDict:infoDict credentials:credentials authType:authType method:method logString:Xstr(@"[S:%@,A:%@]", service, appName) service:service bulletin:bulletin appName:appName];
 	XLog(@"[S:%@,T:%d,A:%@] Pushed", service, isTest, appName);
+	if (!isTest) {
+		addToLogIfEnabled(service, bulletin, appName, @"Pushed");
+	}
 }
 
 %new
@@ -823,7 +851,7 @@ static BOOL prefsSayNo(BBServer *server, BBBulletin *bulletin) {
 }
 
 %new
-- (void)makePusherRequest:(NSString *)urlString infoDict:(NSDictionary *)infoDict credentials:(NSDictionary *)credentials authType:(PusherAuthorizationType)authType method:(NSString *)method logString:(NSString *)logString {
+- (void)makePusherRequest:(NSString *)urlString infoDict:(NSDictionary *)infoDict credentials:(NSDictionary *)credentials authType:(PusherAuthorizationType)authType method:(NSString *)method logString:(NSString *)logString service:(NSString *)service bulletin:(BBBulletin *)bulletin appName:(NSString *)appName {
 
 	NSMutableDictionary *infoDictForRequest = [infoDict mutableCopy];
 	if (authType == PusherAuthorizationTypeCredentials) {
@@ -845,20 +873,25 @@ static BOOL prefsSayNo(BBServer *server, BBBulletin *bulletin) {
 		XLog(@"URL String: %@", urlString);
 	}
 
+	urlString = [urlString stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
+	addToLogIfEnabled(service, bulletin, appName, @"URL", urlString);
 	NSURL *requestURL = [NSURL URLWithString:urlString];
 	if (!requestURL) {
 		XLog(@"Invalid URL: %@", urlString);
+		addToLogIfEnabled(service, bulletin, appName, @"Invalid URL");
 		return;
 	}
-	urlString = [urlString stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
 	NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:requestURL cachePolicy:NSURLRequestUseProtocolCachePolicy timeoutInterval:10];
 
+	addToLogIfEnabled(service, bulletin, appName, @"Method", method);
 	[request setHTTPMethod:method];
 	if (authType == PusherAuthorizationTypeHeader) {
 		[request setValue:credentials[@"value"] forHTTPHeaderField:credentials[@"headerName"]];
+		addToLogIfEnabled(service, bulletin, appName, @"Header", Xstr(@"%@: %@", credentials[@"headerName"], credentials[@"value"]));
 	}
 
 	if (Xeq(method, @"POST")) {
+		addToLogIfEnabled(service, bulletin, appName, @"Request Body Dictionary", infoDictForRequest);
 		[request setValue:@"application/json" forHTTPHeaderField:@"Accept"];
 		[request setValue:@"application/json" forHTTPHeaderField:@"Content-Type"];
 		NSData *requestData = [NSJSONSerialization dataWithJSONObject:infoDictForRequest options:NSJSONWritingPrettyPrinted error:nil];
@@ -869,11 +902,14 @@ static BOOL prefsSayNo(BBServer *server, BBBulletin *bulletin) {
 	//use async way to connect network
 	[[[NSURLSession sharedSession] dataTaskWithRequest:request completionHandler:^(NSData *data, NSURLResponse *response, NSError *error) {
 		if (data.length && error == nil) {
+			addToLogIfEnabled(service, bulletin, appName, @"Network Response: Success");
 			XLog(@"%@ Success", logString);
 			// XLog(@"data: %@", [[[[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding] componentsSeparatedByCharactersInSet:[NSCharacterSet newlineCharacterSet]] componentsJoinedByString:@" "]);
 		} else if (error) {
+			addToLogIfEnabled(service, bulletin, appName, @"Network Response: Error", error.description);
 			XLog(@"%@ Error: %@", logString, error);
 		} else {
+			addToLogIfEnabled(service, bulletin, appName, @"Network Response: No Data");
 			XLog(@"%@ No data", logString);
 		}
 	}] resume];

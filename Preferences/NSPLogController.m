@@ -131,7 +131,7 @@ static NSDictionary *getLogPreferences() {
 		int numSections = [self numberOfSectionsInTableView:tableView];
 		[self updateLog];
 		if (numSections > 1) {
-			[tableView deleteSections:[NSIndexSet indexSetWithIndexesInRange:NSMakeRange(1, numSections)] withRowAnimation:UITableViewRowAnimationTop];
+			[tableView deleteSections:[NSIndexSet indexSetWithIndexesInRange:NSMakeRange(1, numSections - 1)] withRowAnimation:UITableViewRowAnimationTop];
 		}
 	}
 }
@@ -159,8 +159,8 @@ static NSDictionary *getLogPreferences() {
 			[logEnabledSwitch addTarget:self action:@selector(updateLogEnabled:) forControlEvents:UIControlEventValueChanged];
 			cell.accessoryView = logEnabledSwitch;
 		}
-	} else if (logEnabledSwitch && [logEnabledSwitch isKindOfClass:UISwitch.class]) {
-		[logEnabledSwitch removeFromSuperview];
+	} else {
+		cell.accessoryView = nil;
 	}
 	return cell;
 }
