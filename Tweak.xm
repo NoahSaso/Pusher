@@ -33,6 +33,7 @@ static BOOL globalAppListIsBlacklist = YES;
 static NSArray *globalAppList = nil;
 static NSMutableDictionary *pusherEnabledServices = nil;
 static NSMutableDictionary *pusherServicePrefs = nil;
+static NSMutableArray *pusherEnabledLogs = nil;
 
 static BBServer *bbServerInstance = nil;
 
@@ -66,7 +67,56 @@ static NSString *stringForObject(id object) {
 	return stringForObject(object, @"");
 }
 
-static void addToLog(NSString *service, NSString *text) {
+static void addToLogIfEnabled(NSString *service, BBBulletin *bulletin, NSString *appName, NSString *text) {
+
+	if (pusherEnabledLogs && ![pusherEnabledLogs containsObject:service]) {
+		XLog(@"[S:%@] Log Disabled", service);
+		return;
+	}
+
+	CFPreferencesSynchronize(PUSHER_LOG_ID, kCFPreferencesCurrentUser, kCFPreferencesAnyHost);
+	CFArrayRef keyList = CFPreferencesCopyKeyList(PUSHER_LOG_ID, kCFPreferencesCurrentUser, kCFPreferencesAnyHost);
+	NSDictionary *prefs = @{};
+	if (keyList) {
+		prefs = (NSDictionary *)CFPreferencesCopyMultiple(keyList, PUSHER_LOG_ID, kCFPreferencesCurrentUser, kCFPreferencesAnyHost);
+		if (!prefs) { prefs = @{}; }
+		CFRelease(keyList);
+	}
+
+	NSString *logKey = Xstr(@"%@Log", service);
+	NSMutableArray *logSections = [(prefs[logKey] ?: @[]) mutableCopy];
+
+	NSMutableDictionary *existingLogSection = nil;
+	int replaceIdx = -1;
+	for (int i = 0; i < logSections.count; i++) {
+		NSDictionary *logSection = logSections[i];
+		NSDate *timestamp = (NSDate *) logSection[@"timestamp"];
+		if (timestamp && [timestamp isKindOfClass:NSDate.class] && [timestamp respondsToSelector:@selector(isEqualToDate:)] && [timestamp isEqualToDate:bulletin.date]) {
+			existingLogSection = [logSection mutableCopy];
+			replaceIdx = i;
+			break;
+		}
+	}
+
+	if (!existingLogSection || replaceIdx == -1) {
+		existingLogSection = [@{
+			@"name": Xstr(@"%@: %@", appName, bulletin.sectionID),
+			@"timestamp": bulletin.date,
+			@"logs": @[]
+		} mutableCopy];
+		[logSections addObject:existingLogSection];
+	}
+
+	NSMutableArray *logs = [(existingLogSection[@"logs"] ?: @[]) mutableCopy];
+	[logs addObject:text];
+	existingLogSection[@"logs"] = logs;
+
+	if (replaceIdx > -1) {
+		[logSections replaceObjectAtIndex:replaceIdx withObject:existingLogSection];
+	}
+
+	CFPreferencesSetValue((__bridge CFStringRef) logKey, (__bridge CFPropertyListRef) logSections, PUSHER_LOG_ID, kCFPreferencesCurrentUser, kCFPreferencesAnyHost);
+	CFPreferencesSynchronize(PUSHER_LOG_ID, kCFPreferencesCurrentUser, kCFPreferencesAnyHost);
 
 }
 
@@ -197,6 +247,8 @@ static void pusherPrefsChanged() {
 		pusherServicePrefs = [NSMutableDictionary new];
 	}
 
+	pusherEnabledLogs = [NSMutableArray new];
+
 	NSDictionary *customServices = prefs[NSPPreferenceCustomServicesKey];
 	for (NSString *service in customServices.allKeys) {
 		NSDictionary *customService = customServices[service];
@@ -209,6 +261,13 @@ static void pusherPrefsChanged() {
 		servicePrefs[@"snsIsAnd"] = servicePrefs[@"SufficientNotificationSettingsIsAnd"] ?: @(pusherSNSIsAnd);
 		servicePrefs[@"snsRequireANWithOR"] = servicePrefs[@"SNSORRequireAllowNotifications"] ?: @(pusherSNSRequireANWithOR);
 		servicePrefs[@"sns"] = getSNSKeys(customService, NSPPreferenceSNSPrefix, prefs, NSPPreferenceSNSPrefix);
+
+		NSString *logEnabledKey = Xstr(@"%@LogEnabled", service);
+		id val = prefs[logEnabledKey];
+		BOOL logEnabled = val ? ((NSNumber *) val).boolValue : YES;
+		if (logEnabled) {
+			[pusherEnabledLogs addObject:service];
+		}
 
 		NSString *customAppsKey = NSPPreferenceCustomServiceCustomAppsKey(service);
 
@@ -260,6 +319,7 @@ static void pusherPrefsChanged() {
 		NSString *snsIsAndKey = Xstr(@"%@SufficientNotificationSettingsIsAnd", service);
 		NSString *snsRequireANWithORKey = Xstr(@"%@SNSORRequireAllowNotifications", service);
 		NSString *snsPrefix = Xstr(@"%@%@", service, NSPPreferenceSNSPrefix);
+		NSString *logEnabledKey = Xstr(@"%@LogEnabled", service);
 
 		servicePrefs[@"appList"] = getAppIDsWithPrefix(prefs, appListPrefix);
 		val = prefs[appListIsBlacklistKey];
@@ -288,6 +348,12 @@ static void pusherPrefsChanged() {
 		val = prefs[snsRequireANWithORKey];
 		servicePrefs[@"snsRequireANWithOR"] = [(val ?: @YES) copy];
 		servicePrefs[@"sns"] = getSNSKeys(prefs, snsPrefix, prefs, NSPPreferenceSNSPrefix);
+
+		val = prefs[logEnabledKey];
+		BOOL logEnabled = val ? ((NSNumber *) val).boolValue : YES;
+		if (logEnabled) {
+			[pusherEnabledLogs addObject:service];
+		}
 
 		if (Xeq(service, PUSHER_SERVICE_IFTTT)) {
 			NSString *includeIconKey = Xstr(@"%@IncludeIcon", service);
