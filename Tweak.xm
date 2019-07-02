@@ -595,6 +595,9 @@ static BOOL prefsSayNo(BBServer *server, BBBulletin *bulletin) {
 		XLog(@"Prefs say no. bulletin nil? %d", bulletin == nil);
 		return;
 	}
+	if (!bulletin.date) {
+		bulletin.date = [NSDate date]; // fix crash on logging if date nil, set to current date time
+	}
 	// Check if notification within last 5 seconds so we don't send uncleared notifications every respring
 	NSDate *fiveSecondsAgo = [[NSDate date] dateByAddingTimeInterval:-5];
 	if (bulletin.date && [bulletin.date compare:fiveSecondsAgo] == NSOrderedAscending) {

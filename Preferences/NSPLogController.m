@@ -186,7 +186,7 @@ static NSDictionary *getLogPreferences() {
 	if (indexPath.section == 0 && indexPath.row == 0) {
 		if (!logEnabledSwitch || ![logEnabledSwitch isKindOfClass:UISwitch.class]) {
 			logEnabledSwitch = [UISwitch new];
-			logEnabledSwitch.on = _logEnabled;
+			logEnabledSwitch.on = _logEnabled;	
 			[logEnabledSwitch addTarget:self action:@selector(updateLogEnabled:) forControlEvents:UIControlEventValueChanged];
 			cell.accessoryView = logEnabledSwitch;
 		}
