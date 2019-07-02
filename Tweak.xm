@@ -38,29 +38,37 @@ static BBServer *bbServerInstance = nil;
 
 static NSMutableArray *recentNotificationTitles = [NSMutableArray new];
 
-static NSString *stringForObject(id object) {
+static NSString *stringForObject(id object, NSString *prefix) {
 	NSString *str = @"";
-	if ([object isKindOfClass:NSArray.class]) {
+	if (!object) {
+		str = Xstr(@"%@nil", prefix);
+	} else if ([object isKindOfClass:NSArray.class]) {
 		NSArray *array = (NSArray *) object;
 		str = @"[";
-		for (id val in object) {
-			str = Xstr(@"\n\t%@", stringForObject(val));
+		for (id val in array) {
+			str = Xstr(@"%@\n%@\t%@", str, prefix, stringForObject(val, Xstr(@"%@\t", prefix)));
 		}
-		str = Xstr(@"%@\n]", str);
+		str = Xstr(@"%@\n%@]", str, prefix);
 	} else if ([object isKindOfClass:NSDictionary.class]) {
 		NSDictionary *dict = (NSDictionary *) object;
 		str = @"{";
 		for (id key in dict.allKeys) {
-			str = Xstr(@"\n\t%@: %@", key, stringForObject(dict[key]));
+			str = Xstr(@"%@\n%@\t%@: %@", str, prefix, key, stringForObject(dict[key], Xstr(@"%@\t", prefix)));
 		}
-		str = Xstr(@"%@\n}", str);
+		str = Xstr(@"%@\n%@}", str, prefix);
 	} else {
-		str = Xstr(@"%@", object); // find out what %@ actually does and directly call that method
+		str = Xstr(@"%@%@", prefix, object);
 	}
 	return str;
 }
 
-static void addToLog(NSString *service, )
+static NSString *stringForObject(id object) {
+	return stringForObject(object, @"");
+}
+
+static void addToLog(NSString *service, NSString *text) {
+
+}
 
 // returns array of all lowercase keys that begin with the given prefix that have a boolean value of true in the dictionary
 static NSArray *getAppIDsWithPrefix(NSDictionary *prefs, NSString *prefix) {
