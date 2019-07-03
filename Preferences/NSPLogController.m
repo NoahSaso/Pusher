@@ -145,7 +145,7 @@ static NSDictionary *getLogPreferences() {
 	for (NSDictionary *logSection in prefsLog) {
 		NSString *logSectionAppID = logSection[@"appID"];
 		// if app filter is on, skip if not same app
-		if (!logSectionAppID || (_filteredAppID && !Xeq(logSectionAppID, _filteredAppID))) { continue; }
+		if (logSectionAppID && _filteredAppID && !Xeq(logSectionAppID, _filteredAppID)) { continue; }
 
 		NSString *sectionName = logSection[@"name"] ?: @"Section";
 		NSArray *logs = logSection[@"logs"] ?: @[];
