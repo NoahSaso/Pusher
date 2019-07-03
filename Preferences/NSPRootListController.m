@@ -38,32 +38,28 @@ static int countAppIDsWithPrefix(NSDictionary *prefs, NSString *prefix) {
 			idx += 1;
 		}
 
+		// Get preferences for counting
+		CFPreferencesSynchronize(PUSHER_APP_ID, kCFPreferencesCurrentUser, kCFPreferencesAnyHost);
+		CFArrayRef keyList = CFPreferencesCopyKeyList(PUSHER_APP_ID, kCFPreferencesCurrentUser, kCFPreferencesAnyHost);
+		NSDictionary *prefs = @{};
+		if (keyList) {
+			prefs = (NSDictionary *)CFPreferencesCopyMultiple(keyList, PUSHER_APP_ID, kCFPreferencesCurrentUser, kCFPreferencesAnyHost);
+			if (!prefs) { prefs = @{}; }
+			CFRelease(keyList);
+		}
+
+		for (PSSpecifier *specifier in allSpecifiers) {
+			if (specifier.cellType == PSLinkCell && Xeq(specifier.name, @"Global App List")) {
+				specifier.name = Xstr(@"%@ (%d total)", specifier.name, countAppIDsWithPrefix(prefs, [specifier propertyForKey:@"ALSettingsKeyPrefix"]));
+				[specifier setProperty:self forKey:@"psListRef"];
+				break;
+			}
+		}
+
 		_specifiers = [allSpecifiers copy];
 	}
 
 	return _specifiers;
-}
-
-- (void)viewWillAppear:(BOOL)animated {
-	[super viewWillAppear:animated];
-
-	// Get preferences for counting
-	CFPreferencesSynchronize(PUSHER_APP_ID, kCFPreferencesCurrentUser, kCFPreferencesAnyHost);
-	CFArrayRef keyList = CFPreferencesCopyKeyList(PUSHER_APP_ID, kCFPreferencesCurrentUser, kCFPreferencesAnyHost);
-	NSDictionary *prefs = @{};
-	if (keyList) {
-		prefs = (NSDictionary *)CFPreferencesCopyMultiple(keyList, PUSHER_APP_ID, kCFPreferencesCurrentUser, kCFPreferencesAnyHost);
-		if (!prefs) { prefs = @{}; }
-		CFRelease(keyList);
-	}
-
-	for (PSSpecifier *specifier in self.specifiers) {
-		if (specifier.cellType == PSLinkCell && Xeq(specifier.name, @"Global App List")) {
-			specifier.name = Xstr(@"%@ (%d total)", specifier.name, countAppIDsWithPrefix(prefs, [specifier propertyForKey:@"ALSettingsKeyPrefix"]));
-			[specifier setProperty:self forKey:@"psListRef"];
-			break;
-		}
-	}
 }
 
 - (void)openTwitter:(NSString *)username {
