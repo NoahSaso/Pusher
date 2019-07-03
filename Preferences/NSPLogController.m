@@ -95,15 +95,14 @@ static NSDictionary *getLogPreferences() {
 	_logEnabledKey = [Xstr(@"%@LogEnabled", _service) retain];
 	_filteredAppID = nil;
 	_filteredNetworkResponse = nil;
+	_globalOnly = NO;
 
 	self.navigationItem.title = [self.specifier propertyForKey:@"label"] ?: @"Log";
 
 	CFPropertyListRef logEnabledRef = CFPreferencesCopyValue((__bridge CFStringRef) _logEnabledKey, PUSHER_APP_ID, kCFPreferencesCurrentUser, kCFPreferencesAnyHost);
 	_logEnabled = logEnabledRef ? ((__bridge NSNumber *) logEnabledRef).boolValue : YES;
 
-	[self updateLog];
-
-	[_table reloadData];
+	[self updateLogAndReload];
 }
 
 - (void)updateLogEnabled:(UISwitch *)logEnabledSwitch {
@@ -111,6 +110,11 @@ static NSDictionary *getLogPreferences() {
 	CFPreferencesSetValue((__bridge CFStringRef) _logEnabledKey, (__bridge CFNumberRef) @(_logEnabled), PUSHER_APP_ID, kCFPreferencesCurrentUser, kCFPreferencesAnyHost);
 	CFPreferencesSynchronize(PUSHER_APP_ID, kCFPreferencesCurrentUser, kCFPreferencesAnyHost);
 	notify_post(PUSHER_PREFS_NOTIFICATION);
+}
+
+- (void)updateGlobalOnly:(UISwitch *)globalOnlySwitch {
+	_globalOnly = globalOnlySwitch.isOn;
+	[self updateLogAndReload];
 }
 
 - (void)updateLogAndReload {
@@ -139,7 +143,8 @@ static NSDictionary *getLogPreferences() {
 		] mutableCopy],
 		_sections[1]: @[
 			@"Network Response",
-			@"Select an App"
+			@"Select an App",
+			@"Global Only"
 		]
 	} mutableCopy];
 
@@ -156,12 +161,13 @@ static NSDictionary *getLogPreferences() {
 	_filterSection = 1;
 	_networkResponseRow = 0;
 	_appFilterRow = 1;
+	_globalOnlyRow = 2;
 
 	_firstLogSection = _data.count;
 	_expandedIndexPaths = [NSMutableArray new];
 
 	NSArray *prefsLog = nil;
-	if (_global) {
+	if (_global && !_globalOnly) {
 		NSMutableArray *allLogs = [NSMutableArray new];
 		for (id key in prefs.allKeys) {
 			if (![key isKindOfClass:NSString.class]) { continue; }
@@ -179,6 +185,7 @@ static NSDictionary *getLogPreferences() {
 		}
 		prefsLog = allLogs;
 	} else {
+		// handles _globalOnly because _logKey set to @"Log" which is just global
 		prefsLog = prefs[_logKey] ?: @[];
 	}
 
@@ -363,6 +370,11 @@ static NSDictionary *getLogPreferences() {
 				cell.textLabel.text = Xstr(@"App Filter: %@", _appList.applications[_filteredAppID]);
 				cell.imageView.image = [_appList iconOfSize:ALApplicationIconSizeSmall forDisplayIdentifier:_filteredAppID];
 			}
+		} else if (indexPath.row == _globalOnlyRow) {
+			UISwitch *globalOnlySwitch = [UISwitch new];
+			globalOnlySwitch.on = _globalOnly;
+			[globalOnlySwitch addTarget:self action:@selector(updateGlobalOnly:) forControlEvents:UIControlEventValueChanged];
+			cell.accessoryView = globalOnlySwitch;
 		}
 
 		return cell;
@@ -384,14 +396,11 @@ static NSDictionary *getLogPreferences() {
 		cell.textLabel.textColor = [UIColor colorWithRed:0.0 green:122/255.0 blue:255/255.0 alpha:1.0];
 	}
 
-	UISwitch *logEnabledSwitch = (UISwitch *) cell.accessoryView;
 	if (indexPath.section == 0 && indexPath.row == _logEnabledSwitchRow) {
-		if (!logEnabledSwitch || ![logEnabledSwitch isKindOfClass:UISwitch.class]) {
-			logEnabledSwitch = [UISwitch new];
-			logEnabledSwitch.on = _logEnabled;
-			[logEnabledSwitch addTarget:self action:@selector(updateLogEnabled:) forControlEvents:UIControlEventValueChanged];
-			cell.accessoryView = logEnabledSwitch;
-		}
+		UISwitch *logEnabledSwitch = [UISwitch new];
+		logEnabledSwitch.on = _logEnabled;
+		[logEnabledSwitch addTarget:self action:@selector(updateLogEnabled:) forControlEvents:UIControlEventValueChanged];
+		cell.accessoryView = logEnabledSwitch;
 	}
 
 	return cell;
