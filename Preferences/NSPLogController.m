@@ -41,7 +41,7 @@ static NSDictionary *getLogPreferences() {
 	UILabel *label = [UILabel new];
 	label.font = [UIFont fontWithName:@"HelveticaNeue-Thin" size:UIFont.systemFontSize * 1.5f];
 	label.textColor = UIColor.whiteColor;
-	label.text = @"After using the app filter, you can swipe to delete the row to unset it and show all apps again.\n\nTap anywhere to continue.";
+	label.text = @"After using the app filter, you can swipe to delete to unset it and show all apps again.\n\nTap anywhere to continue.";
 	label.lineBreakMode = NSLineBreakByWordWrapping;
 	label.numberOfLines = 0;
 	label.translatesAutoresizingMaskIntoConstraints = NO;
@@ -65,9 +65,14 @@ static NSDictionary *getLogPreferences() {
 	});
 
 	CFStringRef tutorialKeyRef = CFSTR("LogAppFilterTutorialShown");
-	CFPreferencesSetValue(tutorialKeyRef, (__bridge CFNumberRef) @(YES), PUSHER_APP_ID, kCFPreferencesCurrentUser, kCFPreferencesAnyHost);
+	CFPreferencesSetValue(tutorialKeyRef, (__bridge CFNumberRef) @YES, PUSHER_APP_ID, kCFPreferencesCurrentUser, kCFPreferencesAnyHost);
 	CFPreferencesSynchronize(PUSHER_APP_ID, kCFPreferencesCurrentUser, kCFPreferencesAnyHost);
 	CFRelease(tutorialKeyRef);
+}
+
+- (void)dismissTutorial:(UITapGestureRecognizer *)tapGestureRecognizer {
+	UIView *tutorialView = tapGestureRecognizer.view;
+	[UIView animateWithDuration:0.3 animations:^{ tutorialView.alpha = 0.f; } completion:^(BOOL finished){ [tutorialView removeFromSuperview]; }];
 }
 
 - (void)viewDidLoad {
