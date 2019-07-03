@@ -109,6 +109,10 @@ static void addToLogIfEnabled(NSString *service, BBBulletin *bulletin, NSString 
 
 	NSMutableArray *logs = [(existingLogSection[@"logs"] ?: @[]) mutableCopy];
 
+	if (logs.count == 0) {
+		[logs addObject:Xstr(@"Processing %@", bulletin.sectionID)];
+	}
+
 	NSString *logItem = nil;
 	// if only one passed, only do one of them
 	if ((label && !object) || (!label && object)) {
@@ -594,8 +598,10 @@ static NSString *prefsSayNo(BBServer *server, BBBulletin *bulletin) {
 		bulletin.date = [NSDate date]; // fix crash on logging if date nil, set to current date time
 	}
 
-	NSString *appID = bulletin.sectionID;
-	addToLogIfEnabled(@"", bulletin, Xstr(@"Processing %@", appID));
+	if (!NSClassFromString(@"SBApplicationController") || ![%c(SBApplicationController) sharedInstance]) {
+		XLog(@"SpringBoard not ready");
+		return;
+	}
 
 	// Check if notification within last 5 seconds so we don't send uncleared notifications every respring
 	NSDate *fiveSecondsAgo = [[NSDate date] dateByAddingTimeInterval:-5];
@@ -605,7 +611,8 @@ static NSString *prefsSayNo(BBServer *server, BBBulletin *bulletin) {
 		return;
 	}
 
-	SBApplication *app = [[NSClassFromString(@"SBApplicationController") sharedInstance] applicationWithBundleIdentifier:appID];
+	NSString *appID = bulletin.sectionID;
+	SBApplication *app = [[%c(SBApplicationController) sharedInstance] applicationWithBundleIdentifier:appID];
 	NSString *appName = app && app.displayName && app.displayName.length > 0 ? app.displayName : Xstr(@"Unknown App: %@", appID);
 
 	NSString *prefsResponse = prefsSayNo(self, bulletin);
