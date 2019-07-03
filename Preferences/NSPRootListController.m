@@ -44,8 +44,8 @@ static int countAppIDsWithPrefix(NSDictionary *prefs, NSString *prefix) {
 	return _specifiers;
 }
 
-- (void)viewDidLoad {
-	[super viewDidLoad];
+- (void)viewWillAppear:(BOOL)animated {
+	[super viewWillAppear:animated];
 
 	// Get preferences for counting
 	CFPreferencesSynchronize(PUSHER_APP_ID, kCFPreferencesCurrentUser, kCFPreferencesAnyHost);
