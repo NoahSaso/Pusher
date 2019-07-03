@@ -651,7 +651,7 @@ static NSString *prefsSayNo(BBServer *server, BBBulletin *bulletin) {
 %new
 - (void)sendToPusherService:(NSString *)service bulletin:(BBBulletin *)bulletin appID:(NSString *)appID appName:(NSString *)appName title:(NSString *)title message:(NSString *)message isTest:(BOOL)isTest {
 	if (!isTest && Xeq(appID, getServiceAppID(service))) {
-		addToLogIfEnabled(@"", bulletin, appName, @"Prevented loop from same app");
+		addToLogIfEnabled(service, bulletin, appName, @"Prevented loop from same app");
 		XLog(@"Prevented loop from same app");
 		return;
 	}
