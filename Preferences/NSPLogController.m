@@ -31,6 +31,45 @@ static NSDictionary *getLogPreferences() {
 	[super dealloc];
 }
 
+- (void)showAppFilterTutorial {
+	UIWindow *window = [UIApplication sharedApplication].keyWindow;
+	UIView *tutorialView = [[UIView alloc] initWithFrame:window.bounds];
+	tutorialView.alpha = 0.f;
+	tutorialView.backgroundColor = [UIColor colorWithWhite:0.f alpha:0.9f];
+
+	// Label setup
+	UILabel *label = [UILabel new];
+	label.font = [UIFont fontWithName:@"HelveticaNeue-Thin" size:UIFont.systemFontSize * 1.5f];
+	label.textColor = UIColor.whiteColor;
+	label.text = @"After using the app filter, you can swipe to delete the row to unset it and show all apps again.\n\nTap anywhere to continue.";
+	label.lineBreakMode = NSLineBreakByWordWrapping;
+	label.numberOfLines = 0;
+	label.translatesAutoresizingMaskIntoConstraints = NO;
+	label.textAlignment = NSTextAlignmentCenter;
+	[tutorialView addSubview:label];
+
+	// Constraints
+	[label addConstraint:[NSLayoutConstraint constraintWithItem:label attribute:NSLayoutAttributeWidth relatedBy:NSLayoutRelationEqual toItem:nil attribute:NSLayoutAttributeNotAnAttribute multiplier:1 constant:270]];
+	[label addConstraint:[NSLayoutConstraint constraintWithItem:label attribute:NSLayoutAttributeHeight relatedBy:NSLayoutRelationEqual toItem:nil attribute:NSLayoutAttributeNotAnAttribute multiplier:1 constant:tutorialView.frame.size.height]];
+	[label.centerXAnchor constraintEqualToAnchor:label.superview.centerXAnchor].active = YES;
+	[label.centerYAnchor constraintEqualToAnchor:label.superview.centerYAnchor].active = YES;
+
+	[window addSubview:tutorialView];
+	[UIView animateWithDuration:0.3 animations:^{ tutorialView.alpha = 1.f; }];
+
+	// Add touch action after a second
+	UITapGestureRecognizer *tapGestureRecognizer = [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(dismissTutorial:)];
+	dispatch_after(dispatch_time(DISPATCH_TIME_NOW, 1.f * NSEC_PER_SEC), dispatch_get_main_queue(), ^{
+		// Dismiss gesture
+		[tutorialView addGestureRecognizer:tapGestureRecognizer];
+	});
+
+	CFStringRef tutorialKeyRef = CFSTR("LogAppFilterTutorialShown");
+	CFPreferencesSetValue(tutorialKeyRef, (__bridge CFNumberRef) @(YES), PUSHER_APP_ID, kCFPreferencesCurrentUser, kCFPreferencesAnyHost);
+	CFPreferencesSynchronize(PUSHER_APP_ID, kCFPreferencesCurrentUser, kCFPreferencesAnyHost);
+	CFRelease(tutorialKeyRef);
+}
+
 - (void)viewDidLoad {
 	[super viewDidLoad];
 
@@ -128,7 +167,7 @@ static NSDictionary *getLogPreferences() {
 				if (!serviceLogs) { continue; }
 				for (NSDictionary *logSection in serviceLogs) {
 					NSMutableDictionary *newLogSection = [logSection mutableCopy];
-					newLogSection[@"name"] = Xstr(@"[%@] %@", service, newLogSection[@"name"]);
+					newLogSection[@"service"] = service;
 					[allLogs addObject:newLogSection];
 				}
 			}
@@ -149,7 +188,25 @@ static NSDictionary *getLogPreferences() {
 			if (!logSectionAppID || !Xeq(logSectionAppID, _filteredAppID)) { continue; }
 		}
 
-		NSString *sectionName = logSection[@"name"] ?: @"Section";
+		NSString *sectionName = logSection[@"name"];
+		if (!sectionName) {
+			NSString *appName = logSection[@"appName"] ?: logSectionAppID ?: @"Unknown App";
+
+			NSDate *timestamp = logSection[@"timestamp"];
+			if (timestamp && [timestamp isKindOfClass:NSDate.class]) {
+				NSDateFormatter *dateFormatter = [NSDateFormatter new];
+				dateFormatter.dateStyle = NSDateFormatterMediumStyle;
+				dateFormatter.timeStyle = NSDateFormatterMediumStyle;
+				NSString *dateString = [dateFormatter stringFromDate:timestamp];
+				sectionName = Xstr(@"%@: %@", appName, dateString);
+			} else {
+				sectionName = Xstr(@"%@: %@", appName, timestamp);
+			}
+		}
+		// added only if global
+		if (logSection[@"service"]) {
+			sectionName = Xstr(@"[%@] %@", logSection[@"service"], sectionName);
+		}
 		NSArray *logs = logSection[@"logs"] ?: @[];
 		if (_filteredNetworkResponse) {
 			BOOL networkResponseFilterPasses = NO;
@@ -207,7 +264,7 @@ static NSDictionary *getLogPreferences() {
 		if (numSections >= _firstLogSection) {
 			[tableView beginUpdates];
 			[self updateLog];
-			[tableView deleteSections:[NSIndexSet indexSetWithIndexesInRange:NSMakeRange(1, numSections - _firstLogSection)] withRowAnimation:UITableViewRowAnimationAutomatic];
+			[tableView deleteSections:[NSIndexSet indexSetWithIndexesInRange:NSMakeRange(_firstLogSection, numSections - _firstLogSection)] withRowAnimation:UITableViewRowAnimationAutomatic];
 			[tableView endUpdates];
 		}
 	} else if (indexPath.section == 1 && indexPath.row == 1) {
@@ -216,6 +273,13 @@ static NSDictionary *getLogPreferences() {
 		[appSelectionController setCallback:^(id appID) {
 			_filteredAppID = [appID copy];
 			[self updateLogAndReload];
+			CFStringRef tutorialKeyRef = CFSTR("LogAppFilterTutorialShown");
+			CFPropertyListRef tutorialShownRef = CFPreferencesCopyValue(tutorialKeyRef, PUSHER_APP_ID, kCFPreferencesCurrentUser, kCFPreferencesAnyHost);
+			CFRelease(tutorialKeyRef);
+			BOOL tutorialShown = tutorialShownRef ? ((__bridge NSNumber *) tutorialShownRef).boolValue : NO;
+			if (!tutorialShown) {
+				[self showAppFilterTutorial];
+			}
 		}];
 		appSelectionController.navItemTitle = @"Select an App";
 		appSelectionController.selectingMultiple = NO;

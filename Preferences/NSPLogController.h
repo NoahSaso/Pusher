@@ -27,4 +27,5 @@
 - (void)updateLog;
 - (void)updateLogEnabled:(UISwitch *)logEnabledSwitch;
 - (void)updateLogAndReload;
+- (void)showAppFilterTutorial;
 @end
