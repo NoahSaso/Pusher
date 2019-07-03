@@ -211,7 +211,10 @@ static NSDictionary *getLogPreferences() {
 
 		NSString *sectionName = logSection[@"name"];
 		if (!sectionName) {
-			NSString *appName = logSection[@"appName"] ?: logSectionAppID ?: @"Unknown App";
+			NSString *appName = @"Unknown App";
+			if (logSectionAppID) {
+				appName = _appList.applications[logSectionAppID];
+			}
 
 			NSDate *timestamp = logSection[@"timestamp"];
 			if (timestamp && [timestamp isKindOfClass:NSDate.class]) {
