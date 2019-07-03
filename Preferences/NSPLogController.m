@@ -1,8 +1,9 @@
 #import "NSPLogController.h"
 #import "NSPAppSelectionController.h"
 
-#define NETWORK_RESPONSE_TAG 673
+#define SEGMENTED_CONTROL_TAG 673
 #define NETWORK_RESPONSE_ITEMS @[@"Any", @"Success", @"No Data", @"Error"]
+#define END_RESULT_ITEMS @[@"Any", @"Blocked", @"Pushed"]
 
 static NSPLogController *logControllerSharedInstance = nil;
 static void logsUpdated() {
@@ -93,9 +94,10 @@ static NSDictionary *getLogPreferences() {
 	_global = XIS_EMPTY(_service);
 	_logKey = [Xstr(@"%@Log", _service) retain];
 	_logEnabledKey = [Xstr(@"%@LogEnabled", _service) retain];
-	_filteredAppID = nil;
+	_filteredEndResult = nil;
 	_filteredNetworkResponse = nil;
-	_globalOnly = NO;
+	_filteredAppID = nil;
+	_filteredGlobalOnly = NO;
 
 	self.navigationItem.title = [self.specifier propertyForKey:@"label"] ?: @"Log";
 
@@ -113,7 +115,7 @@ static NSDictionary *getLogPreferences() {
 }
 
 - (void)updateGlobalOnly:(UISwitch *)globalOnlySwitch {
-	_globalOnly = globalOnlySwitch.isOn;
+	_filteredGlobalOnly = globalOnlySwitch.isOn;
 	[self updateLogAndReload];
 }
 
@@ -143,6 +145,7 @@ static NSDictionary *getLogPreferences() {
 		] mutableCopy],
 		_sections[1]: @[
 			@"Network Response",
+			@"End Result",
 			@"Select an App",
 			@"Global Only"
 		]
@@ -160,14 +163,15 @@ static NSDictionary *getLogPreferences() {
 
 	_filterSection = 1;
 	_networkResponseRow = 0;
-	_appFilterRow = 1;
-	_globalOnlyRow = 2;
+	_endResultFilterRow = 1;
+	_appFilterRow = 2;
+	_globalOnlyRow = 3;
 
 	_firstLogSection = _data.count;
 	_expandedIndexPaths = [NSMutableArray new];
 
 	NSArray *prefsLog = nil;
-	if (_global && !_globalOnly) {
+	if (_global && !_filteredGlobalOnly) {
 		NSMutableArray *allLogs = [NSMutableArray new];
 		for (id key in prefs.allKeys) {
 			if (![key isKindOfClass:NSString.class]) { continue; }
@@ -185,7 +189,7 @@ static NSDictionary *getLogPreferences() {
 		}
 		prefsLog = allLogs;
 	} else {
-		// handles _globalOnly because _logKey set to @"Log" which is just global
+		// handles _filteredGlobalOnly because _logKey set to @"Log" which is just global
 		prefsLog = prefs[_logKey] ?: @[];
 	}
 
@@ -225,6 +229,7 @@ static NSDictionary *getLogPreferences() {
 			}
 		}
 		NSArray *logs = logSection[@"logs"] ?: @[];
+
 		if (_filteredNetworkResponse) {
 			BOOL networkResponseFilterPasses = NO;
 			NSString *filterLogString = Xstr(@"Network Response: %@", _filteredNetworkResponse);
@@ -236,6 +241,11 @@ static NSDictionary *getLogPreferences() {
 			}
 			if (!networkResponseFilterPasses) { continue; }
 		}
+		if (_filteredEndResult) {
+			BOOL shouldContainPushed = Xeq(_filteredEndResult, END_RESULT_ITEMS[2]);
+			BOOL containsPushed = [logs containsObject:END_RESULT_ITEMS[2]];
+			if (shouldContainPushed != containsPushed) { continue; }
+		}
 
 		[_sections addObject:sectionName];
 		_data[sectionName] = [logs retain];
@@ -243,7 +253,7 @@ static NSDictionary *getLogPreferences() {
 }
 
 - (BOOL)tableView:(UITableView *)tableView shouldHighlightRowAtIndexPath:(NSIndexPath *)indexPath {
-	return indexPath.section != _filterSection || indexPath.row != _networkResponseRow;
+	return indexPath.section != _filterSection || (indexPath.row != _networkResponseRow && indexPath.row != _endResultFilterRow && indexPath.row != _globalOnlyRow);
 }
 
 - (BOOL)tableView:(UITableView *)tableView canEditRowAtIndexPath:(NSIndexPath *)indexPath {
@@ -284,7 +294,7 @@ static NSDictionary *getLogPreferences() {
 			[tableView deleteSections:[NSIndexSet indexSetWithIndexesInRange:NSMakeRange(_firstLogSection, numSections - _firstLogSection)] withRowAnimation:UITableViewRowAnimationAutomatic];
 			[tableView endUpdates];
 		}
-	} else if (indexPath.section == 1 && indexPath.row == 1) {
+	} else if (indexPath.section == _filterSection && indexPath.row == _appFilterRow) {
 		// app filter
 		NSPAppSelectionController *appSelectionController = [NSPAppSelectionController new];
 		[appSelectionController setCallback:^(id appID) {
@@ -337,33 +347,39 @@ static NSDictionary *getLogPreferences() {
 	cell.textLabel.text = nil;
 	cell.textLabel.textColor = nil;
 
-	if (indexPath.section != _filterSection || indexPath.row != _networkResponseRow) {
+	UIView *segmentedControlView = [cell.contentView viewWithTag:SEGMENTED_CONTROL_TAG];
+	if (segmentedControlView) {
+		[segmentedControlView removeFromSuperview];
+	}
+
+	if (indexPath.section != _filterSection || (indexPath.row != _networkResponseRow && indexPath.row != _endResultFilterRow)) {
 		cell.textLabel.text = _data[_sections[indexPath.section]][indexPath.row];
-		UIView *segmentedControlView = [cell.contentView viewWithTag:NETWORK_RESPONSE_TAG];
-		if (segmentedControlView) {
-			[segmentedControlView removeFromSuperview];
-		}
 	}
 
 	if (indexPath.section == _filterSection) {
-		if (indexPath.row == _networkResponseRow) {
-			UISegmentedControl *segmentedControl = (UISegmentedControl *)[cell.contentView viewWithTag:NETWORK_RESPONSE_TAG];
-			if (!segmentedControl || ![segmentedControl isKindOfClass:UISegmentedControl.class]) {
+		if (indexPath.row == _networkResponseRow || indexPath.row == _endResultFilterRow) {
+			BOOL isNetworkResponse = indexPath.row == _networkResponseRow;
+			UISegmentedControl *segmentedControl = nil;
+			if (isNetworkResponse) {
 				segmentedControl = [[UISegmentedControl alloc] initWithItems:NETWORK_RESPONSE_ITEMS];
 				segmentedControl.selectedSegmentIndex = _filteredNetworkResponse ? [NETWORK_RESPONSE_ITEMS indexOfObject:_filteredNetworkResponse] : 0;
-				segmentedControl.tag = NETWORK_RESPONSE_TAG;
-				segmentedControl.apportionsSegmentWidthsByContent = NO;
 				[segmentedControl addTarget:self action:@selector(networkResponseFilterUpdated:) forControlEvents:UIControlEventValueChanged];
-				[cell.contentView addSubview:segmentedControl];
-
-				segmentedControl.translatesAutoresizingMaskIntoConstraints = NO;
-				[segmentedControl.topAnchor constraintEqualToAnchor:segmentedControl.superview.topAnchor constant:5].active = YES;
-				[segmentedControl.bottomAnchor constraintEqualToAnchor:segmentedControl.superview.bottomAnchor constant:-5].active = YES;
-				[segmentedControl.leadingAnchor constraintEqualToAnchor:segmentedControl.superview.leadingAnchor constant:5].active = YES;
-				[segmentedControl.trailingAnchor constraintEqualToAnchor:segmentedControl.superview.trailingAnchor constant:-5].active = YES;
-				[segmentedControl.centerXAnchor constraintEqualToAnchor:segmentedControl.superview.centerXAnchor].active = YES;
-				[segmentedControl.centerYAnchor constraintEqualToAnchor:segmentedControl.superview.centerYAnchor].active = YES;
+			} else {
+				segmentedControl = [[UISegmentedControl alloc] initWithItems:END_RESULT_ITEMS];
+				segmentedControl.selectedSegmentIndex = _filteredEndResult ? [END_RESULT_ITEMS indexOfObject:_filteredEndResult] : 0;
+				[segmentedControl addTarget:self action:@selector(endResultFilterUpdated:) forControlEvents:UIControlEventValueChanged];
 			}
+			segmentedControl.tag = SEGMENTED_CONTROL_TAG;
+			segmentedControl.apportionsSegmentWidthsByContent = NO;
+			[cell.contentView addSubview:segmentedControl];
+
+			segmentedControl.translatesAutoresizingMaskIntoConstraints = NO;
+			[segmentedControl.topAnchor constraintEqualToAnchor:segmentedControl.superview.topAnchor constant:5].active = YES;
+			[segmentedControl.bottomAnchor constraintEqualToAnchor:segmentedControl.superview.bottomAnchor constant:-5].active = YES;
+			[segmentedControl.leadingAnchor constraintEqualToAnchor:segmentedControl.superview.leadingAnchor constant:5].active = YES;
+			[segmentedControl.trailingAnchor constraintEqualToAnchor:segmentedControl.superview.trailingAnchor constant:-5].active = YES;
+			[segmentedControl.centerXAnchor constraintEqualToAnchor:segmentedControl.superview.centerXAnchor].active = YES;
+			[segmentedControl.centerYAnchor constraintEqualToAnchor:segmentedControl.superview.centerYAnchor].active = YES;
 		} else if (indexPath.row == _appFilterRow) {
 			cell.accessoryType = UITableViewCellAccessoryDisclosureIndicator;
 			if (_filteredAppID) {
@@ -372,7 +388,7 @@ static NSDictionary *getLogPreferences() {
 			}
 		} else if (indexPath.row == _globalOnlyRow) {
 			UISwitch *globalOnlySwitch = [UISwitch new];
-			globalOnlySwitch.on = _globalOnly;
+			globalOnlySwitch.on = _filteredGlobalOnly;
 			[globalOnlySwitch addTarget:self action:@selector(updateGlobalOnly:) forControlEvents:UIControlEventValueChanged];
 			cell.accessoryView = globalOnlySwitch;
 		}
@@ -412,6 +428,16 @@ static NSDictionary *getLogPreferences() {
 		_filteredNetworkResponse = nil;
 	} else {
 		_filteredNetworkResponse = NETWORK_RESPONSE_ITEMS[idx];
+	}
+	[self updateLogAndReload];
+}
+
+- (void)endResultFilterUpdated:(UISegmentedControl *)segmentedControl {
+	int idx = segmentedControl.selectedSegmentIndex;
+	if (idx == 0) { // any
+		_filteredEndResult = nil;
+	} else {
+		_filteredEndResult = END_RESULT_ITEMS[idx];
 	}
 	[self updateLogAndReload];
 }

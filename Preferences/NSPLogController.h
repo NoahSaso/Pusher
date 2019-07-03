@@ -21,10 +21,12 @@
   int _filterSection;
   int _firstLogSection;
   int _globalOnlyRow;
+  int _endResultFilterRow;
   NSString *_filteredAppID;
   NSString *_filteredNetworkResponse;
+  NSString *_filteredEndResult;
   ALApplicationList *_appList;
-  BOOL _globalOnly;
+  BOOL _filteredGlobalOnly;
 }
 - (void)updateLog;
 - (void)updateLogEnabled:(UISwitch *)logEnabledSwitch;
