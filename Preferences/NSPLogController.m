@@ -143,12 +143,12 @@ static NSDictionary *getLogPreferences() {
 			@"Logger Enabled",
 			@"Clear Existing Logs"
 		] mutableCopy],
-		_sections[1]: @[
+		_sections[1]: [@[
 			@"Network Response",
 			@"End Result",
 			@"Select an App",
 			@"Global Only"
-		]
+		] mutableCopy]
 	} mutableCopy];
 
 	if (_global) {
