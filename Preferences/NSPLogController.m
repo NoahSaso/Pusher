@@ -156,6 +156,8 @@ static NSDictionary *getLogPreferences() {
 		[_data[_sections[0]] removeObject:@"Logger Enabled"];
 		_logEnabledSwitchRow = -1;
 		_clearLogRow = 0;
+
+		_globalOnlyRow = 3;
 	} else {
 		_logEnabledSwitchRow = 0;
 		_clearLogRow = 1;
@@ -168,7 +170,6 @@ static NSDictionary *getLogPreferences() {
 	_networkResponseRow = 0;
 	_endResultFilterRow = 1;
 	_appFilterRow = 2;
-	_globalOnlyRow = 3;
 
 	_firstLogSection = _data.count;
 	_expandedIndexPaths = [NSMutableArray new];
