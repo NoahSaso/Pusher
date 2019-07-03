@@ -170,6 +170,7 @@ static NSDictionary *getLogPreferences() {
 	_networkResponseRow = 0;
 	_endResultFilterRow = 1;
 	_appFilterRow = 2;
+	// _globalOnlyRow above in _gloabl check
 
 	_firstLogSection = _data.count;
 	_expandedIndexPaths = [NSMutableArray new];
