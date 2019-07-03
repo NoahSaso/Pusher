@@ -36,12 +36,12 @@
 	self.tableView.dataSource = _appListDataSource;
 	_appListDataSource.tableView = self.tableView;
 
-	UISearchController *searchController = [[UISearchController alloc] initWithSearchResultsController:nil];
-	searchController.searchResultsUpdater = self;
-	searchController.hidesNavigationBarDuringPresentation = NO;
-	searchController.dimsBackgroundDuringPresentation = NO;
-	[searchController.searchBar sizeToFit];
-	self.tableView.tableHeaderView = searchController.searchBar;
+	_searchController = [[UISearchController alloc] initWithSearchResultsController:nil];
+	_searchController.searchResultsUpdater = self;
+	_searchController.hidesNavigationBarDuringPresentation = NO;
+	_searchController.dimsBackgroundDuringPresentation = NO;
+	[_searchController.searchBar sizeToFit];
+	self.tableView.tableHeaderView = _searchController.searchBar;
 
 	if (!self.selectedAppIDs || ![self.selectedAppIDs isKindOfClass:NSMutableArray.class]) {
 		self.selectedAppIDs = [NSMutableArray new];
@@ -55,6 +55,7 @@
 }
 
 - (void)dismiss {
+	_searchController.active = NO;
 	if (self.selectingMultiple) {
 		[self.navigationController dismissViewControllerAnimated:YES completion:nil];
 	} else {

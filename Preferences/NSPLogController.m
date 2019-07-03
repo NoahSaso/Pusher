@@ -145,7 +145,9 @@ static NSDictionary *getLogPreferences() {
 	for (NSDictionary *logSection in prefsLog) {
 		NSString *logSectionAppID = logSection[@"appID"];
 		// if app filter is on, skip if not same app
-		if (logSectionAppID && _filteredAppID && !Xeq(logSectionAppID, _filteredAppID)) { continue; }
+		if (_filteredAppID) {
+			if (!logSectionAppID || !Xeq(logSectionAppID, _filteredAppID)) { continue; }
+		}
 
 		NSString *sectionName = logSection[@"name"] ?: @"Section";
 		NSArray *logs = logSection[@"logs"] ?: @[];
@@ -168,6 +170,17 @@ static NSDictionary *getLogPreferences() {
 
 - (BOOL)tableView:(UITableView *)tableView shouldHighlightRowAtIndexPath:(NSIndexPath *)indexPath {
 	return indexPath.section != _filterSection || indexPath.row != _networkResponseRow;
+}
+
+- (BOOL)tableView:(UITableView *)tableView canEditRowAtIndexPath:(NSIndexPath *)indexPath {
+	return indexPath.section == _filterSection && indexPath.row == _appFilterRow;
+}
+
+- (void)tableView:(UITableView *)tableView commitEditingStyle:(UITableViewCellEditingStyle)editingStyle forRowAtIndexPath:(NSIndexPath *)indexPath {
+	if (indexPath.section == _filterSection && indexPath.row == _appFilterRow && editingStyle == UITableViewCellEditingStyleDelete) {
+		_filteredAppID = nil;
+		[self updateLogAndReload];
+	}
 }
 
 - (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath {

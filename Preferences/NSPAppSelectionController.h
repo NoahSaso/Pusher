@@ -8,6 +8,7 @@ typedef void (^PickerCallback)(id appIdOrIds);
   ALApplicationList *_appList;
   NSPAppSelectionALApplicationTableDataSource *_appListDataSource;
   PickerCallback callback;
+  UISearchController *_searchController;
 }
 @property (nonatomic, assign) BOOL selectingMultiple;
 @property (nonatomic, retain) NSString *navItemTitle;
