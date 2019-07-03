@@ -102,6 +102,7 @@ static void addToLogIfEnabled(NSString *service, BBBulletin *bulletin, NSString 
 	if (!existingLogSection || replaceIdx == -1) {
 		existingLogSection = [@{
 			@"name": Xstr(@"%@: %@", appName, bulletin.date),
+			@"appID": bulletin.sectionID,
 			@"timestamp": bulletin.date
 		} mutableCopy];
 		[logSections addObject:existingLogSection];

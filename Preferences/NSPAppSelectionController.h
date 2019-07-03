@@ -1,16 +1,18 @@
 #import <Preferences/PSViewController.h>
 #import <AppList/AppList.h>
 #import "NSPAppSelectionALApplicationTableDataSource.h"
-#import "NSPCustomizeAppsController.h"
+
+typedef void (^PickerCallback)(id appIdOrIds);
 
 @interface NSPAppSelectionController : UITableViewController <UITableViewDelegate, UISearchResultsUpdating> {
   ALApplicationList *_appList;
   NSPAppSelectionALApplicationTableDataSource *_appListDataSource;
+  PickerCallback callback;
 }
-@property (nonatomic, copy) BOOL selectingMultiple;
-@property (nonatomic, retain) NSString *title;
+@property (nonatomic, assign) BOOL selectingMultiple;
+@property (nonatomic, retain) NSString *navItemTitle;
 @property (nonatomic, retain) NSString *rightButtonTitle;
 @property (nonatomic, retain) NSMutableArray *selectedAppIDs;
-@property (nonatomic, retain) NSPCustomizeAppsController *customizeAppsController;
+@property (nonatomic, copy) PickerCallback callback;
 - (void)dismiss;
 @end

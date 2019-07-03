@@ -17,6 +17,7 @@
 @end
 
 @implementation NSPAppSelectionController
+@synthesize callback;
 
 - (void)dealloc {
 	[self.tableView release];
@@ -42,21 +43,29 @@
 	[searchController.searchBar sizeToFit];
 	self.tableView.tableHeaderView = searchController.searchBar;
 
-	self.selectedAppIDs = [NSMutableArray new];
+	if (!self.selectedAppIDs || ![self.selectedAppIDs isKindOfClass:NSMutableArray.class]) {
+		self.selectedAppIDs = [NSMutableArray new];
+	}
 
-	self.navigationItem.title = self.title;
-	self.navigationItem.leftBarButtonItem = [[UIBarButtonItem alloc] initWithTitle:@"Cancel" style:UIBarButtonItemStylePlain target:self action:@selector(dismiss)];
+	self.navigationItem.title = self.navItemTitle ?: @"Apps";
 	if (self.selectingMultiple) {
-		self.navigationItem.rightBarButtonItem = [[UIBarButtonItem alloc] initWithTitle:self.rightButtonTitle style:UIBarButtonItemStylePlain target:self action:@selector(doneSelecting)];
+		self.navigationItem.leftBarButtonItem = [[UIBarButtonItem alloc] initWithTitle:@"Cancel" style:UIBarButtonItemStylePlain target:self action:@selector(dismiss)];
+		self.navigationItem.rightBarButtonItem = [[UIBarButtonItem alloc] initWithTitle:(self.rightButtonTitle ?: @"Done") style:UIBarButtonItemStylePlain target:self action:@selector(doneSelecting)];
 	}
 }
 
 - (void)dismiss {
-	[self.navigationController dismissViewControllerAnimated:YES completion:nil];
+	if (self.selectingMultiple) {
+		[self.navigationController dismissViewControllerAnimated:YES completion:nil];
+	} else {
+		[self.navigationController popViewControllerAnimated:YES];
+	}
 }
 
 - (void)doneSelecting {
-	[self.customizeAppsController addAppIDs:self.selectedAppIDs];
+	if (callback) {
+		callback(self.selectingMultiple ? self.selectedAppIDs : (self.selectedAppIDs.count ? self.selectedAppIDs[0] : nil));
+	}
 	[self dismiss];
 }
 
@@ -83,12 +92,18 @@
 - (void)tableView:(UITableView *)table didSelectRowAtIndexPath:(NSIndexPath *)indexPath {
 	[table deselectRowAtIndexPath:indexPath animated:YES];
 	NSString *displayIdentifier = [_appListDataSource displayIdentifierForIndexPath:indexPath];
-	if ([self.selectedAppIDs containsObject:displayIdentifier]) {
-		[self.selectedAppIDs removeObject:displayIdentifier];
+	if (self.selectingMultiple) {
+		if ([self.selectedAppIDs containsObject:displayIdentifier]) {
+			[self.selectedAppIDs removeObject:displayIdentifier];
+		} else {
+			[self.selectedAppIDs addObject:displayIdentifier];
+		}
+		[table reloadRowsAtIndexPaths:@[indexPath] withRowAnimation:UITableViewRowAnimationFade];
 	} else {
+		[self.selectedAppIDs removeAllObjects];
 		[self.selectedAppIDs addObject:displayIdentifier];
+		[self doneSelecting];
 	}
-	[table reloadRowsAtIndexPaths:@[indexPath] withRowAnimation:UITableViewRowAnimationFade];
 }
 
 @end

@@ -1,6 +1,9 @@
 #import "NSPLogController.h"
 #import "NSPAppSelectionController.h"
 
+#define NETWORK_RESPONSE_TAG 673
+#define NETWORK_RESPONSE_ITEMS @[@"Any", @"Success", @"No Data", @"Error"]
+
 static NSPLogController *logControllerSharedInstance = nil;
 static void logsUpdated() {
 	if (logControllerSharedInstance && [logControllerSharedInstance isKindOfClass:NSPLogController.class] && [logControllerSharedInstance respondsToSelector:@selector(updateLogAndReload)]) {
@@ -34,6 +37,8 @@ static NSDictionary *getLogPreferences() {
 	logControllerSharedInstance = self;
 	CFNotificationCenterAddObserver(CFNotificationCenterGetDarwinNotifyCenter(), NULL, (CFNotificationCallback)logsUpdated, CFSTR(PUSHER_LOG_PREFS_NOTIFICATION), NULL, CFNotificationSuspensionBehaviorCoalesce);
 
+  _appList = [ALApplicationList sharedApplicationList];
+
 	_table = [[UITableView alloc] initWithFrame:self.view.bounds style:UITableViewStyleGrouped];
 	[_table registerClass:UITableViewCell.class forCellReuseIdentifier:@"LogCell"];
 	_table.delegate = self;
@@ -44,6 +49,8 @@ static NSDictionary *getLogPreferences() {
 	_global = XIS_EMPTY(_service);
 	_logKey = [Xstr(@"%@Log", _service) retain];
 	_logEnabledKey = [Xstr(@"%@LogEnabled", _service) retain];
+	_filteredAppID = nil;
+	_filteredNetworkResponse = nil;
 
 	self.navigationItem.title = [self.specifier propertyForKey:@"label"] ?: @"Log";
 
@@ -88,7 +95,7 @@ static NSDictionary *getLogPreferences() {
 		] mutableCopy],
 		_sections[1]: @[
 			@"Network Response",
-			@"App"
+			@"Select an App"
 		]
 	} mutableCopy];
 
@@ -102,8 +109,11 @@ static NSDictionary *getLogPreferences() {
 		_clearLogRow = 1;
 	}
 
-	_firstLogSection = _data.count;
+	_filterSection = 1;
+	_networkResponseRow = 0;
+	_appFilterRow = 1;
 
+	_firstLogSection = _data.count;
 	_expandedIndexPaths = [NSMutableArray new];
 
 	NSArray *prefsLog = nil;
@@ -133,11 +143,31 @@ static NSDictionary *getLogPreferences() {
 	prefsLog = [prefsLog sortedArrayUsingDescriptors:@[timestampDescriptor]];
 
 	for (NSDictionary *logSection in prefsLog) {
+		NSString *logSectionAppID = logSection[@"appID"];
+		// if app filter is on, skip if not same app
+		if (!logSectionAppID || (_filteredAppID && !Xeq(logSectionAppID, _filteredAppID))) { continue; }
+
 		NSString *sectionName = logSection[@"name"] ?: @"Section";
 		NSArray *logs = logSection[@"logs"] ?: @[];
+		if (_filteredNetworkResponse) {
+			BOOL networkResponseFilterPasses = NO;
+			NSString *filterLogString = Xstr(@"Network Response: %@", _filteredNetworkResponse);
+			for (NSString *log in logs) {
+				if ([log containsString:filterLogString]) {
+					networkResponseFilterPasses = YES;
+					break;
+				}
+			}
+			if (!networkResponseFilterPasses) { continue; }
+		}
+
 		[_sections addObject:sectionName];
 		_data[sectionName] = [logs retain];
 	}
+}
+
+- (BOOL)tableView:(UITableView *)tableView shouldHighlightRowAtIndexPath:(NSIndexPath *)indexPath {
+	return indexPath.section != _filterSection || indexPath.row != _networkResponseRow;
 }
 
 - (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath {
@@ -170,12 +200,16 @@ static NSDictionary *getLogPreferences() {
 	} else if (indexPath.section == 1 && indexPath.row == 1) {
 		// app filter
 		NSPAppSelectionController *appSelectionController = [NSPAppSelectionController new];
-		appSelectionController.title = @"Select an App";
+		[appSelectionController setCallback:^(id appID) {
+			_filteredAppID = [appID copy];
+			[self updateLogAndReload];
+		}];
+		appSelectionController.navItemTitle = @"Select an App";
 		appSelectionController.selectingMultiple = NO;
-		[appSelectionController add]
-		appSelectionController.customizeAppsController = self;
-		UINavigationController *navController = [[UINavigationController alloc] initWithRootViewController:appSelectionController];
-		[self presentViewController:navController animated:YES completion:nil];
+		if (_filteredAppID) {
+			appSelectionController.selectedAppIDs = [@[_filteredAppID] mutableCopy];
+		}
+		[self.navigationController pushViewController:appSelectionController animated:YES];
 	} else if (indexPath.section >= _firstLogSection) {
 		if ([_expandedIndexPaths containsObject:indexPath]) {
 			[_expandedIndexPaths removeObject:indexPath];
@@ -200,19 +234,63 @@ static NSDictionary *getLogPreferences() {
 
 - (UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath {
 	UITableViewCell *cell = [tableView dequeueReusableCellWithIdentifier:@"LogCell" forIndexPath:indexPath];
-	cell.textLabel.text = _data[_sections[indexPath.section]][indexPath.row];
+
+	cell.accessoryType = UITableViewCellAccessoryNone;
+	cell.accessoryView = nil;
+	cell.imageView.image = nil;
+	cell.textLabel.numberOfLines = 1;
+	cell.textLabel.lineBreakMode = NSLineBreakByTruncatingTail;
+	cell.textLabel.text = nil;
+
+	if (indexPath.section != _filterSection || indexPath.row != _networkResponseRow) {
+		cell.textLabel.text = _data[_sections[indexPath.section]][indexPath.row];
+		UIView *segmentedControlView = [cell.contentView viewWithTag:NETWORK_RESPONSE_TAG];
+		if (segmentedControlView) {
+			[segmentedControlView removeFromSuperview];
+		}
+	}
+
+	if (indexPath.section == _filterSection) {
+		if (indexPath.row == _networkResponseRow) {
+			UISegmentedControl *segmentedControl = (UISegmentedControl *)[cell.contentView viewWithTag:NETWORK_RESPONSE_TAG];
+			if (!segmentedControl || ![segmentedControl isKindOfClass:UISegmentedControl.class]) {
+				segmentedControl = [[UISegmentedControl alloc] initWithItems:NETWORK_RESPONSE_ITEMS];
+				segmentedControl.selectedSegmentIndex = _filteredNetworkResponse ? [NETWORK_RESPONSE_ITEMS indexOfObject:_filteredNetworkResponse] : 0;
+				segmentedControl.tag = NETWORK_RESPONSE_TAG;
+				segmentedControl.apportionsSegmentWidthsByContent = NO;
+				[segmentedControl addTarget:self action:@selector(networkResponseFilterUpdated:) forControlEvents:UIControlEventValueChanged];
+				[cell.contentView addSubview:segmentedControl];
+
+				segmentedControl.translatesAutoresizingMaskIntoConstraints = NO;
+				[segmentedControl.topAnchor constraintEqualToAnchor:segmentedControl.superview.topAnchor constant:5].active = YES;
+				[segmentedControl.bottomAnchor constraintEqualToAnchor:segmentedControl.superview.bottomAnchor constant:-5].active = YES;
+				[segmentedControl.leadingAnchor constraintEqualToAnchor:segmentedControl.superview.leadingAnchor constant:5].active = YES;
+				[segmentedControl.trailingAnchor constraintEqualToAnchor:segmentedControl.superview.trailingAnchor constant:-5].active = YES;
+				[segmentedControl.centerXAnchor constraintEqualToAnchor:segmentedControl.superview.centerXAnchor].active = YES;
+				[segmentedControl.centerYAnchor constraintEqualToAnchor:segmentedControl.superview.centerYAnchor].active = YES;
+			}
+		} else if (indexPath.row == _appFilterRow) {
+			cell.accessoryType = UITableViewCellAccessoryDisclosureIndicator;
+			if (_filteredAppID) {
+				cell.textLabel.text = Xstr(@"App Filter: %@", _appList.applications[_filteredAppID]);
+				cell.imageView.image = [_appList iconOfSize:ALApplicationIconSizeSmall forDisplayIdentifier:_filteredAppID];
+			}
+		}
+
+		return cell;
+	}
+
 	BOOL expanded = [_expandedIndexPaths containsObject:indexPath];
-	cell.textLabel.numberOfLines = expanded ? 0 : 1;
-	cell.textLabel.lineBreakMode = expanded ? NSLineBreakByWordWrapping : NSLineBreakByTruncatingTail;
+	if (expanded) {
+		cell.textLabel.numberOfLines = 0;
+		cell.textLabel.lineBreakMode = NSLineBreakByWordWrapping;
+	}
 
 	CGSize textSize = [cell.textLabel.text sizeWithAttributes:@{NSFontAttributeName: cell.textLabel.font}];
 	BOOL isTruncated = textSize.width > cell.contentView.bounds.size.width;
 	if ((indexPath.section == 0 && indexPath.row == _clearLogRow)
-			|| (indexPath.section == 1 && indexPath.row > 0)
 			|| (indexPath.section >= _firstLogSection && !expanded && isTruncated)) {
 		cell.accessoryType = UITableViewCellAccessoryDisclosureIndicator;
-	} else {
-		cell.accessoryType = UITableViewCellAccessoryNone;
 	}
 
 	UISwitch *logEnabledSwitch = (UISwitch *) cell.accessoryView;
@@ -223,10 +301,19 @@ static NSDictionary *getLogPreferences() {
 			[logEnabledSwitch addTarget:self action:@selector(updateLogEnabled:) forControlEvents:UIControlEventValueChanged];
 			cell.accessoryView = logEnabledSwitch;
 		}
-	} else {
-		cell.accessoryView = nil;
 	}
+
 	return cell;
+}
+
+- (void)networkResponseFilterUpdated:(UISegmentedControl *)segmentedControl {
+	int idx = segmentedControl.selectedSegmentIndex;
+	if (idx == 0) { // any
+		_filteredNetworkResponse = nil;
+	} else {
+		_filteredNetworkResponse = NETWORK_RESPONSE_ITEMS[idx];
+	}
+	[self updateLogAndReload];
 }
 
 @end
