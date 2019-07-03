@@ -940,13 +940,17 @@ static NSString *prefsSayNo(BBServer *server, BBBulletin *bulletin) {
 // iOS 10 & 11
 - (void)publishBulletin:(BBBulletin *)bulletin destinations:(unsigned long long)arg2 alwaysToLockScreen:(BOOL)arg3 {
 	%orig;
-	[self sendBulletinToPusher:bulletin];
+	if ([self respondsToSelector:@selector(sendBulletinToPusher:)]) {
+		[self sendBulletinToPusher:bulletin];
+	}
 }
 
 // iOS 12
 - (void)publishBulletin:(BBBulletin *)bulletin destinations:(unsigned long long)arg2 {
 	%orig;
-	[self sendBulletinToPusher:bulletin];
+	if ([self respondsToSelector:@selector(sendBulletinToPusher:)]) {
+		[self sendBulletinToPusher:bulletin];
+	}
 }
 
 %end
