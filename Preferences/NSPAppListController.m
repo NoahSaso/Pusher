@@ -46,12 +46,12 @@ static void setPreference(CFStringRef keyRef, CFPropertyListRef val, BOOL should
 	_appListDataSource.sectionDescriptors = [NSPAppListALApplicationTableDataSource standardSectionDescriptors];
 	_appListDataSource.appListController = self;
 
-	UISearchController *searchController = [[UISearchController alloc] initWithSearchResultsController:nil];
-	searchController.searchResultsUpdater = self;
-	searchController.hidesNavigationBarDuringPresentation = NO;
-	searchController.dimsBackgroundDuringPresentation = NO;
-	[searchController.searchBar sizeToFit];
-	_table.tableHeaderView = searchController.searchBar;
+	_searchController = [[UISearchController alloc] initWithSearchResultsController:nil];
+	_searchController.searchResultsUpdater = self;
+	_searchController.hidesNavigationBarDuringPresentation = NO;
+	_searchController.dimsBackgroundDuringPresentation = NO;
+	[_searchController.searchBar sizeToFit];
+	_table.tableHeaderView = _searchController.searchBar;
 
 	_table.dataSource = _appListDataSource;
 	_appListDataSource.tableView = _table;
@@ -140,6 +140,11 @@ static void setPreference(CFStringRef keyRef, CFPropertyListRef val, BOOL should
 	if (!_prefs[@"AppListTutorialShown"] || !((NSNumber *) _prefs[@"AppListTutorialShown"]).boolValue) {
 		[self showTutorial];
 	}
+}
+
+- (void)viewWillDisappear:(BOOL)animated {
+	[super viewWillDisappear:animated];
+	_searchController.active = NO;
 }
 
 - (void)showTutorial {

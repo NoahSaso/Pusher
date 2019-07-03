@@ -209,8 +209,13 @@ static NSDictionary *getLogPreferences() {
 			}
 		}
 		// added only if global
-		if (logSection[@"service"]) {
-			sectionName = Xstr(@"[%@] %@", logSection[@"service"], sectionName);
+		NSString *logSectionService = logSection[@"service"];
+		if (logSectionService) {
+			if (XIS_EMPTY(logSectionService)) {
+				sectionName = Xstr(@"{GLOBAL} %@", sectionName);
+			} else {
+				sectionName = Xstr(@"[%@] %@", logSectionService, sectionName);
+			}
 		}
 		NSArray *logs = logSection[@"logs"] ?: @[];
 		if (_filteredNetworkResponse) {
@@ -323,6 +328,7 @@ static NSDictionary *getLogPreferences() {
 	cell.textLabel.numberOfLines = 1;
 	cell.textLabel.lineBreakMode = NSLineBreakByTruncatingTail;
 	cell.textLabel.text = nil;
+	cell.textLabel.textColor = nil;
 
 	if (indexPath.section != _filterSection || indexPath.row != _networkResponseRow) {
 		cell.textLabel.text = _data[_sections[indexPath.section]][indexPath.row];
@@ -370,9 +376,12 @@ static NSDictionary *getLogPreferences() {
 
 	CGSize textSize = [cell.textLabel.text sizeWithAttributes:@{NSFontAttributeName: cell.textLabel.font}];
 	BOOL isTruncated = textSize.width > cell.contentView.bounds.size.width;
-	if ((indexPath.section == 0 && indexPath.row == _clearLogRow)
-			|| (indexPath.section >= _firstLogSection && !expanded && isTruncated)) {
+	if (indexPath.section >= _firstLogSection && !expanded && isTruncated) {
 		cell.accessoryType = UITableViewCellAccessoryDisclosureIndicator;
+	}
+
+	if (indexPath.section == 0 && indexPath.row == _clearLogRow) {
+		cell.textLabel.textColor = [UIColor colorWithRed:0.0 green:122/255.0 blue:255/255.0 alpha:1.0];
 	}
 
 	UISwitch *logEnabledSwitch = (UISwitch *) cell.accessoryView;

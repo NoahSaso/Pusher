@@ -11,6 +11,7 @@
   NSString *_prefix;
   NSString *_label;
   NSDictionary *_prefs;
+  UISearchController *_searchController;
 }
 @property (nonatomic, retain) NSMutableArray *selectedAppIDs;
 - (void)updatePreferencesForAppID:(NSString *)appID selected:(BOOL)selected;
