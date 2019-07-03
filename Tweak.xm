@@ -595,6 +595,14 @@ static NSString *prefsSayNo(BBServer *server, BBBulletin *bulletin) {
 		bulletin.date = [NSDate date]; // fix crash on logging if date nil, set to current date time
 	}
 
+	// Check if notification within last 5 seconds so we don't send uncleared notifications every respring
+	NSDate *fiveSecondsAgo = [[NSDate date] dateByAddingTimeInterval:-5];
+	if (bulletin.date && [bulletin.date compare:fiveSecondsAgo] == NSOrderedAscending) {
+		// addToLogIfEnabled(@"", bulletin, appName, @"Notification dated greater than 5 seconds ago, not sending to prevent resending all notifications on respring"); // can't send log because can't get appName because SBApplicationController may not yet be ready when just resprung which is what this 5 second check is preventing (resending notifications on respring)
+		XLog(@"Bulletin 5 seconds or older");
+		return;
+	}
+
 	NSString *appID = bulletin.sectionID;
 	SBApplication *app = [[NSClassFromString(@"SBApplicationController") sharedInstance] applicationWithBundleIdentifier:appID];
 	NSString *appName = app && app.displayName && app.displayName.length > 0 ? app.displayName : Xstr(@"Unknown App: %@", appID);
@@ -604,14 +612,6 @@ static NSString *prefsSayNo(BBServer *server, BBBulletin *bulletin) {
 	if (prefsResponse) {
 		addToLogIfEnabled(@"", bulletin, appName, Xstr(@"Global prefs: %@", prefsResponse));
 		XLog(@"Prefs say no: %@", prefsResponse);
-		return;
-	}
-
-	// Check if notification within last 5 seconds so we don't send uncleared notifications every respring
-	NSDate *fiveSecondsAgo = [[NSDate date] dateByAddingTimeInterval:-5];
-	if (bulletin.date && [bulletin.date compare:fiveSecondsAgo] == NSOrderedAscending) {
-		addToLogIfEnabled(@"", bulletin, appName, @"Notification dated greater than 5 seconds ago, not sending to prevent resending all notifications on respring");
-		XLog(@"Bulletin 5 seconds or older");
 		return;
 	}
 	// App list contains lowercase app IDs
