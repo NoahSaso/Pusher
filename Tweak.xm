@@ -131,6 +131,8 @@ static void addToLogIfEnabled(NSString *service, BBBulletin *bulletin, NSString 
 	CFPreferencesSetValue((__bridge CFStringRef) logKey, (__bridge CFPropertyListRef) logSections, PUSHER_LOG_ID, kCFPreferencesCurrentUser, kCFPreferencesAnyHost);
 	CFPreferencesSynchronize(PUSHER_LOG_ID, kCFPreferencesCurrentUser, kCFPreferencesAnyHost);
 	notify_post(PUSHER_LOG_PREFS_NOTIFICATION);
+
+	XLog(@"[S:%@] Saved to log", service);
 }
 
 static void addToLogIfEnabled(NSString *service, BBBulletin *bulletin, NSString *label) {
@@ -542,12 +544,16 @@ static NSString *prefsSayNo(BBServer *server, BBBulletin *bulletin) {
 		return Xstr(@"Pusher %@abled", pusherEnabled ? @"En" : @"Dis");
 	}
 
-	if (Xeq(bulletin.sectionID, PUSHER_TEST_NOTIFICATION_SECTION_ID) && Xeq(bulletin.title, @"Pusher") && [bulletin.message hasPrefix:PUSHER_TEST_PUSH_RESULT_PREFIX]) {
+	if (bulletin.sectionID && Xeq(bulletin.sectionID, PUSHER_TEST_NOTIFICATION_SECTION_ID) && bulletin.title && Xeq(bulletin.title, @"Pusher") && bulletin.message && [bulletin.message hasPrefix:PUSHER_TEST_PUSH_RESULT_PREFIX]) {
 		return @"Not forwarding test notification result banner";
 	}
 
-	if (globalAppList == nil || ![globalAppList isKindOfClass:NSArray.class]) {
+	if (!globalAppList || ![globalAppList isKindOfClass:NSArray.class]) {
 		return Xstr(@"Global app list is nil, it shouldn't be. %@", globalAppList);
+	}
+
+	if (!server) {
+		return @"Server is nil, it shouldn't be";
 	}
 
 	BBSectionInfo *sectionInfo = [server _sectionInfoForSectionID:bulletin.sectionID effective:YES];
@@ -555,23 +561,15 @@ static NSString *prefsSayNo(BBServer *server, BBBulletin *bulletin) {
 		return @"Section info is nil, it shouldn't be";
 	}
 
+	if (!pusherEnabledServices || ![pusherEnabledServices isKindOfClass:NSDictionary.class]) {
+		return Xstr(@"Enabled services is nil, it shouldn't be. %@", pusherEnabledServices);
+	}
+
 	for (NSString *service in pusherEnabledServices.allKeys) {
 		NSDictionary *servicePrefs = pusherEnabledServices[service];
-		if (servicePrefs == nil/*
-					|| servicePrefs[@"appList"] == nil || ![servicePrefs[@"appList"] isKindOfClass:NSArray.class]
-					|| servicePrefs[@"token"] == nil || ![servicePrefs[@"token"] isKindOfClass:NSString.class] || ((NSString *) servicePrefs[@"token"]).length == 0
-					|| servicePrefs[@"user"] == nil || ![servicePrefs[@"user"] isKindOfClass:NSString.class] || ((NSString *) servicePrefs[@"user"]).length == 0
-					|| servicePrefs[@"devices"] == nil || ![servicePrefs[@"devices"] isKindOfClass:NSArray.class] // devices can be empty depending on API
-					|| servicePrefs[@"url"] == nil || ![servicePrefs[@"url"] isKindOfClass:NSString.class] || ((NSString *) servicePrefs[@"url"]).length == 0
-					|| servicePrefs[@"customApps"] == nil || ![servicePrefs[@"customApps"] isKindOfClass:NSDictionary.class]*/) {
+		if (!servicePrefs || ![servicePrefs isKindOfClass:NSDictionary.class]) {
 			return @"Service prefs are nil, they shouldn't be";
 		}
-		// for (id val in servicePrefs.allValues) {
-		// 	if (val == nil) {
-		// 		XLog(@"value in service prefs nil");
-		// 		return YES;
-		// 	}
-		// }
 	}
 	return nil;
 }
@@ -600,14 +598,15 @@ static NSString *prefsSayNo(BBServer *server, BBBulletin *bulletin) {
 
 	if (!NSClassFromString(@"SBApplicationController") || ![%c(SBApplicationController) sharedInstance]) {
 		XLog(@"SpringBoard not ready");
+		addToLogIfEnabled(@"", bulletin, @"SpringBoard not ready");
 		return;
 	}
 
 	// Check if notification within last 5 seconds so we don't send uncleared notifications every respring
 	NSDate *fiveSecondsAgo = [[NSDate date] dateByAddingTimeInterval:-5];
 	if (bulletin.date && [bulletin.date compare:fiveSecondsAgo] == NSOrderedAscending) {
-		addToLogIfEnabled(@"", bulletin, @"Notification dated greater than 5 seconds ago, not sending to prevent resending all notifications on respring");
 		XLog(@"Bulletin 5 seconds or older");
+		addToLogIfEnabled(@"", bulletin, @"Notification dated greater than 5 seconds ago, not sending to prevent resending all notifications on respring");
 		return;
 	}
 
@@ -617,16 +616,16 @@ static NSString *prefsSayNo(BBServer *server, BBBulletin *bulletin) {
 
 	NSString *prefsResponse = prefsSayNo(self, bulletin);
 	if (prefsResponse) {
-		addToLogIfEnabled(@"", bulletin, Xstr(@"Global prefs: %@", prefsResponse));
 		XLog(@"Prefs say no: %@", prefsResponse);
+		addToLogIfEnabled(@"", bulletin, Xstr(@"Global prefs: %@", prefsResponse));
 		return;
 	}
 
 	// App list contains lowercase app IDs
 	BOOL appListContainsApp = [globalAppList containsObject:appID.lowercaseString];
 	if (globalAppListIsBlacklist == appListContainsApp) {
-		addToLogIfEnabled(@"", bulletin, Xstr(@"Blocked by global app list (%@)", ((NSNumber *) globalAppListIsBlacklist).boolValue ? @"blacklist" : @"whitelist"));
 		XLog(@"[Global] Blocked by app list: %@", appID);
+		addToLogIfEnabled(@"", bulletin, Xstr(@"Blocked by global app list (%@)", globalAppListIsBlacklist ? @"blacklist" : @"whitelist"));
 		return;
 	}
 
@@ -640,8 +639,8 @@ static NSString *prefsSayNo(BBServer *server, BBBulletin *bulletin) {
 	for (NSString *recentNotificationTitle in recentNotificationTitles) {
 		// prevent looping by checking if this title contains any recent titles in format of "App [Previous Title]"
 		if (Xeq(title, Xstr(@"%@: %@", appName, recentNotificationTitle))) {
-			addToLogIfEnabled(@"", bulletin, @"Prevented loop");
 			XLog(@"Prevented loop");
+			addToLogIfEnabled(@"", bulletin, @"Prevented loop");
 			return;
 		}
 	}
@@ -659,8 +658,8 @@ static NSString *prefsSayNo(BBServer *server, BBBulletin *bulletin) {
 %new
 - (void)sendToPusherService:(NSString *)service bulletin:(BBBulletin *)bulletin appID:(NSString *)appID appName:(NSString *)appName title:(NSString *)title message:(NSString *)message isTest:(BOOL)isTest {
 	if (!isTest && Xeq(appID, getServiceAppID(service))) {
-		addToLogIfEnabled(service, bulletin, @"Prevented loop from same app");
 		XLog(@"Prevented loop from same app");
+		addToLogIfEnabled(service, bulletin, @"Prevented loop from same app");
 		return;
 	}
 	NSDictionary *servicePrefs = pusherServicePrefs[service];
@@ -669,8 +668,8 @@ static NSString *prefsSayNo(BBServer *server, BBBulletin *bulletin) {
 		BOOL appListContainsApp = [serviceAppList containsObject:appID.lowercaseString];
 		id appListIsBlacklist = servicePrefs[@"appListIsBlacklist"];
 		if (appListIsBlacklist && ((NSNumber *) appListIsBlacklist).boolValue == appListContainsApp) {
-			addToLogIfEnabled(service, bulletin, Xstr(@"Blocked by app list (%@)", ((NSNumber *) appListIsBlacklist).boolValue ? @"blacklist" : @"whitelist"));
 			XLog(@"[S:%@] Blocked by app list: %@", service, appID);
+			addToLogIfEnabled(service, bulletin, Xstr(@"Blocked by app list (%@)", ((NSNumber *) appListIsBlacklist).boolValue ? @"blacklist" : @"whitelist"));
 			return;
 		}
 
@@ -680,13 +679,14 @@ static NSString *prefsSayNo(BBServer *server, BBBulletin *bulletin) {
 		BBSectionInfo *sectionInfo = [self _sectionInfoForSectionID:bulletin.sectionID effective:YES];
 		if (!sectionInfo) {
 			XLog(@"[S:%@,A:%@] sectionInfo nil", service, appID);
+			addToLogIfEnabled(service, bulletin, @"sectionInfo is nil, it should not be");
 			return;
 		}
 		XLog(@"[S:%@,A:%@] Doing SNS", service, appID);
 		NSString *snsResponse = snsSaysNo(sns, sectionInfo, isAnd, requireANWithOR);
 		if (snsResponse) {
-			addToLogIfEnabled(service, bulletin, snsResponse);
 			XLog(@"[S:%@,A:%@] SNS said no: %@", service, appID, snsResponse);
+			addToLogIfEnabled(service, bulletin, snsResponse);
 			return;
 		}
 
@@ -695,8 +695,8 @@ static NSString *prefsSayNo(BBServer *server, BBBulletin *bulletin) {
 		XLog(@"[S:%@,A:%@] Doing Device Conditions", service, appID);
 		NSString *deviceConditionsResponse = deviceConditionsSayNo(serviceWhenToPush, serviceWhatNetwork);
 		if (deviceConditionsResponse) {
-			addToLogIfEnabled(service, bulletin, deviceConditionsResponse);
 			XLog(@"[S:%@,A:%@] Device Conditions said no: %@", service, appID, deviceConditionsResponse);
+			addToLogIfEnabled(service, bulletin, deviceConditionsResponse);
 			return;
 		}
 	}
