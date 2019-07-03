@@ -153,12 +153,15 @@ static NSDictionary *getLogPreferences() {
 
 	if (_global) {
 		// remove enabled switch because global can't be disabled
-		[_data[_sections[0]] removeObjectAtIndex:0];
+		[_data[_sections[0]] removeObject:@"Logger Enabled"];
 		_logEnabledSwitchRow = -1;
 		_clearLogRow = 0;
 	} else {
 		_logEnabledSwitchRow = 0;
 		_clearLogRow = 1;
+		// remove global only switch because don't show on individual services
+		[_data[_sections[1]] removeObject:@"Global Only"];
+		_globalOnlyRow = -1;
 	}
 
 	_filterSection = 1;
