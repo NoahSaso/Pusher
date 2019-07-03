@@ -25,4 +25,8 @@
 	[UISlider appearanceWhenContainedInInstancesOfClasses:@[self.class]].tintColor = color;
 }
 
+- (void)scrollViewWillBeginDragging:(UIScrollView *)scrollView {
+	[self.view endEditing:YES];
+}
+
 @end

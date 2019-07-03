@@ -390,4 +390,8 @@ static void setPreference(CFStringRef keyRef, CFPropertyListRef val, BOOL should
 
 }
 
+- (void)scrollViewWillBeginDragging:(UIScrollView *)scrollView {
+	[self.view endEditing:YES];
+}
+
 @end
