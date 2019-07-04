@@ -599,6 +599,7 @@ static NSString *prefsSayNo(BBServer *server, BBBulletin *bulletin) {
 	// bulletin.lastInterruptDate is nil upon respring, so ignore if that's the case
 	if (!bulletin.lastInterruptDate) {
 		XLog(@"Not forwarding, Last Interrupt Date: %@", bulletin.lastInterruptDate);
+		addToLogIfEnabled(@"", bulletin, @"Last interrupt date nil (this should only happen if SpringBoard just restarted; if some other time, there is a problem)");
 		return;
 	}
 
