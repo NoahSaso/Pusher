@@ -593,7 +593,13 @@ static NSString *prefsSayNo(BBServer *server, BBBulletin *bulletin) {
 		return;
 	}
 	if (!bulletin.date) {
-		bulletin.date = [NSDate date]; // fix crash on logging if date nil, set to current date time
+		bulletin.date = [NSDate date]; // for logging to visual log
+	}
+
+	// bulletin.lastInterruptDate is nil upon respring, so ignore if that's the case
+	if (!bulletin.lastInterruptDate) {
+		XLog(@"Not forwarding, Last Interrupt Date: %@", bulletin.lastInterruptDate);
+		return;
 	}
 
 	if (!NSClassFromString(@"SBApplicationController") || ![%c(SBApplicationController) sharedInstance]) {
@@ -602,13 +608,15 @@ static NSString *prefsSayNo(BBServer *server, BBBulletin *bulletin) {
 		return;
 	}
 
-	// Check if notification within last 5 seconds so we don't send uncleared notifications every respring
-	NSDate *fiveSecondsAgo = [[NSDate date] dateByAddingTimeInterval:-5];
-	if (bulletin.date && [bulletin.date compare:fiveSecondsAgo] == NSOrderedAscending) {
-		XLog(@"Bulletin 5 seconds or older");
-		addToLogIfEnabled(@"", bulletin, @"Notification dated greater than 5 seconds ago, not sending to prevent resending all notifications on respring");
-		return;
-	}
+	// THIS METHOD IS BAD BECAUSE THEN NOTIFICATIONS DATED IN THE PAST (e.g. Messages, Mail, etc.) WILL NOT GET FORWARDED
+	// THIS IS WHY USE NEW METHOD OF lastInterruptDate = nil ABOVE
+	// // Check if notification within last 5 seconds so we don't send uncleared notifications every respring
+	// NSDate *fiveSecondsAgo = [[NSDate date] dateByAddingTimeInterval:-5];
+	// if (bulletin.date && [bulletin.date compare:fiveSecondsAgo] == NSOrderedAscending) {
+	// 	XLog(@"Bulletin 5 seconds or older");
+	// 	addToLogIfEnabled(@"", bulletin, @"Notification dated greater than 5 seconds ago, not sending to prevent resending all notifications on respring");
+	// 	return;
+	// }
 
 	NSString *appID = bulletin.sectionID;
 	SBApplication *app = [[%c(SBApplicationController) sharedInstance] applicationWithBundleIdentifier:appID];
