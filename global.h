@@ -8,6 +8,7 @@
 #define PUSHER_BUNDLE_PATH @"/Library/PreferenceBundles/Pusher.bundle"
 #define PUSHER_BUNDLE [NSBundle bundleWithPath:PUSHER_BUNDLE_PATH]
 #define PUSHER_COLOR [UIColor colorWithRed:0.0 green:177/255.0 blue:79/255.0 alpha:1.0]
+#define PUSHER_TRIES 3 // how many times pusher will try to send the web request
 
 #import <rocketbootstrap/rocketbootstrap.h>
 #import <AppSupport/CPDistributedMessagingCenter.h>

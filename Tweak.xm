@@ -39,6 +39,11 @@ static NSMutableArray *pusherEnabledLogs = nil;
 static BBServer *bbServerInstance = nil;
 
 static NSMutableArray *recentNotificationTitles = [NSMutableArray new];
+static NSMutableDictionary *pusherRetriesLeft = [NSMutableDictionary new];
+
+static NSString *retriesLeftKeyForBulletinAndService(BBBulletin *bulletin, NSString *service) {
+	return Xstr(@"%@_%@_%@", bulletin.bulletinID, bulletin.sectionID, service);
+}
 
 static NSString *stringForObject(id object, NSString *prefix) {
 	NSString *str = @"";
@@ -122,6 +127,12 @@ static void addToLogIfEnabled(NSString *service, BBBulletin *bulletin, NSString 
 	}
 	[logs addObject:logItem];
 
+	// only keep last 100
+	if (logs.count > 100) {
+		NSRange *rangeToDelete = NSMakeRange(0, logs.count - 100);
+		[logs removeObjectsInRange:rangeToDelete];
+	}
+
 	existingLogSection[@"logs"] = logs;
 
 	if (replaceIdx > -1) {
@@ -132,7 +143,7 @@ static void addToLogIfEnabled(NSString *service, BBBulletin *bulletin, NSString 
 	CFPreferencesSynchronize(PUSHER_LOG_ID, kCFPreferencesCurrentUser, kCFPreferencesAnyHost);
 	notify_post(PUSHER_LOG_PREFS_NOTIFICATION);
 
-	XLog(@"[S:%@] Saved to log", service);
+	// XLog(@"[S:%@] Saved to log", service);
 }
 
 static void addToLogIfEnabled(NSString *service, BBBulletin *bulletin, NSString *label) {
@@ -748,6 +759,7 @@ static NSString *prefsSayNo(BBServer *server, BBBulletin *bulletin) {
 		@"headerName": authType == PusherAuthorizationTypeHeader ? XStrDefault(servicePrefs[@"paramName"], @"Access-Token") : @""
 	}];
 	NSString *method = XStrDefault(servicePrefs[@"method"], @"POST");
+	pusherRetriesLeft[retriesLeftKeyForBulletinAndService(bulletin, service)] = @(PUSHER_TRIES - 1);
 	[self makePusherRequest:url infoDict:infoDict credentials:credentials authType:authType method:method logString:Xstr(@"[S:%@,A:%@]", service, appName) service:service bulletin:bulletin];
 	XLog(@"[S:%@,T:%d,A:%@] Pushed", service, isTest, appName);
 	if (!isTest) {
@@ -882,13 +894,14 @@ static NSString *prefsSayNo(BBServer *server, BBBulletin *bulletin) {
 
 %new
 - (void)makePusherRequest:(NSString *)urlString infoDict:(NSDictionary *)infoDict credentials:(NSDictionary *)credentials authType:(PusherAuthorizationType)authType method:(NSString *)method logString:(NSString *)logString service:(NSString *)service bulletin:(BBBulletin *)bulletin {
-
 	NSMutableDictionary *infoDictForRequest = [infoDict mutableCopy];
 	if (authType == PusherAuthorizationTypeCredentials) {
 		[infoDictForRequest addEntriesFromDictionary:credentials];
 	}
+
+	NSString *newUrlString = [urlString copy];
 	if (authType == PusherAuthorizationTypeReplaceKey) {
-		urlString = [urlString stringByReplacingOccurrencesOfString:@"REPLACE_KEY" withString:credentials[@"key"]];
+		newUrlString = [newUrlString stringByReplacingOccurrencesOfString:@"REPLACE_KEY" withString:credentials[@"key"]];
 	}
 
 	if (Xeq(method, @"GET")) {
@@ -899,15 +912,15 @@ static NSString *prefsSayNo(BBServer *server, BBBulletin *bulletin) {
 			NSString *escapedValue = [[[value stringByAddingPercentEncodingWithAllowedCharacters:NSCharacterSet.URLQueryAllowedCharacterSet] stringByReplacingOccurrencesOfString:@"+" withString:@"%2B"] stringByReplacingOccurrencesOfString:@"=" withString:@"%3D"];
 			parameterString = Xstr(@"%@%@%@=%@", parameterString, (parameterString.length < 1 ? @"" : @"&"), escapedKey, escapedValue);
 		}
-		urlString = Xstr(@"%@?%@", urlString, parameterString);
-		XLog(@"URL String: %@", urlString);
+		newUrlString = Xstr(@"%@?%@", newUrlString, parameterString);
+		XLog(@"URL String: %@", newUrlString);
 	}
 
-	urlString = [urlString stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
-	addToLogIfEnabled(service, bulletin, @"URL", urlString);
-	NSURL *requestURL = [NSURL URLWithString:urlString];
+	newUrlString = [newUrlString stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
+	addToLogIfEnabled(service, bulletin, @"URL", newUrlString);
+	NSURL *requestURL = [NSURL URLWithString:newUrlString];
 	if (!requestURL) {
-		XLog(@"Invalid URL: %@", urlString);
+		XLog(@"Invalid URL: %@", newUrlString);
 		addToLogIfEnabled(service, bulletin, @"Invalid URL");
 		return;
 	}
@@ -929,21 +942,36 @@ static NSString *prefsSayNo(BBServer *server, BBBulletin *bulletin) {
 		[request setHTTPBody:requestData];
 	}
 
+	NSString *retryKey = [retriesLeftKeyForBulletinAndService(bulletin, service) retain];
+
 	//use async way to connect network
 	[[[NSURLSession sharedSession] dataTaskWithRequest:request completionHandler:^(NSData *data, NSURLResponse *response, NSError *error) {
 		if (data.length && error == nil) {
 			addToLogIfEnabled(service, bulletin, @"Network Response: Success");
 			XLog(@"%@ Success", logString);
 			// XLog(@"data: %@", [[[[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding] componentsSeparatedByCharactersInSet:[NSCharacterSet newlineCharacterSet]] componentsJoinedByString:@" "]);
-		} else if (error) {
-			addToLogIfEnabled(service, bulletin, @"Network Response: Error", error.description);
-			XLog(@"%@ Error: %@", logString, error);
+			[pusherRetriesLeft removeObjectForKey:retryKey];
 		} else {
-			addToLogIfEnabled(service, bulletin, @"Network Response: No Data");
-			XLog(@"%@ No data", logString);
+			if (error) {
+				addToLogIfEnabled(service, bulletin, @"Network Response: Error", error.description);
+				XLog(@"%@ Error: %@", logString, error);
+			} else {
+				addToLogIfEnabled(service, bulletin, @"Network Response: No Data");
+				XLog(@"%@ No data", logString);
+			}
+			NSNumber *retriesLeft = pusherRetriesLeft[retryKey];
+			if (retriesLeft) {
+				if (retriesLeft.intValue > 0) {
+					pusherRetriesLeft[retryKey] = @(retriesLeft.intValue - 1);
+					XLog(@"%@ Retrying. Try #%@ of %d...", logString, pusherRetriesLeft[retryKey], PUSHER_TRIES);
+					addToLogIfEnabled(service, bulletin, Xstr(@"Retrying. Try #%@ of %d...", pusherRetriesLeft[retryKey], PUSHER_TRIES));
+					[self makePusherRequest:urlString infoDict:infoDict credentials:credentials authType:authType method:method logString:logString service:service bulletin:bulletin];
+				} else {
+					[pusherRetriesLeft removeObjectForKey:retryKey];
+				}
+			}
 		}
 	}] resume];
-
 }
 
 // iOS 10 & 11
