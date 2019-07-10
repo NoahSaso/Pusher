@@ -333,6 +333,9 @@ static void setPreference(CFStringRef keyRef, CFPropertyListRef val, BOOL should
 			return;
 		}
 
+		_serviceImages[newServiceName] = _serviceImages[currService];
+		[_serviceImages removeObjectForKey:currService];
+
 		_customServices[newServiceName] = [_customServices[currService] mutableCopy];
 		[_customServices removeObjectForKey:currService];
 		[self saveCustomServices];
