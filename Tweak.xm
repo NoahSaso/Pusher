@@ -958,8 +958,9 @@ static NSString *prefsSayNo(BBServer *server, BBBulletin *bulletin) {
 	//use async way to connect network
 	[[[NSURLSession sharedSession] dataTaskWithRequest:request completionHandler:^(NSData *data, NSURLResponse *response, NSError *error) {
 		if (data.length && error == nil) {
-			addToLogIfEnabled(service, bulletin, @"Network Response: Success");
-			XLog(@"%@ Success", logString);
+			NSString *dataStr = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
+			addToLogIfEnabled(service, bulletin, @"Network Response: Success", dataStr);
+			XLog(@"%@ Success: %@", logString, dataStr);
 			// XLog(@"data: %@", [[[[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding] componentsSeparatedByCharactersInSet:[NSCharacterSet newlineCharacterSet]] componentsJoinedByString:@" "]);
 			[pusherRetriesLeft removeObjectForKey:retryKey];
 		} else {

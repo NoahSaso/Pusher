@@ -5,6 +5,8 @@
 #define NETWORK_RESPONSE_ITEMS @[@"Any", @"Success", @"No Data", @"Error"]
 #define END_RESULT_ITEMS @[@"Any", @"Blocked", @"Pushed"]
 
+#define EXPANDED_TEXT_VIEW_TAG 674
+
 static NSPLogController *logControllerSharedInstance = nil;
 static void logsUpdated() {
 	if (logControllerSharedInstance && [logControllerSharedInstance isKindOfClass:NSPLogController.class] && [logControllerSharedInstance respondsToSelector:@selector(updateLogAndReload)]) {
@@ -323,12 +325,30 @@ static NSDictionary *getLogPreferences() {
 		}
 		[self.navigationController pushViewController:appSelectionController animated:YES];
 	} else if (indexPath.section >= _firstLogSection) {
-		if ([_expandedIndexPaths containsObject:indexPath]) {
-			[_expandedIndexPaths removeObject:indexPath];
-		} else {
-			[_expandedIndexPaths addObject:indexPath];
+		UIAlertController *alert = [UIAlertController alertControllerWithTitle:@"Choose" message:nil preferredStyle:UIAlertControllerStyleActionSheet];
+		BOOL expanded = [_expandedIndexPaths containsObject:indexPath];
+		// use this instead of cell.textLabel.text because may be expanded and have text in uitextview not label
+		NSString *text = _data[_sections[indexPath.section]][indexPath.row];
+
+		// only add expand / collapse option if currently expanded or if it is being truncated
+		UITableViewCell *cell = [self tableView:tableView cellForRowAtIndexPath:indexPath];
+		CGSize textSize = [text sizeWithAttributes:@{NSFontAttributeName: cell.textLabel.font}];
+		BOOL isTruncated = textSize.width + 30 > cell.contentView.bounds.size.width;
+		if (expanded || isTruncated) {
+			[alert addAction:[UIAlertAction actionWithTitle:(expanded ? @"Collapse" : @"Expand") style:UIAlertActionStyleDefault handler:^(UIAlertAction *action) {
+				if (expanded) {
+					[_expandedIndexPaths removeObject:indexPath];
+				} else {
+					[_expandedIndexPaths addObject:indexPath];
+				}
+				[tableView reloadRowsAtIndexPaths:@[indexPath] withRowAnimation:UITableViewRowAnimationAutomatic];
+			}]];
 		}
-		[tableView reloadRowsAtIndexPaths:@[indexPath] withRowAnimation:UITableViewRowAnimationAutomatic];
+		[alert addAction:[UIAlertAction actionWithTitle:@"Copy to Clipboard" style:UIAlertActionStyleDefault handler:^(UIAlertAction *action) {
+			UIPasteboard.generalPasteboard.string = text;
+		}]];
+		[alert addAction:[UIAlertAction actionWithTitle:@"Cancel" style:UIAlertActionStyleCancel handler:nil]];
+		[self presentViewController:alert animated:YES completion:nil];
 	}
 }
 
@@ -350,10 +370,15 @@ static NSDictionary *getLogPreferences() {
 	cell.accessoryType = UITableViewCellAccessoryNone;
 	cell.accessoryView = nil;
 	cell.imageView.image = nil;
-	cell.textLabel.numberOfLines = 1;
-	cell.textLabel.lineBreakMode = NSLineBreakByTruncatingTail;
+	// cell.textLabel.numberOfLines = 1;
+	// cell.textLabel.lineBreakMode = NSLineBreakByTruncatingTail;
 	cell.textLabel.text = nil;
 	cell.textLabel.textColor = nil;
+
+	UITextView *expandedTextView = [cell.contentView viewWithTag:EXPANDED_TEXT_VIEW_TAG];
+	if (expandedTextView) {
+		[expandedTextView removeFromSuperview];
+	}
 
 	UIView *segmentedControlView = [cell.contentView viewWithTag:SEGMENTED_CONTROL_TAG];
 	if (segmentedControlView) {
@@ -406,12 +431,32 @@ static NSDictionary *getLogPreferences() {
 
 	BOOL expanded = [_expandedIndexPaths containsObject:indexPath];
 	if (expanded) {
-		cell.textLabel.numberOfLines = 0;
-		cell.textLabel.lineBreakMode = NSLineBreakByWordWrapping;
+		// cell.textLabel.numberOfLines = 0;
+		// cell.textLabel.lineBreakMode = NSLineBreakByWordWrapping;
+		expandedTextView = [UITextView new];
+		expandedTextView.tag = EXPANDED_TEXT_VIEW_TAG;
+		expandedTextView.editable = NO;
+		expandedTextView.text = cell.textLabel.text;
+		expandedTextView.font = cell.textLabel.font;
+		cell.textLabel.text = nil;
+		[cell.contentView addSubview:expandedTextView];
+
+		CGSize textSize = [expandedTextView.text boundingRectWithSize:CGSizeMake(cell.contentView.bounds.size.width, MAXFLOAT) options:NSStringDrawingUsesLineFragmentOrigin attributes:@{NSFontAttributeName: expandedTextView.font} context:nil].size;
+
+		CGFloat minHeight = 50;
+		CGFloat maxHeight = UIScreen.mainScreen.bounds.size.height / 2;
+		CGFloat height = textSize.height > maxHeight ? maxHeight : (textSize.height < minHeight ? minHeight : textSize.height);
+
+		expandedTextView.translatesAutoresizingMaskIntoConstraints = NO;
+		[expandedTextView.topAnchor constraintEqualToAnchor:expandedTextView.superview.topAnchor constant:10].active = YES;
+		[expandedTextView.bottomAnchor constraintEqualToAnchor:expandedTextView.superview.bottomAnchor constant:-10].active = YES;
+		[expandedTextView.leadingAnchor constraintEqualToAnchor:expandedTextView.superview.leadingAnchor constant:10].active = YES;
+		[expandedTextView.trailingAnchor constraintEqualToAnchor:expandedTextView.superview.trailingAnchor constant:-10].active = YES;
+		[expandedTextView addConstraint:[NSLayoutConstraint constraintWithItem:expandedTextView attribute:NSLayoutAttributeHeight relatedBy:NSLayoutRelationEqual toItem:nil attribute:NSLayoutAttributeNotAnAttribute multiplier:1 constant:height]];
 	}
 
 	CGSize textSize = [cell.textLabel.text sizeWithAttributes:@{NSFontAttributeName: cell.textLabel.font}];
-	BOOL isTruncated = textSize.width > cell.contentView.bounds.size.width;
+	BOOL isTruncated = textSize.width + 30 > cell.contentView.bounds.size.width;
 	if (indexPath.section >= _firstLogSection && !expanded && isTruncated) {
 		cell.accessoryType = UITableViewCellAccessoryDisclosureIndicator;
 	}
