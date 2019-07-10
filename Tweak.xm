@@ -127,16 +127,16 @@ static void addToLogIfEnabled(NSString *service, BBBulletin *bulletin, NSString 
 	}
 	[logs addObject:logItem];
 
-	// only keep last 100
-	if (logs.count > 100) {
-		NSRange *rangeToDelete = NSMakeRange(0, logs.count - 100);
-		[logs removeObjectsInRange:rangeToDelete];
-	}
-
 	existingLogSection[@"logs"] = logs;
 
 	if (replaceIdx > -1) {
 		[logSections replaceObjectAtIndex:replaceIdx withObject:existingLogSection];
+	}
+
+	// only keep last 100
+	if (logSections.count > 100) {
+		NSRange rangeToDelete = NSMakeRange(0, logSections.count - 100);
+		[logSections removeObjectsInRange:rangeToDelete];
 	}
 
 	CFPreferencesSetValue((__bridge CFStringRef) logKey, (__bridge CFPropertyListRef) logSections, PUSHER_LOG_ID, kCFPreferencesCurrentUser, kCFPreferencesAnyHost);
@@ -963,8 +963,8 @@ static NSString *prefsSayNo(BBServer *server, BBBulletin *bulletin) {
 			if (retriesLeft) {
 				if (retriesLeft.intValue > 0) {
 					pusherRetriesLeft[retryKey] = @(retriesLeft.intValue - 1);
-					XLog(@"%@ Retrying. Try #%@ of %d...", logString, pusherRetriesLeft[retryKey], PUSHER_TRIES);
-					addToLogIfEnabled(service, bulletin, Xstr(@"Retrying. Try #%@ of %d...", pusherRetriesLeft[retryKey], PUSHER_TRIES));
+					XLog(@"%@ Retrying. Try #%@ of %d...", logString, PUSHER_TRIES - pusherRetriesLeft[retryKey], PUSHER_TRIES);
+					addToLogIfEnabled(service, bulletin, Xstr(@"Retrying. Try #%@ of %d...", PUSHER_TRIES - pusherRetriesLeft[retryKey], PUSHER_TRIES));
 					[self makePusherRequest:urlString infoDict:infoDict credentials:credentials authType:authType method:method logString:logString service:service bulletin:bulletin];
 				} else {
 					[pusherRetriesLeft removeObjectForKey:retryKey];
