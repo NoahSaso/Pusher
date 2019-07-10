@@ -245,6 +245,14 @@ static NSString *base64RepresentationForImage(UIImage *image) {
 	return [iconData base64EncodedStringWithOptions:NSDataBase64EncodingEndLineWithLineFeed];
 }
 
+static UIImage *shrinkImage(UIImage *image, CGFloat factor) {
+	CGSize newSize = CGSizeMake(image.size.width / factor, image.size.height / factor);
+	UIGraphicsImageRenderer *renderer = [[UIGraphicsImageRenderer alloc] initWithSize:newSize];
+	return [renderer imageWithActions:^(UIGraphicsImageRendererContext *rendererContext) {
+		[image drawInRect:CGRectMake(0, 0, newSize.width, newSize.height)];
+	}];
+}
+
 static void pusherPrefsChanged() {
 	XLog(@"Reloading prefs");
 
@@ -828,7 +836,7 @@ static NSString *prefsSayNo(BBServer *server, BBBulletin *bulletin) {
 			if (URL) {
 				UIImage *image = [UIImage imageWithContentsOfFile:URL.path];
 				if (image) {
-					data[@"image"] = base64RepresentationForImage(image);
+					data[@"image"] = image;
 				}
 			}
 			// give true value so even if can't figure out how to send image, can still tell that there is one
@@ -906,15 +914,13 @@ static NSString *prefsSayNo(BBServer *server, BBBulletin *bulletin) {
 		[infoDictForRequest addEntriesFromDictionary:credentials];
 	}
 
-	// if last retry and has image, remove image property
-	NSString *retryKey = [retriesLeftKeyForBulletinAndService(bulletin, service) retain];
-	if (infoDictForRequest[@"image"] && pusherRetriesLeft[retryKey] && ((NSNumber *) pusherRetriesLeft[retryKey]).intValue == 0) {
-		infoDictForRequest[@"image"] = @YES;
-	}
-
 	NSString *newUrlString = [urlString copy];
 	if (authType == PusherAuthorizationTypeReplaceKey) {
 		newUrlString = [newUrlString stringByReplacingOccurrencesOfString:@"REPLACE_KEY" withString:credentials[@"key"]];
+	}
+
+	if (infoDictForRequest[@"image"] && [infoDictForRequest[@"image"] isKindOfClass:UIImage.class]) {
+		infoDictForRequest[@"image"] = base64RepresentationForImage(infoDictForRequest[@"image"]);
 	}
 
 	if (Xeq(method, @"GET")) {
@@ -957,11 +963,36 @@ static NSString *prefsSayNo(BBServer *server, BBBulletin *bulletin) {
 
 	//use async way to connect network
 	[[[NSURLSession sharedSession] dataTaskWithRequest:request completionHandler:^(NSData *data, NSURLResponse *response, NSError *error) {
+		NSString *retryKey = retriesLeftKeyForBulletinAndService(bulletin, service);
+		NSNumber *retriesLeft = pusherRetriesLeft[retryKey];
+
 		if (data.length && error == nil) {
 			NSString *dataStr = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
+			// if has retries left request entity too large and has base64 image string (not image set to true)
+			UIImage *image = infoDict[@"image"];
+			if ([dataStr containsString:@"request entity too large"] && retriesLeft && retriesLeft.intValue > 0 && image && [image isKindOfClass:UIImage.class]) {
+				pusherRetriesLeft[retryKey] = @(retriesLeft.intValue - 1);
+				NSMutableDictionary *retryInfoDict = [infoDict mutableCopy];
+
+				NSString *status = @"shrunk";
+				// if last retry and has image, set image property to true instead of image base64
+				if (((NSNumber *) pusherRetriesLeft[retryKey]).intValue == 0) {
+					retryInfoDict[@"image"] = @YES;
+					status = @"removed";
+				} else {
+					CGFloat shrinkFactor = 10.0;
+					UIImage *smallerImage = shrinkImage(image, shrinkFactor);
+					retryInfoDict[@"image"] = smallerImage;
+				}
+
+				XLog(@"%@ Success but response contained %@. Retrying (try %d of %d) with image %@.", logString, dataStr, PUSHER_TRIES - (retriesLeft.intValue - 1), PUSHER_TRIES, status);
+				addToLogIfEnabled(service, bulletin, Xstr(@"Network Response: Success, but response contained %@. Retrying (try %d of %d) with image %@.", dataStr, PUSHER_TRIES - (retriesLeft.intValue - 1), PUSHER_TRIES, status));
+
+				[self makePusherRequest:urlString infoDict:retryInfoDict credentials:credentials authType:authType method:method logString:logString service:service bulletin:bulletin];
+				return;
+			}
 			addToLogIfEnabled(service, bulletin, @"Network Response: Success", dataStr);
 			XLog(@"%@ Success: %@", logString, dataStr);
-			// XLog(@"data: %@", [[[[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding] componentsSeparatedByCharactersInSet:[NSCharacterSet newlineCharacterSet]] componentsJoinedByString:@" "]);
 			[pusherRetriesLeft removeObjectForKey:retryKey];
 		} else {
 			if (error) {
@@ -971,15 +1002,19 @@ static NSString *prefsSayNo(BBServer *server, BBBulletin *bulletin) {
 				addToLogIfEnabled(service, bulletin, @"Network Response: No Data");
 				XLog(@"%@ No data", logString);
 			}
-			NSNumber *retriesLeft = pusherRetriesLeft[retryKey];
 			if (retriesLeft) {
 				if (retriesLeft.intValue > 0) {
 					pusherRetriesLeft[retryKey] = @(retriesLeft.intValue - 1);
-					XLog(@"%@ ----- Retrying. Try #%d of %d -----", logString, PUSHER_TRIES - (retriesLeft.intValue - 1), PUSHER_TRIES);
+
+					NSMutableDictionary *retryInfoDict = [infoDict mutableCopy];
+					// if last retry and has image, set image property to true instead of image base64
+					if (retryInfoDict[@"image"] && pusherRetriesLeft[retryKey] && ((NSNumber *) pusherRetriesLeft[retryKey]).intValue == 0) {
+						retryInfoDict[@"image"] = @YES;
+					}
+
+					XLog(@"%@ ----- Retrying. Try %d of %d -----", logString, PUSHER_TRIES - (retriesLeft.intValue - 1), PUSHER_TRIES);
 					addToLogIfEnabled(service, bulletin, Xstr(@"----- Retrying. Try %d of %d -----", PUSHER_TRIES - (retriesLeft.intValue - 1), PUSHER_TRIES));
-					dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0ul), ^{
-						[self makePusherRequest:urlString infoDict:infoDict credentials:credentials authType:authType method:method logString:logString service:service bulletin:bulletin];
-					});
+					[self makePusherRequest:urlString infoDict:retryInfoDict credentials:credentials authType:authType method:method logString:logString service:service bulletin:bulletin];
 				} else {
 					[pusherRetriesLeft removeObjectForKey:retryKey];
 				}
