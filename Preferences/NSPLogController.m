@@ -333,6 +333,7 @@ static NSDictionary *getLogPreferences() {
 		// only add expand / collapse option if currently expanded or if it is being truncated
 		UITableViewCell *cell = [self tableView:tableView cellForRowAtIndexPath:indexPath];
 		CGSize textSize = [text sizeWithAttributes:@{NSFontAttributeName: cell.textLabel.font}];
+		// add 30 just to provide some buffer for the text that might just be too long
 		BOOL isTruncated = textSize.width + 30 > cell.contentView.bounds.size.width;
 		if (expanded || isTruncated) {
 			[alert addAction:[UIAlertAction actionWithTitle:(expanded ? @"Collapse" : @"Expand") style:UIAlertActionStyleDefault handler:^(UIAlertAction *action) {
@@ -456,6 +457,7 @@ static NSDictionary *getLogPreferences() {
 	}
 
 	CGSize textSize = [cell.textLabel.text sizeWithAttributes:@{NSFontAttributeName: cell.textLabel.font}];
+	// add 30 just to provide some buffer for the text that might just be too long
 	BOOL isTruncated = textSize.width + 30 > cell.contentView.bounds.size.width;
 	if (indexPath.section >= _firstLogSection && !expanded && isTruncated) {
 		cell.accessoryType = UITableViewCellAccessoryDisclosureIndicator;
