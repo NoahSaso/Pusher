@@ -167,7 +167,9 @@
 			<key>label</key>
 			<string>Options</string>
 			<key>footerText</key>
-			<string>The following properties will be passed to the URL endpoint (via GET or POST parameters) specified above (property names in parentheses) [Must Turn on "Include Icon" and "Include Image" switches above in order to get the corresponding properties below]:
+			<string>The server may reject the request if the data is too large, which is usually a result of the image being high resolution. Pusher will try to forward the notification 5 times, shrinking the image each time. If by the last retry, it still is too large, it will remove the image but set the "image" property to a 1 to indicate that an image is attached.
+
+The following properties will be passed to the URL endpoint (via GET or POST parameters) specified above (property names in parentheses) [Must Turn on "Include Icon" and "Include Image" switches above in order to get the corresponding properties below]:
 
 App Name (appName), App Bundle ID (appID), Title (title), Subtitle (subtitle), Message (message), Date (date), Base64 Encoded PNG Icon 58x58 (icon), Base64 Encoded Image (image)</string>
 		</dict>
