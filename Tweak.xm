@@ -906,6 +906,12 @@ static NSString *prefsSayNo(BBServer *server, BBBulletin *bulletin) {
 		[infoDictForRequest addEntriesFromDictionary:credentials];
 	}
 
+	// if last retry and has image, remove image property
+	NSString *retryKey = [retriesLeftKeyForBulletinAndService(bulletin, service) retain];
+	if (infoDictForRequest[@"image"] && pusherRetriesLeft[retryKey] && ((NSNumber *) pusherRetriesLeft[retryKey]).intValue == 0) {
+		infoDictForRequest[@"image"] = @YES;
+	}
+
 	NSString *newUrlString = [urlString copy];
 	if (authType == PusherAuthorizationTypeReplaceKey) {
 		newUrlString = [newUrlString stringByReplacingOccurrencesOfString:@"REPLACE_KEY" withString:credentials[@"key"]];
@@ -948,8 +954,6 @@ static NSString *prefsSayNo(BBServer *server, BBBulletin *bulletin) {
 		[request setValue:Xstr(@"%lu", requestData.length) forHTTPHeaderField:@"Content-Length"];
 		[request setHTTPBody:requestData];
 	}
-
-	NSString *retryKey = [retriesLeftKeyForBulletinAndService(bulletin, service) retain];
 
 	//use async way to connect network
 	[[[NSURLSession sharedSession] dataTaskWithRequest:request completionHandler:^(NSData *data, NSURLResponse *response, NSError *error) {
