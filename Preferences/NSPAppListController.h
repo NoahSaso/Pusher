@@ -1,10 +1,10 @@
-#import <Preferences/PSViewController.h>
+#import "NSPPSViewControllerWithColoredUI.h"
 #import <Preferences/PSListController.h>
 #import <AppList/AppList.h>
 #import "NSPAppListALApplicationTableDataSource.h"
 #import "NSPCustomizeAppsController.h"
 
-@interface NSPAppListController : PSViewController <UITableViewDelegate, UISearchResultsUpdating> {
+@interface NSPAppListController : NSPPSViewControllerWithColoredUI <UITableViewDelegate, UISearchResultsUpdating> {
   UITableView *_table;
   ALApplicationList *_appList;
   NSPAppListALApplicationTableDataSource *_appListDataSource;

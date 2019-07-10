@@ -5,6 +5,8 @@
 #import <notify.h>
 // #import <MetalKit/MTKTextureLoader.h>
 
+#define isBundle(z) [[[NSBundle mainBundle] bundleIdentifier] isEqualToString:z]
+
 @interface UIImage (UIApplicationIconPrivate)
 /*
  @param format
@@ -142,11 +144,13 @@ static void addToLogIfEnabled(NSString *service, BBBulletin *bulletin, NSString 
 		[logSections removeObjectsInRange:rangeToDelete];
 	}
 
+	XLog(@"[S:%@] Saving log...", service);
+
 	CFPreferencesSetValue((__bridge CFStringRef) logKey, (__bridge CFPropertyListRef) logSections, PUSHER_LOG_ID, kCFPreferencesCurrentUser, kCFPreferencesAnyHost);
 	CFPreferencesSynchronize(PUSHER_LOG_ID, kCFPreferencesCurrentUser, kCFPreferencesAnyHost);
 	notify_post(PUSHER_LOG_PREFS_NOTIFICATION);
 
-	// XLog(@"[S:%@] Saved to log", service);
+	XLog(@"[S:%@] Saved log!", service);
 }
 
 static void addToLogIfEnabled(NSString *service, BBBulletin *bulletin, NSString *label) {
@@ -596,6 +600,7 @@ static NSString *prefsSayNo(BBServer *server, BBBulletin *bulletin) {
 	return nil;
 }
 
+%group SB
 %hook BBServer
 
 %new
@@ -719,6 +724,8 @@ static NSString *prefsSayNo(BBServer *server, BBBulletin *bulletin) {
 			XLog(@"[S:%@,A:%@] SNS said no: %@", service, appID, snsResponse);
 			addToLogIfEnabled(service, bulletin, snsResponse);
 			return;
+		} else {
+			XLog(@"[S:%@,A:%@] SNS ok", service, appID);
 		}
 
 		int serviceWhenToPush = ((NSNumber *) servicePrefs[@"whenToPush"]).intValue;
@@ -729,6 +736,8 @@ static NSString *prefsSayNo(BBServer *server, BBBulletin *bulletin) {
 			XLog(@"[S:%@,A:%@] Device Conditions said no: %@", service, appID, deviceConditionsResponse);
 			addToLogIfEnabled(service, bulletin, deviceConditionsResponse);
 			return;
+		} else {
+			XLog(@"[S:%@,A:%@] Device Conditions ok", service, appID);
 		}
 	}
 	// Custom app prefs?
@@ -1041,12 +1050,35 @@ static NSString *prefsSayNo(BBServer *server, BBBulletin *bulletin) {
 	}
 }
 
-%end
+%end // %hook BBServer
+%end // %group SB
+
+%group Preferences
+%hook PSTableCell
+
+- (void)setIcon:(UIImage *)icon {
+	if (icon
+			&& self.superview && [self.superview isKindOfClass:UITableView.class]
+			&& self.superview.superview && [self.superview.superview respondsToSelector:@selector(_viewDelegate)]
+			&& ([self.superview.superview._viewDelegate isKindOfClass:%c(NSPPSListControllerWithColoredUI)] || [self.superview.superview._viewDelegate isKindOfClass:%c(NSPPSViewControllerWithColoredUI)])) {
+		UIImage *newIcon = [icon imageByReplacingColor:PUSHER_COLOR withColor:((NSPTintController *) [%c(NSPTintController) sharedController]).activeTintColor];
+		%orig(newIcon);
+	} else {
+		%orig;
+	}
+}
+
+%end // %hook PSTableCell
+%end // %group Preferences
 
 %ctor {
-	CFPreferencesSynchronize(PUSHER_APP_ID, kCFPreferencesCurrentUser, kCFPreferencesAnyHost);
-	CFNotificationCenterAddObserver(CFNotificationCenterGetDarwinNotifyCenter(), NULL, (CFNotificationCallback)pusherPrefsChanged, CFSTR(PUSHER_PREFS_NOTIFICATION), NULL, CFNotificationSuspensionBehaviorCoalesce);
-	pusherPrefsChanged();
-	%init;
-	[NSPTestPush load];
+	if (isBundle(@"com.apple.springboard")) {
+		CFPreferencesSynchronize(PUSHER_APP_ID, kCFPreferencesCurrentUser, kCFPreferencesAnyHost);
+		CFNotificationCenterAddObserver(CFNotificationCenterGetDarwinNotifyCenter(), NULL, (CFNotificationCallback)pusherPrefsChanged, CFSTR(PUSHER_PREFS_NOTIFICATION), NULL, CFNotificationSuspensionBehaviorCoalesce);
+		pusherPrefsChanged();
+		[NSPTestPush load];
+		%init(SB);
+	} else if (isBundle(@"com.apple.Preferences")) {
+		%init(Preferences);
+	}
 }

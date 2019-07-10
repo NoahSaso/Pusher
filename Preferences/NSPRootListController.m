@@ -17,6 +17,18 @@ static int countAppIDsWithPrefix(NSDictionary *prefs, NSString *prefix) {
 
 @implementation NSPRootListController
 
+- (void)viewDidLoad {
+	[super viewDidLoad];
+	if (!_priorTintColor) {
+		_priorTintColor = [self.navigationController.navigationController.navigationBar.tintColor retain];
+	}
+}
+
+- (void)viewWillDisappear:(BOOL)animated {
+	[super viewWillDisappear:animated];
+	self.navigationController.navigationController.navigationBar.tintColor = _priorTintColor;
+}
+
 - (void)addObjectsFromArray:(NSArray *)source atIndex:(int)idx toArray:(NSMutableArray *)dest {
 	for (id object in source) {
 		[dest insertObject:object atIndex:idx];

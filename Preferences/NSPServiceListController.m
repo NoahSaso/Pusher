@@ -45,6 +45,10 @@ static void setPreference(CFStringRef keyRef, CFPropertyListRef val, BOOL should
 - (void)viewWillAppear:(BOOL)animated {
 	[super viewWillAppear:animated];
 
+	// load each time to override NSPRootListController
+	[NSPTintController.sharedController setActiveTintColor:nil];
+	[self tintUIToPusherColor];
+
 	// Get preferences
 	CFArrayRef keyList = CFPreferencesCopyKeyList(PUSHER_APP_ID, kCFPreferencesCurrentUser, kCFPreferencesAnyHost);
 	_prefs = @{};

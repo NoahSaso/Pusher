@@ -4,19 +4,13 @@
 
 - (void)viewWillAppear:(BOOL)animated {
 	[super viewWillAppear:animated];
-	[self setPusherUIColor:PUSHER_COLOR override:NO];
-}
-
-- (void)viewWillDisappear:(BOOL)animated {
-	[super viewWillDisappear:animated];
-	self.navigationController.navigationController.navigationBar.tintColor = _priorTintColor;
+	[self tintUIToPusherColor];
 }
 
 // override so we can dynamically set ui color later for each service to match icon
-- (void)setPusherUIColor:(UIColor *)color override:(BOOL)override {
-	if (override || !_priorTintColor) { // only set once on load
-		_priorTintColor = [self.navigationController.navigationController.navigationBar.tintColor retain];
-	}
+- (void)tintUIToPusherColor {
+	UIColor *color = NSPTintController.sharedController.activeTintColor;
+
 	self.navigationController.navigationController.navigationBar.tintColor = color;
 
 	[UISwitch appearanceWhenContainedInInstancesOfClasses:@[self.class]].tintColor = color;
@@ -27,6 +21,16 @@
 
 - (void)scrollViewWillBeginDragging:(UIScrollView *)scrollView {
 	[self.view endEditing:YES];
+}
+
+- (UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath {
+	PSTableCell *cell = (PSTableCell *) [super tableView:tableView cellForRowAtIndexPath:indexPath];
+	// tint color
+	if (cell.type == PSLinkCell && cell.iconImageView && cell.iconImageView.image) {
+		UIImage *newImage = [cell.iconImageView.image imageByReplacingColor:PUSHER_COLOR withColor:NSPTintController.sharedController.activeTintColor];
+		cell.iconImageView.image = newImage;
+	}
+	return cell;
 }
 
 @end

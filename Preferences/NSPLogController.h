@@ -1,10 +1,10 @@
-#import <Preferences/PSViewController.h>
+#import "NSPPSViewControllerWithColoredUI.h"
 #import "../global.h"
 #import <Custom/defines.h>
 #import <notify.h>
 #import <AppList/AppList.h>
 
-@interface NSPLogController : PSViewController <UITableViewDelegate, UITableViewDataSource> {
+@interface NSPLogController : NSPPSViewControllerWithColoredUI <UITableViewDelegate, UITableViewDataSource> {
   UITableView *_table;
   NSString *_service;
   BOOL _global;

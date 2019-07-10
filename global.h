@@ -114,6 +114,12 @@ typedef enum {
 #import <BulletinBoard/BBSectionInfo.h> // imports BBSectionInfoSettings
 #import <SpringBoard/SBApplication.h>
 #import <SpringBoard/SBApplicationController.h>
+#import <Preferences/PSTableCell.h>
+#import "UIImage+ReplaceColor.h"
+#import <objc/runtime.h>
+#import "Preferences/NSPTintController.h"
+
+#define CURRENT_TINT_COLOR_KEY @"CurrentTintColor"
 
 @interface PSSpecifier (Pusher)
 @property (nonatomic, retain) NSArray *values;
@@ -166,4 +172,12 @@ typedef enum {
 @interface SBWiFiManager : NSObject
 + (id)sharedInstance;
 - (NSString *)currentNetworkName;
+@end
+
+@interface PSTableCell (Pusher)
+- (UIImageView *)iconImageView;
+@end
+
+@interface UIView (Pusher)
+- (id)_viewDelegate;
 @end
