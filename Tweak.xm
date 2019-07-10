@@ -986,7 +986,7 @@ static NSString *prefsSayNo(BBServer *server, BBBulletin *bulletin) {
 				}
 
 				XLog(@"%@ Success but response contained %@. Retrying (try %d of %d) with image %@.", logString, dataStr, PUSHER_TRIES - (retriesLeft.intValue - 1), PUSHER_TRIES, status);
-				addToLogIfEnabled(service, bulletin, Xstr(@"Network Response: Success, but response contained %@. Retrying (try %d of %d) with image %@.", dataStr, PUSHER_TRIES - (retriesLeft.intValue - 1), PUSHER_TRIES, status));
+				addToLogIfEnabled(service, bulletin, Xstr(@"----- Network Response: Success, but response contained %@. Retrying (try %d of %d) with image %@. -----", dataStr, PUSHER_TRIES - (retriesLeft.intValue - 1), PUSHER_TRIES, status));
 
 				[self makePusherRequest:urlString infoDict:retryInfoDict credentials:credentials authType:authType method:method logString:logString service:service bulletin:bulletin];
 				return;
