@@ -3,6 +3,7 @@
 #import "NSPTestPush.h"
 #import <SystemConfiguration/CaptiveNetwork.h>
 #import <notify.h>
+// #import <MetalKit/MTKTextureLoader.h>
 
 @interface UIImage (UIApplicationIconPrivate)
 /*
@@ -816,23 +817,29 @@ static NSString *prefsSayNo(BBServer *server, BBBulletin *bulletin) {
 		@"date": dateStr ?: @""
 	} mutableCopy];
 
-	if (dictionary[@"includeIcon"] && ((NSNumber *)dictionary[@"includeIcon"]).boolValue) {
+	if (dictionary[@"includeIcon"] && ((NSNumber *) dictionary[@"includeIcon"]).boolValue) {
 		data[@"icon"] = [self base64IconDataForBundleID:bulletin.sectionID];
 	}
 
-	if (dictionary[@"includeImage"] && ((NSNumber *)dictionary[@"includeImage"]).boolValue) {
+	if (dictionary[@"includeImage"] && ((NSNumber *) dictionary[@"includeImage"]).boolValue) {
 		BBAttachmentMetadata *metadata = bulletin.primaryAttachment;
-		if (metadata && metadata.type == 1 && metadata.URL) { // I assume image type is 1
+		if (metadata && metadata.type == 1) { // I assume image type is 1
 			NSURL *URL = metadata.URL;
-			UIImage *image = [UIImage imageWithContentsOfFile:URL.path];
-			if (image) {
-				data[@"image"] = base64RepresentationForImage(image);
+			if (URL) {
+				UIImage *image = [UIImage imageWithContentsOfFile:URL.path];
+				if (image) {
+					data[@"image"] = base64RepresentationForImage(image);
+				}
+			}
+			// give true value so even if can't figure out how to send image, can still tell that there is one
+			if (!data[@"image"]) {
+				data[@"image"] = @YES;
 			}
 		}
 	}
 
 	if (Xeq(service, PUSHER_SERVICE_IFTTT)) {
-		if (dictionary[@"curateData"] && ((NSNumber *)dictionary[@"curateData"]).boolValue) {
+		if (dictionary[@"curateData"] && ((NSNumber *) dictionary[@"curateData"]).boolValue) {
 			return @{ @"value1": dictionary[@"title"], @"value2": dictionary[@"message"], @"value3": data[@"icon"] ?: dateStr };
 		}
 		id json = data;

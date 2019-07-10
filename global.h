@@ -128,14 +128,15 @@ typedef enum {
 @end
 
 @interface BBAttachmentMetadata : NSObject
-@property (nonatomic,readonly) long long type;
-@property (nonatomic,copy,readonly) NSURL *URL;
+@property (nonatomic, readonly) long long type;
+@property (nonatomic, copy, readonly) NSURL *URL;
 - (id)_initWithUUID:(id)arg1 type:(long long)arg2 URL:(id)arg3;
 @end
 
 @interface BBBulletin (Pusher)
 @property (nonatomic, readonly) BOOL showsSubtitle;
 @property (nonatomic, copy) BBAttachmentMetadata *primaryAttachment;
+// @property (nonatomic, copy) NSArray *additionalAttachments;
 @end
 
 @interface BBServer : NSObject

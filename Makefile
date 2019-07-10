@@ -5,6 +5,7 @@ include $(THEOS)/makefiles/common.mk
 TWEAK_NAME = Pusher
 Pusher_FILES = Tweak.xm NSPTestPush.m
 Pusher_LIBRARIES = rocketbootstrap
+# Pusher_FRAMEWORKS = MetalKit
 Pusher_PRIVATE_FRAMEWORKS = AppSupport BulletinBoard
 
 include $(THEOS_MAKE_PATH)/tweak.mk
