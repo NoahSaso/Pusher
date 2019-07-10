@@ -550,7 +550,7 @@ static NSString *deviceConditionsSayNo(int whenToPush, int whatNetwork) {
 }
 
 static NSString *prefsSayNo(BBServer *server, BBBulletin *bulletin) {
-	XLog(@"---Bulletin:--- %@", bulletin.sectionID);
+	XLog(@"-------Bulletin------- %@", bulletin.sectionID);
 	if (!pusherEnabled) {
 		return Xstr(@"Pusher %@abled", pusherEnabled ? @"En" : @"Dis");
 	}
@@ -963,8 +963,8 @@ static NSString *prefsSayNo(BBServer *server, BBBulletin *bulletin) {
 			if (retriesLeft) {
 				if (retriesLeft.intValue > 0) {
 					pusherRetriesLeft[retryKey] = @(retriesLeft.intValue - 1);
-					XLog(@"%@ Retrying. Try #%@ of %d...", logString, PUSHER_TRIES - pusherRetriesLeft[retryKey], PUSHER_TRIES);
-					addToLogIfEnabled(service, bulletin, Xstr(@"Retrying. Try #%@ of %d...", PUSHER_TRIES - pusherRetriesLeft[retryKey], PUSHER_TRIES));
+					XLog(@"%@ ----- Retrying. Try #%d of %d... -----", logString, PUSHER_TRIES - (retriesLeft.intValue - 1), PUSHER_TRIES);
+					addToLogIfEnabled(service, bulletin, Xstr(@"----- Retrying. Try #%d of %d... -----", PUSHER_TRIES - (retriesLeft.intValue - 1), PUSHER_TRIES));
 					[self makePusherRequest:urlString infoDict:infoDict credentials:credentials authType:authType method:method logString:logString service:service bulletin:bulletin];
 				} else {
 					[pusherRetriesLeft removeObjectForKey:retryKey];
