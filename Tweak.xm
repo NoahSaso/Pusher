@@ -963,8 +963,8 @@ static NSString *prefsSayNo(BBServer *server, BBBulletin *bulletin) {
 			if (retriesLeft) {
 				if (retriesLeft.intValue > 0) {
 					pusherRetriesLeft[retryKey] = @(retriesLeft.intValue - 1);
-					XLog(@"%@ ----- Retrying. Try #%d of %d... -----", logString, PUSHER_TRIES - (retriesLeft.intValue - 1), PUSHER_TRIES);
-					addToLogIfEnabled(service, bulletin, Xstr(@"----- Retrying. Try #%d of %d... -----", PUSHER_TRIES - (retriesLeft.intValue - 1), PUSHER_TRIES));
+					XLog(@"%@ ----- Retrying. Try #%d of %d -----", logString, PUSHER_TRIES - (retriesLeft.intValue - 1), PUSHER_TRIES);
+					addToLogIfEnabled(service, bulletin, Xstr(@"----- Retrying. Try %d of %d -----", PUSHER_TRIES - (retriesLeft.intValue - 1), PUSHER_TRIES));
 					dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0ul), ^{
 						[self makePusherRequest:urlString infoDict:infoDict credentials:credentials authType:authType method:method logString:logString service:service bulletin:bulletin];
 					});
