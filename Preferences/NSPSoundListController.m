@@ -77,7 +77,7 @@ static void setPreference(CFStringRef keyRef, CFPropertyListRef val, BOOL should
 }
 
 - (void)hideActivityIndicator {
-	dispatch_async(dispatch_get_main_queue(), ^(void) {
+	dispatch_async(dispatch_get_main_queue(), ^{
 		[_activityIndicator stopAnimating];
 		self.navigationItem.rightBarButtonItem = _updateBn;
 	});
@@ -197,7 +197,7 @@ static void setPreference(CFStringRef keyRef, CFPropertyListRef val, BOOL should
 					[self.navigationController popViewControllerAnimated:YES];
 				};
 				[alert addAction:XalertBtnWHandler(@"Ok", handler)];
-				dispatch_async(dispatch_get_main_queue(), ^(void) {
+				dispatch_async(dispatch_get_main_queue(), ^{
 					[self presentViewController:alert animated:YES completion:nil];
 				});
 				[self hideActivityIndicator];
@@ -227,7 +227,7 @@ static void setPreference(CFStringRef keyRef, CFPropertyListRef val, BOOL should
 			XLog(@"Saved sounds");
 
 			// Reload specifiers on current screen
-			dispatch_async(dispatch_get_main_queue(), ^(void) {
+			dispatch_async(dispatch_get_main_queue(), ^{
 				[self reloadSpecifiers];
 			});
 
@@ -245,7 +245,7 @@ static void setPreference(CFStringRef keyRef, CFPropertyListRef val, BOOL should
 			}
 			UIAlertController *alert = XalertWTitle(@"Network Error", msg);
 			[alert addAction:XalertBtnWHandler(@"Ok", handler)];
-			dispatch_async(dispatch_get_main_queue(), ^(void) {
+			dispatch_async(dispatch_get_main_queue(), ^{
 				[self presentViewController:alert animated:YES completion:nil];
 			});
 		}
@@ -281,7 +281,7 @@ static void setPreference(CFStringRef keyRef, CFPropertyListRef val, BOOL should
 					[self.navigationController popViewControllerAnimated:YES];
 				};
 				[alert addAction:XalertBtnWHandler(@"Ok", handler)];
-				dispatch_async(dispatch_get_main_queue(), ^(void) {
+				dispatch_async(dispatch_get_main_queue(), ^{
 					[self presentViewController:alert animated:YES completion:nil];
 				});
 				[self hideActivityIndicator];
@@ -325,7 +325,7 @@ static void setPreference(CFStringRef keyRef, CFPropertyListRef val, BOOL should
 			XLog(@"Saved sounds");
 
 			// Reload specifiers on current screen
-			dispatch_async(dispatch_get_main_queue(), ^(void) {
+			dispatch_async(dispatch_get_main_queue(), ^{
 				[self reloadSpecifiers];
 			});
 
@@ -343,7 +343,7 @@ static void setPreference(CFStringRef keyRef, CFPropertyListRef val, BOOL should
 			}
 			UIAlertController *alert = XalertWTitle(@"Network Error", msg);
 			[alert addAction:XalertBtnWHandler(@"Ok", handler)];
-			dispatch_async(dispatch_get_main_queue(), ^(void) {
+			dispatch_async(dispatch_get_main_queue(), ^{
 				[self presentViewController:alert animated:YES completion:nil];
 			});
 		}
