@@ -33,6 +33,12 @@
 	self.title = nil; // banner takes care of name
 }
 
+- (void)viewWillAppear:(BOOL)animated {
+	[super viewWillAppear:animated];
+	[NSPusherManager.sharedController setActiveTintColor:nil];
+	[self tintUIToPusherColor];
+}
+
 - (void)viewWillDisappear:(BOOL)animated {
 	[super viewWillDisappear:animated];
 	UINavigationController *navController = self.navigationController;
