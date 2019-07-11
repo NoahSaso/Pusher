@@ -930,6 +930,7 @@ static NSString *prefsSayNo(BBServer *server, BBBulletin *bulletin) {
 		newUrlString = [newUrlString stringByReplacingOccurrencesOfString:@"REPLACE_KEY" withString:credentials[@"key"]];
 	}
 
+	//!Xeq(service, PUSHER_SERVICE_PUSHER_RECEIVER) &&
 	if (infoDictForRequest[@"image"] && [infoDictForRequest[@"image"] isKindOfClass:UIImage.class]) {
 		infoDictForRequest[@"image"] = base64RepresentationForImage(infoDictForRequest[@"image"]);
 	}

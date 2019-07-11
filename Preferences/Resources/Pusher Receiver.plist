@@ -11,7 +11,7 @@
 			<key>label</key>
 			<string>Where to Download</string>
 			<key>footerText</key>
-			<string>Pusher Receiver is an awesome browser extension made by @burkybang to display pushes as desktop notifications.</string>
+			<string>Pusher Receiver is a browser extension that displays pushes as desktop notifications.</string>
 		</dict>
 		<dict>
 			<key>cell</key>
@@ -33,13 +33,23 @@
 			<key>action</key>
 			<string>openPusherReceiverChromeExtension</string>
 		</dict>
+
+		<!-- Support -->
+		<dict>
+			<key>cell</key>
+			<string>PSGroupCell</string>
+			<key>label</key>
+			<string>Support</string>
+			<key>footerText</key>
+			<string>Huge thanks to @burkybang for the awesome browser extension as well as all of his help with ideas and testing!</string>
+		</dict>
 		<dict>
 			<key>cell</key>
 			<string>PSButtonCell</string>
 			<key>label</key>
 			<string>Developer: @burkybang</string>
 			<key>icon</key>
-			<string>orig_twitter</string>
+			<string>twitter</string>
 			<key>action</key>
 			<string>openTwitterBurkybang</string>
 		</dict>
