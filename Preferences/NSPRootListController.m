@@ -29,10 +29,7 @@
 	headerContainer.backgroundColor = UIColor.clearColor;
 	[headerContainer addSubview:headerImage];
 	[self.table setTableHeaderView:headerContainer];
-}
 
-- (void)viewWillAppear:(BOOL)animated {
-	[super viewWillAppear:animated];
 	self.title = nil; // banner takes care of name
 }
 
