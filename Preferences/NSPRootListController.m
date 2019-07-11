@@ -10,27 +10,48 @@
 		_priorTintColor = [navController.navigationBar.tintColor retain];
 	}
 
+	_showingHeader = NO;
+
 	// Get the banner image
 	UIImage *image = [UIImage imageNamed:@"banner" inBundle:PUSHER_BUNDLE];
-	UIImageView *headerImage = [[UIImageView alloc] initWithImage:image];
-	// Resize header image
+	_headerImageView = [[UIImageView alloc] initWithImage:image];
+	// Add header container
+	_headerContainer = [UIView new];
+	_headerContainer.backgroundColor = UIColor.clearColor;
+	[_headerContainer addSubview:_headerImageView];
+
+	// Update header image
 	CGFloat paneWidth = UIScreen.mainScreen.bounds.size.width;
 	if (UI_USER_INTERFACE_IDIOM() == UIUserInterfaceIdiomPad) {
 		paneWidth = self.rootController.view.frame.size.width;
 	}
-	// Resize frame to fit
-	CGRect newFrame = headerImage.frame;
-	CGFloat ratio = paneWidth / newFrame.size.width;
-	newFrame.size.width = paneWidth;
-	newFrame.size.height *= ratio;
-	headerImage.frame = newFrame;
-	// Add header container
-	UIView *headerContainer = [[UIView alloc] initWithFrame:CGRectMake(0, 0, self.table.frame.size.width, newFrame.size.height)];
-	headerContainer.backgroundColor = UIColor.clearColor;
-	[headerContainer addSubview:headerImage];
-	[self.table setTableHeaderView:headerContainer];
+	[self updateHeader:paneWidth];
+}
 
-	self.title = nil; // banner takes care of name
+- (void)updateHeader:(CGFloat)width {
+	// Resize frame to fit
+	CGRect newFrame = _headerImageView.frame;
+	CGFloat ratio = width / newFrame.size.width;
+	newFrame.size.width = width;
+	newFrame.size.height *= ratio;
+	_headerImageView.frame = newFrame;
+	_headerContainer.frame = newFrame;
+
+	BOOL takesUpTooMuchScreen = newFrame.size.height >= UIScreen.mainScreen.bounds.size.height / 3.0;
+	if (_showingHeader && takesUpTooMuchScreen) {
+		[self.table setTableHeaderView:nil];
+		self.title = @"Pusher";
+		_showingHeader = NO;
+	} else if (!_showingHeader && !takesUpTooMuchScreen) {
+		[self.table setTableHeaderView:_headerContainer];
+		self.title = nil;
+		_showingHeader = YES;
+	}
+}
+
+- (void)viewWillTransitionToSize:(CGSize)size withTransitionCoordinator:(id)coordinator {
+	[super viewWillTransitionToSize:size withTransitionCoordinator:coordinator];
+	[self updateHeader:size.width];
 }
 
 - (void)viewWillAppear:(BOOL)animated {

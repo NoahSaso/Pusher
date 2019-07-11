@@ -37,7 +37,11 @@ static void setPreference(CFStringRef keyRef, CFPropertyListRef val, BOOL should
 - (void)viewDidLoad {
 	[super viewDidLoad];
 
-	_table = [[UITableView alloc] initWithFrame:self.view.bounds style:UITableViewStylePlain];
+	CGRect tableFrame = self.view.bounds;
+	if (UI_USER_INTERFACE_IDIOM() == UIUserInterfaceIdiomPad) {
+		tableFrame = self.rootController.view.bounds;
+	}
+	_table = [[UITableView alloc] initWithFrame:tableFrame style:UITableViewStylePlain];
 	[_table registerClass:UITableViewCell.class forCellReuseIdentifier:@"AppCell"];
 	_table.delegate = self;
 	[self.view addSubview:_table];

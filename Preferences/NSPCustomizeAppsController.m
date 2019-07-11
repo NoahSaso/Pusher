@@ -82,7 +82,11 @@ static void setPreference(CFStringRef keyRef, CFPropertyListRef val, BOOL should
 
 	_loadedAppControllers = [NSMutableDictionary new];
 
-	_table = [[UITableView alloc] initWithFrame:self.view.bounds style:UITableViewStyleGrouped];
+	CGRect tableFrame = self.view.bounds;
+	if (UI_USER_INTERFACE_IDIOM() == UIUserInterfaceIdiomPad) {
+		tableFrame = self.rootController.view.bounds;
+	}
+	_table = [[UITableView alloc] initWithFrame:tableFrame style:UITableViewStyleGrouped];
 	[_table registerClass:UITableViewCell.class forCellReuseIdentifier:@"CustomAppCell"];
 	_table.dataSource = self;
 	_table.delegate = self;

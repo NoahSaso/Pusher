@@ -98,13 +98,14 @@ static void addToLogIfEnabled(NSString *service, BBBulletin *bulletin, NSString 
 	NSString *logKey = Xstr(@"%@Log", service);
 	NSMutableArray *logSections = [(prefs[logKey] ?: @[]) mutableCopy];
 
+	NSString *currBulletinID = bulletin.bulletinID ?: @"empty_bulletin_id";
 	NSMutableDictionary *existingLogSection = nil;
 	int replaceIdx = -1;
 	for (int i = 0; i < logSections.count; i++) {
 		NSDictionary *logSection = logSections[i];
 		NSDate *timestamp = (NSDate *) logSection[@"timestamp"];
-		NSString *bulletinID = (NSString *) logSection[@"bulletinID"];
-		if (timestamp && bulletinID && [timestamp isKindOfClass:NSDate.class] && [bulletinID isKindOfClass:NSString.class] && [timestamp respondsToSelector:@selector(isEqualToDate:)] && [timestamp isEqualToDate:bulletin.date] && Xeq(bulletinID, bulletin.bulletinID)) {
+		NSString *existingBulletinID = (NSString *) logSection[@"bulletinID"] ?: @"empty_bulletin_id";
+		if (timestamp && [timestamp isKindOfClass:NSDate.class] && [timestamp respondsToSelector:@selector(isEqualToDate:)] && [timestamp isEqualToDate:bulletin.date] && Xeq(existingBulletinID, currBulletinID)) {
 			existingLogSection = [logSection mutableCopy];
 			replaceIdx = i;
 			break;
@@ -113,8 +114,8 @@ static void addToLogIfEnabled(NSString *service, BBBulletin *bulletin, NSString 
 
 	if (!existingLogSection || replaceIdx == -1) {
 		existingLogSection = [@{
-			@"appID": bulletin.sectionID,
-			@"bulletinID": bulletin.bulletinID,
+			@"appID": bulletin.sectionID ?: @"empty_app_id",
+			@"bulletinID": currBulletinID,
 			@"timestamp": bulletin.date
 		} mutableCopy];
 		[logSections addObject:existingLogSection];

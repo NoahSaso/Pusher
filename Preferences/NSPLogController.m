@@ -86,7 +86,11 @@ static NSDictionary *getLogPreferences() {
 
   _appList = [ALApplicationList sharedApplicationList];
 
-	_table = [[UITableView alloc] initWithFrame:self.view.bounds style:UITableViewStyleGrouped];
+	CGRect tableFrame = self.view.bounds;
+	if (UI_USER_INTERFACE_IDIOM() == UIUserInterfaceIdiomPad) {
+		tableFrame = self.rootController.view.bounds;
+	}
+	_table = [[UITableView alloc] initWithFrame:tableFrame style:UITableViewStyleGrouped];
 	[_table registerClass:UITableViewCell.class forCellReuseIdentifier:@"LogCell"];
 	_table.delegate = self;
 	_table.dataSource = self;
