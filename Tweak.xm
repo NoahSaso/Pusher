@@ -45,7 +45,7 @@ static NSMutableArray *recentNotificationTitles = [NSMutableArray new];
 static NSMutableDictionary *pusherRetriesLeft = [NSMutableDictionary new];
 
 static NSString *retriesLeftKeyForBulletinAndService(BBBulletin *bulletin, NSString *service) {
-	return Xstr(@"%@_%@_%@", bulletin.bulletinID, bulletin.sectionID, service);
+	return Xstr(@"%@_%@_%@", bulletin.bulletinID ?: @"empty_bulletin_id", bulletin.sectionID, service);
 }
 
 static NSString *stringForObject(id object, NSString *prefix) {
