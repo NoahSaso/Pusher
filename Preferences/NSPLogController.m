@@ -145,7 +145,7 @@ static NSDictionary *getLogPreferences() {
 	_data = [@{
 		_sections[0]: [@[
 			@"Logger Enabled",
-			@"Clear Existing Logs"
+			@"Clear All Logs"
 		] mutableCopy],
 		_sections[1]: [@[
 			@"Network Response",
@@ -366,6 +366,7 @@ static NSDictionary *getLogPreferences() {
 	// cell.textLabel.lineBreakMode = NSLineBreakByTruncatingTail;
 	cell.textLabel.text = nil;
 	cell.textLabel.textColor = nil;
+	cell.tintColor = NSPusherManager.sharedController.activeTintColor;
 
 	UITextView *expandedTextView = [cell.contentView viewWithTag:EXPANDED_TEXT_VIEW_TAG];
 	if (expandedTextView) {
@@ -450,8 +451,8 @@ static NSDictionary *getLogPreferences() {
 			cell.accessoryType = UITableViewCellAccessoryDetailButton;
 		} else {
 			CGSize textSize = [cell.textLabel.text sizeWithAttributes:@{NSFontAttributeName: cell.textLabel.font}];
-			// add 30 just to provide some buffer for the text that might just be too long
-			BOOL isTruncated = textSize.width > cell.contentView.bounds.size.width;
+			// if width larger, height larger, or contains new line
+			BOOL isTruncated = textSize.width > cell.contentView.bounds.size.width || textSize.height > cell.contentView.bounds.size.height || [cell.textLabel.text containsString:@"\n"];
 			if (isTruncated) {
 				[_truncatedIndexPaths addObject:indexPath];
 				if (!expanded) {
@@ -462,7 +463,7 @@ static NSDictionary *getLogPreferences() {
 	}
 
 	if (indexPath.section == 0 && indexPath.row == _clearLogRow) {
-		cell.textLabel.textColor = [UIColor colorWithRed:0.0 green:122/255.0 blue:255/255.0 alpha:1.0];
+		cell.textLabel.textColor = NSPusherManager.sharedController.activeTintColor;
 	}
 
 	if (indexPath.section == 0 && indexPath.row == _logEnabledSwitchRow) {

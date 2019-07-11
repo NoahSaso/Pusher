@@ -9,6 +9,9 @@
 #define PUSHER_BUNDLE [NSBundle bundleWithPath:PUSHER_BUNDLE_PATH]
 #define PUSHER_COLOR [UIColor colorWithRed:0.0 green:177/255.0 blue:79/255.0 alpha:1.0]
 #define PUSHER_TRIES 5 // how many times pusher will try to send the web request
+#define PUSHER_LOG_MAX_STRING_LENGTH 50
+#define PUSHER_LOG_IMAGE_DATA_PROPERTIES @[@"icon", @"image"] // properties to replace with PUSHER_LOG_IMAGE_DATA_REPLACEMENT in the log
+#define PUSHER_LOG_IMAGE_DATA_REPLACEMENT @"[Base64 Image String]"
 
 #import <rocketbootstrap/rocketbootstrap.h>
 #import <AppSupport/CPDistributedMessagingCenter.h>

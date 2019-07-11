@@ -197,6 +197,7 @@ static void setPreference(CFStringRef keyRef, CFPropertyListRef val, BOOL should
 		appSelectionController.rightButtonTitle = @"Add";
 		appSelectionController.selectingMultiple = YES;
 		UINavigationController *navController = [[UINavigationController alloc] initWithRootViewController:appSelectionController];
+		navController.navigationBar.tintColor = NSPusherManager.sharedController.activeTintColor;
 		[self presentViewController:navController animated:YES completion:nil];
 		return;
 	}

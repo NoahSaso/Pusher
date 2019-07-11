@@ -35,6 +35,7 @@
 	if (cell.type == PSButtonCell) {
 		cell.titleLabel.textColor = NSPusherManager.sharedController.activeTintColor;
 	}
+	cell.tintColor = NSPusherManager.sharedController.activeTintColor;
 	return cell;
 }
 

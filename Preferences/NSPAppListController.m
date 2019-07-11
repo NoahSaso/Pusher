@@ -20,6 +20,7 @@ static void setPreference(CFStringRef keyRef, CFPropertyListRef val, BOOL should
 	UITableViewCell *cell = [super tableView:tableView cellForRowAtIndexPath:indexPath];
 	NSString *displayIdentifier = [self displayIdentifierForIndexPath:indexPath];
 	cell.accessoryType = [self.appListController.selectedAppIDs containsObject:displayIdentifier] ? UITableViewCellAccessoryCheckmark : UITableViewCellAccessoryNone;
+	cell.tintColor = NSPusherManager.sharedController.activeTintColor;
 	return cell;
 }
 
@@ -51,6 +52,7 @@ static void setPreference(CFStringRef keyRef, CFPropertyListRef val, BOOL should
 	_searchController.hidesNavigationBarDuringPresentation = NO;
 	_searchController.dimsBackgroundDuringPresentation = NO;
 	[_searchController.searchBar sizeToFit];
+	_searchController.searchBar.tintColor = NSPusherManager.sharedController.activeTintColor;
 	_table.tableHeaderView = _searchController.searchBar;
 
 	_table.dataSource = _appListDataSource;

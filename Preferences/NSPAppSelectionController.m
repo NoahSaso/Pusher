@@ -11,6 +11,7 @@
 	UITableViewCell *cell = [super tableView:tableView cellForRowAtIndexPath:indexPath];
 	NSString *displayIdentifier = [self displayIdentifierForIndexPath:indexPath];
 	cell.accessoryType = [self.appSelectionController.selectedAppIDs containsObject:displayIdentifier] ? UITableViewCellAccessoryCheckmark : UITableViewCellAccessoryNone;
+	cell.tintColor = NSPusherManager.sharedController.activeTintColor;
 	return cell;
 }
 
@@ -41,6 +42,7 @@
 	_searchController.hidesNavigationBarDuringPresentation = NO;
 	_searchController.dimsBackgroundDuringPresentation = NO;
 	[_searchController.searchBar sizeToFit];
+	_searchController.searchBar.tintColor = NSPusherManager.sharedController.activeTintColor;
 	self.tableView.tableHeaderView = _searchController.searchBar;
 
 	if (!self.selectedAppIDs || ![self.selectedAppIDs isKindOfClass:NSMutableArray.class]) {

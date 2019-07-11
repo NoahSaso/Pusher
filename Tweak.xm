@@ -67,6 +67,9 @@ static NSString *stringForObject(id object, NSString *prefix) {
 		}
 		str = Xstr(@"%@\n%@}", str, prefix);
 	} else {
+		if ([object isKindOfClass:NSString.class] && ((NSString *) object).length > PUSHER_LOG_MAX_STRING_LENGTH) {
+			object = Xstr(@"%@...", [(NSString *)object substringToIndex:PUSHER_LOG_MAX_STRING_LENGTH]);
+		}
 		str = Xstr(@"%@%@", prefix, object);
 	}
 	return str;
@@ -118,6 +121,7 @@ static void addToLogIfEnabled(NSString *service, BBBulletin *bulletin, NSString 
 	}
 
 	NSMutableArray *logs = [(existingLogSection[@"logs"] ?: @[]) mutableCopy];
+	existingLogSection[@"logs"] = logs;
 
 	if (logs.count == 0) {
 		[logs addObject:Xstr(@"Processing %@", bulletin.sectionID)];
@@ -132,8 +136,6 @@ static void addToLogIfEnabled(NSString *service, BBBulletin *bulletin, NSString 
 	}
 	[logs addObject:logItem];
 
-	existingLogSection[@"logs"] = logs;
-
 	if (replaceIdx > -1) {
 		[logSections replaceObjectAtIndex:replaceIdx withObject:existingLogSection];
 	}
@@ -144,13 +146,13 @@ static void addToLogIfEnabled(NSString *service, BBBulletin *bulletin, NSString 
 		[logSections removeObjectsInRange:rangeToDelete];
 	}
 
-	XLog(@"[S:%@] Saving log...", service);
+	// XLog(@"[S:%@] Saving log...", service);
 
 	CFPreferencesSetValue((__bridge CFStringRef) logKey, (__bridge CFPropertyListRef) logSections, PUSHER_LOG_ID, kCFPreferencesCurrentUser, kCFPreferencesAnyHost);
 	CFPreferencesSynchronize(PUSHER_LOG_ID, kCFPreferencesCurrentUser, kCFPreferencesAnyHost);
 	notify_post(PUSHER_LOG_PREFS_NOTIFICATION);
 
-	XLog(@"[S:%@] Saved log!", service);
+	// XLog(@"[S:%@] Saved log!", service);
 }
 
 static void addToLogIfEnabled(NSString *service, BBBulletin *bulletin, NSString *label) {
@@ -686,6 +688,11 @@ static NSString *prefsSayNo(BBServer *server, BBBulletin *bulletin) {
 	}
 	[recentNotificationTitles addObject:title];
 
+	if (pusherEnabledServices.count == 0) {
+		XLog(@"No services enabled!");
+		return;
+	}
+
 	for (NSString *service in pusherEnabledServices.allKeys) {
 		[self sendToPusherService:service bulletin:bulletin appID:appID appName:appName title:title message:message isTest:NO];
 	}
@@ -965,7 +972,13 @@ static NSString *prefsSayNo(BBServer *server, BBBulletin *bulletin) {
 	}
 
 	if (Xeq(method, @"POST")) {
-		addToLogIfEnabled(service, bulletin, @"Request Body Dictionary", infoDictForRequest);
+		// replace image strings with shorter string
+		NSMutableDictionary *infoDictForLog = [infoDictForRequest mutableCopy];
+		for (NSString *prop in PUSHER_LOG_IMAGE_DATA_PROPERTIES) {
+			if (infoDictForLog[prop]) { infoDictForLog[prop] = PUSHER_LOG_IMAGE_DATA_REPLACEMENT; }
+		}
+		addToLogIfEnabled(service, bulletin, @"Request Body Dictionary", infoDictForLog);
+
 		[request setValue:@"application/json" forHTTPHeaderField:@"Accept"];
 		[request setValue:@"application/json" forHTTPHeaderField:@"Content-Type"];
 		NSData *requestData = [NSJSONSerialization dataWithJSONObject:infoDictForRequest options:NSJSONWritingPrettyPrinted error:nil];
@@ -1003,7 +1016,11 @@ static NSString *prefsSayNo(BBServer *server, BBBulletin *bulletin) {
 				[self makePusherRequest:urlString infoDict:retryInfoDict credentials:credentials authType:authType method:method logString:logString service:service bulletin:bulletin];
 				return;
 			}
-			addToLogIfEnabled(service, bulletin, @"Network Response: Success", dataStr);
+			NSString *dataStrForLog = dataStr;
+			if (dataStrForLog.length > PUSHER_LOG_MAX_STRING_LENGTH) {
+				dataStrForLog = Xstr(@"%@...", [dataStrForLog substringToIndex:PUSHER_LOG_MAX_STRING_LENGTH]);
+			}
+			addToLogIfEnabled(service, bulletin, @"Network Response: Success", dataStrForLog);
 			XLog(@"%@ Success: %@", logString, dataStr);
 			[pusherRetriesLeft removeObjectForKey:retryKey];
 		} else {
