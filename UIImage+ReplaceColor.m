@@ -40,8 +40,8 @@
   for (int byte = 0; byte < bytesPerRow * height; byte += 4) {
 
       UInt8 r = data[byte];
-      UInt8 g = data[byte+1];
-      UInt8 b = data[byte+2];
+      UInt8 g = data[byte + 1];
+      UInt8 b = data[byte + 2];
 
       // delta components
       UInt8 dr = abs(r - source255Components[0]);
@@ -55,8 +55,8 @@
 
       // blend color components
       data[byte] = (UInt8) round(ratio * r) + (UInt8) round((1.0 - ratio) * target255Components[0]);
-      data[byte+1] = (UInt8) round(ratio * g) + (UInt8) round((1.0 - ratio) * target255Components[1]);
-      data[byte+2] = (UInt8) round(ratio * b) + (UInt8) round((1.0 - ratio) * target255Components[2]);
+      data[byte + 1] = (UInt8) round(ratio * g) + (UInt8) round((1.0 - ratio) * target255Components[1]);
+      data[byte + 2] = (UInt8) round(ratio * b) + (UInt8) round((1.0 - ratio) * target255Components[2]);
 
   }
 
