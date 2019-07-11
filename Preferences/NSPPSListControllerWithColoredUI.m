@@ -25,12 +25,15 @@
 	[self.view endEditing:YES];
 }
 
+// tint color
 - (UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath {
 	PSTableCell *cell = (PSTableCell *) [super tableView:tableView cellForRowAtIndexPath:indexPath];
-	// tint color
 	if (cell.type == PSLinkCell && cell.iconImageView && cell.iconImageView.image) {
 		UIImage *newImage = [cell.iconImageView.image imageByReplacingColor:PUSHER_COLOR withColor:NSPusherManager.sharedController.activeTintColor];
 		cell.iconImageView.image = newImage;
+	}
+	if (cell.type == PSButtonCell) {
+		cell.titleLabel.textColor = NSPusherManager.sharedController.activeTintColor;
 	}
 	return cell;
 }

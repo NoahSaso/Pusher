@@ -175,7 +175,7 @@ static void setPreference(CFStringRef keyRef, CFPropertyListRef val, BOOL should
 }
 
 - (void)addNewService {
-	UIAlertController *alert = XalertWTitle(@"Add Pusher Service", nil);
+	UIAlertController *alert = XalertWTitle(@"Add Custom Service", nil);
 	[alert addTextFieldWithConfigurationHandler:^(UITextField *textField) {
 		textField.placeholder = @"Service Name";
 	}];
@@ -193,7 +193,7 @@ static void setPreference(CFStringRef keyRef, CFPropertyListRef val, BOOL should
 			id existsHandler = ^(UIAlertAction *existsAction) {
 				[self addNewService];
 			};
-			UIAlertController *existsAlert = XalertWTitle(@"Add Pusher Service", @"A service with that name already exists.");
+			UIAlertController *existsAlert = XalertWTitle(@"Error", @"A service with that name already exists.");
 			[existsAlert addAction:XalertBtnWHandler(@"Ok", existsHandler)];
 			[self presentViewController:existsAlert animated:YES completion:nil];
 			return;

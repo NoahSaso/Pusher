@@ -39,7 +39,7 @@
 			<key>label</key>
 			<string>Developer: @burkybang</string>
 			<key>icon</key>
-			<string>twitter</string>
+			<string>orig_twitter</string>
 			<key>action</key>
 			<string>openTwitterBurkybang</string>
 		</dict>
