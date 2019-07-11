@@ -8,8 +8,6 @@
 		<dict>
 			<key>cell</key>
 			<string>PSGroupCell</string>
-			<key>footerText</key>
-			<string>Pusher will try to forward a notification 5 times until the network request is successful.</string>
 		</dict>
 		<dict>
 			<key>cell</key>
