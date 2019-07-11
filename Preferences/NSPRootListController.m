@@ -1,74 +1,51 @@
 #import "NSPRootListController.h"
 
-#import "../global.h"
-#import <Custom/defines.h>
-#import <notify.h>
-
-static int countAppIDsWithPrefix(NSDictionary *prefs, NSString *prefix) {
-  int count = 0;
-	for (id key in prefs.allKeys) {
-		if (![key isKindOfClass:NSString.class]) { continue; }
-		if ([key hasPrefix:prefix] && ((NSNumber *) prefs[key]).boolValue) {
-      count += 1;
-		}
-	}
-	return count;
-}
-
 @implementation NSPRootListController
 
 - (void)viewDidLoad {
 	[super viewDidLoad];
 	if (!_priorTintColor) {
-		_priorTintColor = [self.navigationController.navigationController.navigationBar.tintColor retain];
+		UINavigationController *navController = self.navigationController;
+		if (UI_USER_INTERFACE_IDIOM() != UIUserInterfaceIdiomPad) { navController = navController.navigationController; }
+		_priorTintColor = [navController.navigationBar.tintColor retain];
 	}
+
+	// Get the banner image
+	UIImage *image = [UIImage imageNamed:@"banner" inBundle:PUSHER_BUNDLE];
+	UIImageView *headerImage = [[UIImageView alloc] initWithImage:image];
+	// Resize header image
+	CGFloat paneWidth = UIScreen.mainScreen.bounds.size.width;
+	if (UI_USER_INTERFACE_IDIOM() == UIUserInterfaceIdiomPad) {
+		paneWidth = self.rootController.view.frame.size.width;
+	}
+	// Resize frame to fit
+	CGRect newFrame = headerImage.frame;
+	CGFloat ratio = paneWidth / newFrame.size.width;
+	newFrame.size.width = paneWidth;
+	newFrame.size.height *= ratio;
+	headerImage.frame = newFrame;
+	// Add header container
+	UIView *headerContainer = [[UIView alloc] initWithFrame:CGRectMake(0, 0, self.table.frame.size.width, newFrame.size.height)];
+	headerContainer.backgroundColor = UIColor.clearColor;
+	[headerContainer addSubview:headerImage];
+	[self.table setTableHeaderView:headerContainer];
+}
+
+- (void)viewWillAppear:(BOOL)animated {
+	[super viewWillAppear:animated];
+	self.title = nil; // banner takes care of name
 }
 
 - (void)viewWillDisappear:(BOOL)animated {
 	[super viewWillDisappear:animated];
-	self.navigationController.navigationController.navigationBar.tintColor = _priorTintColor;
-}
-
-- (void)addObjectsFromArray:(NSArray *)source atIndex:(int)idx toArray:(NSMutableArray *)dest {
-	for (id object in source) {
-		[dest insertObject:object atIndex:idx];
-		idx += 1;
-	}
+	UINavigationController *navController = self.navigationController;
+	if (UI_USER_INTERFACE_IDIOM() != UIUserInterfaceIdiomPad) { navController = navController.navigationController; }
+	navController.navigationBar.tintColor = _priorTintColor;
 }
 
 - (NSArray *)specifiers {
 	if (!_specifiers) {
-		NSMutableArray *allSpecifiers = [[self loadSpecifiersFromPlistName:@"Root" target:self] mutableCopy];
-		NSArray *globalServices = [self loadSpecifiersFromPlistName:@"GlobalAndServices" target:self];
-
-		int idx = 0;
-		for (PSSpecifier *specifier in allSpecifiers) {
-			if (specifier.cellType == PSGroupCell && Xeq(specifier.identifier, @"Support")) {
-				[self addObjectsFromArray:globalServices atIndex:idx toArray:allSpecifiers];
-				break;
-			}
-			idx += 1;
-		}
-
-		// Get preferences for counting
-		CFPreferencesSynchronize(PUSHER_APP_ID, kCFPreferencesCurrentUser, kCFPreferencesAnyHost);
-		CFArrayRef keyList = CFPreferencesCopyKeyList(PUSHER_APP_ID, kCFPreferencesCurrentUser, kCFPreferencesAnyHost);
-		NSDictionary *prefs = @{};
-		if (keyList) {
-			prefs = (NSDictionary *)CFPreferencesCopyMultiple(keyList, PUSHER_APP_ID, kCFPreferencesCurrentUser, kCFPreferencesAnyHost);
-			if (!prefs) { prefs = @{}; }
-			CFRelease(keyList);
-		}
-
-		for (PSSpecifier *specifier in allSpecifiers) {
-			if (specifier.cellType == PSLinkCell && Xeq(specifier.name, @"Global App List")) {
-				specifier.name = Xstr(@"%@ (%d total)", specifier.name, countAppIDsWithPrefix(prefs, [specifier propertyForKey:@"ALSettingsKeyPrefix"]));
-				[specifier setProperty:self forKey:@"psListRef"];
-				break;
-			}
-		}
-
-		_specifiers = [allSpecifiers copy];
+		_specifiers = [[self loadSpecifiersFromPlistName:@"Root" target:self] retain];
 	}
 
 	return _specifiers;

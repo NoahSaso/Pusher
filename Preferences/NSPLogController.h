@@ -14,6 +14,7 @@
   NSString *_logEnabledKey;
   BOOL _logEnabled;
   NSMutableArray *_expandedIndexPaths;
+  int _settingsSection;
   int _clearLogRow;
   int _logEnabledSwitchRow;
   int _networkResponseRow;
@@ -27,6 +28,7 @@
   NSString *_filteredEndResult;
   ALApplicationList *_appList;
   BOOL _filteredGlobalOnly;
+  NSMutableArray *_truncatedIndexPaths;
 }
 - (void)updateLog;
 - (void)updateLogEnabled:(UISwitch *)logEnabledSwitch;

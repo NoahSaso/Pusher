@@ -181,3 +181,7 @@ typedef enum {
 @interface UIView (Pusher)
 - (id)_viewDelegate;
 @end
+
+@interface UIImage (Pusher)
++ (UIImage *)imageNamed:(NSString *)name inBundle:(NSBundle *)bundle;
+@end

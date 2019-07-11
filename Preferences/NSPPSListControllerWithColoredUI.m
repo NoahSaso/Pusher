@@ -11,7 +11,9 @@
 - (void)tintUIToPusherColor {
 	UIColor *color = NSPTintController.sharedController.activeTintColor;
 
-	self.navigationController.navigationController.navigationBar.tintColor = color;
+	UINavigationController *navController = self.navigationController;
+	if (UI_USER_INTERFACE_IDIOM() != UIUserInterfaceIdiomPad) { navController = navController.navigationController; }
+	navController.navigationBar.tintColor = color;
 
 	[UISwitch appearanceWhenContainedInInstancesOfClasses:@[self.class]].tintColor = color;
 	[UISwitch appearanceWhenContainedInInstancesOfClasses:@[self.class]].onTintColor = color;

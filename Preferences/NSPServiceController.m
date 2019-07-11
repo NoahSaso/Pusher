@@ -66,6 +66,13 @@ static int countAppIDsWithPrefix(NSDictionary *prefs, NSString *prefix) {
 	[self tintUIToPusherColor];
 }
 
+- (void)addObjectsFromArray:(NSArray *)source atIndex:(int)idx toArray:(NSMutableArray *)dest {
+	for (id object in source) {
+		[dest insertObject:object atIndex:idx];
+		idx += 1;
+	}
+}
+
 - (NSArray *)specifiers {
 	if (!_specifiers) {
 		NSMutableArray *allSpecifiers = nil;

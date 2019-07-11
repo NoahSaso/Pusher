@@ -44,7 +44,7 @@ static NSDictionary *getLogPreferences() {
 	UILabel *label = [UILabel new];
 	label.font = [UIFont fontWithName:@"HelveticaNeue-Thin" size:UIFont.systemFontSize * 1.5f];
 	label.textColor = UIColor.whiteColor;
-	label.text = @"After using the app filter, you can swipe to delete to unset it and show all apps again.\n\nTap anywhere to continue.";
+	label.text = @"After using the app filter, you can swipe to delete to unset it and show all apps again.\n\nTap on any truncated log to expand it.\n\n Tap and hold on a log to copy it to the clipboard.\n\nTap anywhere to continue.";
 	label.lineBreakMode = NSLineBreakByWordWrapping;
 	label.numberOfLines = 0;
 	label.translatesAutoresizingMaskIntoConstraints = NO;
@@ -129,6 +129,8 @@ static NSDictionary *getLogPreferences() {
 - (void)updateLog {
 	NSDictionary *prefs = getLogPreferences();
 
+	_truncatedIndexPaths = [NSMutableArray new];
+
 	if (_sections) {
 		[_sections release];
 	}
@@ -168,6 +170,7 @@ static NSDictionary *getLogPreferences() {
 		_globalOnlyRow = -1;
 	}
 
+	_settingsSection = 0;
 	_filterSection = 1;
 	_networkResponseRow = 0;
 	_endResultFilterRow = 1;
@@ -263,7 +266,7 @@ static NSDictionary *getLogPreferences() {
 }
 
 - (BOOL)tableView:(UITableView *)tableView shouldHighlightRowAtIndexPath:(NSIndexPath *)indexPath {
-	return indexPath.section != _filterSection || (indexPath.row != _networkResponseRow && indexPath.row != _endResultFilterRow && indexPath.row != _globalOnlyRow);
+	return (indexPath.section == _settingsSection && indexPath.row == _clearLogRow) || (indexPath.section == _filterSection && indexPath.row == _appFilterRow);
 }
 
 - (BOOL)tableView:(UITableView *)tableView canEditRowAtIndexPath:(NSIndexPath *)indexPath {
@@ -324,33 +327,21 @@ static NSDictionary *getLogPreferences() {
 			appSelectionController.selectedAppIDs = [@[_filteredAppID] mutableCopy];
 		}
 		[self.navigationController pushViewController:appSelectionController animated:YES];
-	} else if (indexPath.section >= _firstLogSection) {
-		UIAlertController *alert = [UIAlertController alertControllerWithTitle:@"Choose" message:nil preferredStyle:UIAlertControllerStyleActionSheet];
-		BOOL expanded = [_expandedIndexPaths containsObject:indexPath];
-		// use this instead of cell.textLabel.text because may be expanded and have text in uitextview not label
-		NSString *text = _data[_sections[indexPath.section]][indexPath.row];
-
-		// only add expand / collapse option if currently expanded or if it is being truncated
-		UITableViewCell *cell = [self tableView:tableView cellForRowAtIndexPath:indexPath];
-		CGSize textSize = [text sizeWithAttributes:@{NSFontAttributeName: cell.textLabel.font}];
-		// add 30 just to provide some buffer for the text that might just be too long
-		BOOL isTruncated = textSize.width + 30 > cell.contentView.bounds.size.width;
-		if (expanded || isTruncated) {
-			[alert addAction:[UIAlertAction actionWithTitle:(expanded ? @"Collapse" : @"Expand") style:UIAlertActionStyleDefault handler:^(UIAlertAction *action) {
-				if (expanded) {
-					[_expandedIndexPaths removeObject:indexPath];
-				} else {
-					[_expandedIndexPaths addObject:indexPath];
-				}
-				[tableView reloadRowsAtIndexPaths:@[indexPath] withRowAnimation:UITableViewRowAnimationAutomatic];
-			}]];
-		}
-		[alert addAction:[UIAlertAction actionWithTitle:@"Copy to Clipboard" style:UIAlertActionStyleDefault handler:^(UIAlertAction *action) {
-			UIPasteboard.generalPasteboard.string = text;
-		}]];
-		[alert addAction:[UIAlertAction actionWithTitle:@"Cancel" style:UIAlertActionStyleCancel handler:nil]];
-		[self presentViewController:alert animated:YES completion:nil];
 	}
+}
+
+- (BOOL)tableView:(UITableView *)tableView shouldShowMenuForRowAtIndexPath:(NSIndexPath *)indexPath {
+	return indexPath.section >= _firstLogSection;
+}
+
+- (BOOL)tableView:(UITableView *)tableView canPerformAction:(SEL)action forRowAtIndexPath:(NSIndexPath *)indexPath withSender:(id)sender {
+	return indexPath.section >= _firstLogSection && action == @selector(copy:);
+}
+
+- (void)tableView:(UITableView *)tableView performAction:(SEL)action forRowAtIndexPath:(NSIndexPath *)indexPath withSender:(id)sender {
+	if (indexPath.section < _firstLogSection || action != @selector(copy:)) { return; }
+	// use this instead of cell.textLabel.text because may be expanded and have text in uitextview not label
+	UIPasteboard.generalPasteboard.string = _data[_sections[indexPath.section]][indexPath.row];
 }
 
 - (NSString *)tableView:(UITableView *)tableView titleForHeaderInSection:(NSInteger)section {
@@ -442,11 +433,9 @@ static NSDictionary *getLogPreferences() {
 		cell.textLabel.text = nil;
 		[cell.contentView addSubview:expandedTextView];
 
-		CGSize textSize = [expandedTextView.text boundingRectWithSize:CGSizeMake(cell.contentView.bounds.size.width, MAXFLOAT) options:NSStringDrawingUsesLineFragmentOrigin attributes:@{NSFontAttributeName: expandedTextView.font} context:nil].size;
-
-		CGFloat minHeight = 50;
+		CGFloat textSizeHeight = [expandedTextView.text boundingRectWithSize:CGSizeMake(cell.contentView.bounds.size.width, MAXFLOAT) options:NSStringDrawingUsesLineFragmentOrigin attributes:@{NSFontAttributeName: expandedTextView.font} context:nil].size.height + 30.0;
 		CGFloat maxHeight = UIScreen.mainScreen.bounds.size.height / 2;
-		CGFloat height = textSize.height > maxHeight ? maxHeight : (textSize.height < minHeight ? minHeight : textSize.height);
+		CGFloat height = textSizeHeight > maxHeight ? maxHeight : textSizeHeight;
 
 		expandedTextView.translatesAutoresizingMaskIntoConstraints = NO;
 		[expandedTextView.topAnchor constraintEqualToAnchor:expandedTextView.superview.topAnchor constant:10].active = YES;
@@ -456,11 +445,20 @@ static NSDictionary *getLogPreferences() {
 		[expandedTextView addConstraint:[NSLayoutConstraint constraintWithItem:expandedTextView attribute:NSLayoutAttributeHeight relatedBy:NSLayoutRelationEqual toItem:nil attribute:NSLayoutAttributeNotAnAttribute multiplier:1 constant:height]];
 	}
 
-	CGSize textSize = [cell.textLabel.text sizeWithAttributes:@{NSFontAttributeName: cell.textLabel.font}];
-	// add 30 just to provide some buffer for the text that might just be too long
-	BOOL isTruncated = textSize.width + 30 > cell.contentView.bounds.size.width;
-	if (indexPath.section >= _firstLogSection && !expanded && isTruncated) {
-		cell.accessoryType = UITableViewCellAccessoryDisclosureIndicator;
+	if (indexPath.section >= _firstLogSection) {
+		if ([_truncatedIndexPaths containsObject:indexPath]) {
+			cell.accessoryType = UITableViewCellAccessoryDetailButton;
+		} else {
+			CGSize textSize = [cell.textLabel.text sizeWithAttributes:@{NSFontAttributeName: cell.textLabel.font}];
+			// add 30 just to provide some buffer for the text that might just be too long
+			BOOL isTruncated = textSize.width > cell.contentView.bounds.size.width;
+			if (isTruncated) {
+				[_truncatedIndexPaths addObject:indexPath];
+				if (!expanded) {
+					cell.accessoryType = UITableViewCellAccessoryDetailButton;
+				}
+			}
+		}
 	}
 
 	if (indexPath.section == 0 && indexPath.row == _clearLogRow) {
@@ -475,6 +473,20 @@ static NSDictionary *getLogPreferences() {
 	}
 
 	return cell;
+}
+
+- (void)tableView:(UITableView *)tableView accessoryButtonTappedForRowWithIndexPath:(NSIndexPath *)indexPath {
+	if (indexPath.section < _firstLogSection) { return; }
+	BOOL expanded = [_expandedIndexPaths containsObject:indexPath];
+	// only add expand / collapse option if currently expanded or if it is being truncated
+	if (expanded || [_truncatedIndexPaths containsObject:indexPath]) {
+		if (expanded) {
+			[_expandedIndexPaths removeObject:indexPath];
+		} else {
+			[_expandedIndexPaths addObject:indexPath];
+		}
+		[tableView reloadRowsAtIndexPaths:@[indexPath] withRowAnimation:UITableViewRowAnimationAutomatic];
+	}
 }
 
 - (void)networkResponseFilterUpdated:(UISegmentedControl *)segmentedControl {
