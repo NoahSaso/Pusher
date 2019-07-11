@@ -8,7 +8,7 @@
 }
 
 - (void)tintUIToPusherColor {
-	UIColor *color = NSPTintController.sharedController.activeTintColor;
+	UIColor *color = NSPusherManager.sharedController.activeTintColor;
 
 	UINavigationController *navController = self.navigationController;
 	if (UI_USER_INTERFACE_IDIOM() != UIUserInterfaceIdiomPad) { navController = navController.navigationController; }

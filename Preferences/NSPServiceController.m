@@ -62,7 +62,7 @@ static int countAppIDsWithPrefix(NSDictionary *prefs, NSString *prefix) {
 	}
 
 	// load each time to override NSPRootListController
-	[NSPTintController.sharedController setActiveTintColor:_uiColor];
+	[NSPusherManager.sharedController setActiveTintColor:_uiColor];
 	[self tintUIToPusherColor];
 }
 
@@ -246,7 +246,7 @@ static int countAppIDsWithPrefix(NSDictionary *prefs, NSString *prefix) {
 }
 
 - (void)openTwitterBurkybang {
-	[self openTwitter:@"burkybang"];
+	[NSPusherManager.sharedController openTwitter:@"burkybang"];
 }
 
 @end

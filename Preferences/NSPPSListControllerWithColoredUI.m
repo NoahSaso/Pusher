@@ -9,7 +9,7 @@
 
 // override so we can dynamically set ui color later for each service to match icon
 - (void)tintUIToPusherColor {
-	UIColor *color = NSPTintController.sharedController.activeTintColor;
+	UIColor *color = NSPusherManager.sharedController.activeTintColor;
 
 	UINavigationController *navController = self.navigationController;
 	if (UI_USER_INTERFACE_IDIOM() != UIUserInterfaceIdiomPad) { navController = navController.navigationController; }
@@ -29,7 +29,7 @@
 	PSTableCell *cell = (PSTableCell *) [super tableView:tableView cellForRowAtIndexPath:indexPath];
 	// tint color
 	if (cell.type == PSLinkCell && cell.iconImageView && cell.iconImageView.image) {
-		UIImage *newImage = [cell.iconImageView.image imageByReplacingColor:PUSHER_COLOR withColor:NSPTintController.sharedController.activeTintColor];
+		UIImage *newImage = [cell.iconImageView.image imageByReplacingColor:PUSHER_COLOR withColor:NSPusherManager.sharedController.activeTintColor];
 		cell.iconImageView.image = newImage;
 	}
 	return cell;

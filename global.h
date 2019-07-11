@@ -117,7 +117,7 @@ typedef enum {
 #import <Preferences/PSTableCell.h>
 #import "UIImage+ReplaceColor.h"
 #import <objc/runtime.h>
-#import "Preferences/NSPTintController.h"
+#import "Preferences/NSPusherManager.h"
 
 #define CURRENT_TINT_COLOR_KEY @"CurrentTintColor"
 

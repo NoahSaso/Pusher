@@ -48,18 +48,8 @@
 	return _specifiers;
 }
 
-- (void)openTwitter:(NSString *)username {
-	NSString *appLink = Xstr(@"twitter://user?screen_name=%@", username);
-	NSString *webLink = Xstr(@"https://twitter.com/%@", username);
-	if ([[UIApplication sharedApplication] canOpenURL:[NSURL URLWithString:appLink]]) {
-		Xurl(appLink);
-	} else {
-		Xurl(webLink);
-	}
-}
-
 - (void)openTwitterNoahSaso {
-	[self openTwitter:@"NoahSaso"];
+	[NSPusherManager.sharedController openTwitter:@"NoahSaso"];
 }
 
 @end

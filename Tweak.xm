@@ -1061,7 +1061,7 @@ static NSString *prefsSayNo(BBServer *server, BBBulletin *bulletin) {
 			&& self.superview && [self.superview isKindOfClass:UITableView.class]
 			&& self.superview.superview && [self.superview.superview respondsToSelector:@selector(_viewDelegate)]
 			&& ([self.superview.superview._viewDelegate isKindOfClass:%c(NSPPSListControllerWithColoredUI)] || [self.superview.superview._viewDelegate isKindOfClass:%c(NSPPSViewControllerWithColoredUI)])) {
-		UIImage *newIcon = [icon imageByReplacingColor:PUSHER_COLOR withColor:((NSPTintController *) [%c(NSPTintController) sharedController]).activeTintColor];
+		UIImage *newIcon = [icon imageByReplacingColor:PUSHER_COLOR withColor:((NSPusherManager *) [%c(NSPusherManager) sharedController]).activeTintColor];
 		%orig(newIcon);
 	} else {
 		%orig;

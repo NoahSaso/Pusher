@@ -46,7 +46,7 @@ static void setPreference(CFStringRef keyRef, CFPropertyListRef val, BOOL should
 	[super viewWillAppear:animated];
 
 	// load each time to override NSPRootListController
-	[NSPTintController.sharedController setActiveTintColor:nil];
+	[NSPusherManager.sharedController setActiveTintColor:nil];
 	[self tintUIToPusherColor];
 
 	// Get preferences

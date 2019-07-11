@@ -1,8 +1,8 @@
-#import "NSPRootListController.h"
+#import "NSPPSListControllerWithColoredUI.h"
 #import "CCColorCube.h"
 #import <UserNotifications/UserNotifications.h>
 
-@interface NSPServiceController : NSPRootListController <UNUserNotificationCenterDelegate> { // extend so can use twitter function
+@interface NSPServiceController : NSPPSListControllerWithColoredUI <UNUserNotificationCenterDelegate> { // extend so can use twitter function
   NSString *_service;
   BOOL _isCustom;
   UIImage *_image;
