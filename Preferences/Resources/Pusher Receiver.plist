@@ -161,7 +161,7 @@
 			<key>label</key>
 			<string>Options</string>
 			<key>footerText</key>
-			<string>The server may reject the request if the data is too large, which is usually a result of the image being high resolution. Pusher will try to forward the notification 5 times, shrinking the image each time by the factor you specify. If by the last retry the image is too large, it will remove the image but leave an indication that one is attached so the application may display a placeholder. The image will initially be resized to fit the maximum width unless it is already smaller. The image shrink factor is division, so a factor of 2 means it will divide the image dimensions in half.</string>
+			<string>The server may reject the request if the data is too large, which is usually a result of the image being high resolution. Pusher will try to forward the notification 5 times, shrinking the image each time by the factor you specify. If by the last retry the image is too large, it will remove the image but leave an indication that one is attached so the application may display a placeholder. The image will initially be resized to fit the maximum width unless it is already smaller. The image shrink factor must be greater than 1.0 to work since it is division (a factor of 2 means it will divide the image dimensions in half).</string>
 		</dict>
 
 		<!-- Date Format -->
