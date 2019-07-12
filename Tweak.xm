@@ -982,8 +982,8 @@ static NSString *prefsSayNo(BBServer *server, BBBulletin *bulletin) {
 	if (Xeq(method, @"POST")) {
 		NSData *requestData = [NSJSONSerialization dataWithJSONObject:infoDictForRequest options:NSJSONWritingPrettyPrinted error:nil];
 
-		// shrink image until character limit is under 102400
-		if (infoDict[@"image"] && [infoDict[@"image"] isKindOfClass:UIImage.class] && requestData.length > 102400) {
+		// FOR PUSHER RECEIVER: shrink image until character limit is under 102400
+		if (Xeq(service, PUSHER_SERVICE_PUSHER_RECEIVER) && infoDict[@"image"] && [infoDict[@"image"] isKindOfClass:UIImage.class] && requestData.length > 102400) {
 			NSDate *startShrinkDate = NSDate.date;
 
 			UIImage *image = shrinkImage(infoDict[@"image"], 1.0);
@@ -1044,7 +1044,7 @@ static NSString *prefsSayNo(BBServer *server, BBBulletin *bulletin) {
 					retryInfoDict[@"image"] = @YES;
 					status = @"removed";
 				} else {
-					UIImage *smallerImage = shrinkImage(image, PUSHER_NEXT_SHRINK_FACTOR);
+					UIImage *smallerImage = shrinkImage(image, (Xeq(service, PUSHER_SERVICE_PUSHER_RECEIVER) ? PUSHER_RECEIVER_NEXT_SHRINK_FACTOR : PUSHER_NEXT_SHRINK_FACTOR));
 					retryInfoDict[@"image"] = smallerImage;
 				}
 
