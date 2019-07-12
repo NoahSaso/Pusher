@@ -6,5 +6,5 @@
   UIView *_headerContainer;
   BOOL _showingHeader;
 }
-- (void)updateHeader:(CGFloat)width;
+- (void)updateHeader;
 @end

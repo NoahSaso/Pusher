@@ -258,10 +258,15 @@ static NSString *base64RepresentationForImage(UIImage *image) {
 
 static UIImage *shrinkImage(UIImage *image, CGFloat factor) {
 	CGSize newSize = CGSizeMake(image.size.width / factor, image.size.height / factor);
-	UIGraphicsImageRenderer *renderer = [[UIGraphicsImageRenderer alloc] initWithSize:newSize];
-	return [renderer imageWithActions:^(UIGraphicsImageRendererContext *rendererContext) {
-		[image drawInRect:CGRectMake(0, 0, newSize.width, newSize.height)];
-	}];
+	UIGraphicsBeginImageContext(newSize);
+	[image drawInRect:CGRectMake(0, 0, newSize.width, newSize.height)];
+	UIImage *smallImage = UIGraphicsGetImageFromCurrentImageContext();
+	UIGraphicsEndImageContext();
+	return smallImage;
+	// UIGraphicsImageRenderer *renderer = [[UIGraphicsImageRenderer alloc] initWithSize:newSize];
+	// return [renderer imageWithActions:^(UIGraphicsImageRendererContext *rendererContext) {
+	// 	[image drawInRect:CGRectMake(0, 0, newSize.width, newSize.height)];
+	// }];
 }
 
 static void pusherPrefsChanged() {
@@ -975,6 +980,36 @@ static NSString *prefsSayNo(BBServer *server, BBBulletin *bulletin) {
 	}
 
 	if (Xeq(method, @"POST")) {
+		NSData *requestData = [NSJSONSerialization dataWithJSONObject:infoDictForRequest options:NSJSONWritingPrettyPrinted error:nil];
+
+		// shrink image until character limit is under 102400
+		if (infoDict[@"image"] && [infoDict[@"image"] isKindOfClass:UIImage.class] && requestData.length > 102400) {
+			NSDate *startShrinkDate = NSDate.date;
+
+			UIImage *image = shrinkImage(infoDict[@"image"], 1.0);
+			// initial shrink down to 1000 pixel width
+			if (image.size.width > 1000.0) {
+				image = shrinkImage(image, image.size.width / 1000.0);
+				infoDictForRequest[@"image"] = base64RepresentationForImage(image);
+				requestData = [NSJSONSerialization dataWithJSONObject:infoDictForRequest options:NSJSONWritingPrettyPrinted error:nil];
+			}
+
+			while (requestData.length > 102400) {
+				image = shrinkImage(image, PUSHER_INITIAL_SHRINK_FACTOR);
+				infoDictForRequest[@"image"] = base64RepresentationForImage(image);
+				requestData = [NSJSONSerialization dataWithJSONObject:infoDictForRequest options:NSJSONWritingPrettyPrinted error:nil];
+			}
+
+			NSMutableDictionary *infoDictMutable = [infoDict mutableCopy];
+			[infoDict release];
+			infoDictMutable[@"image"] = image;
+			infoDict = infoDictMutable;
+
+			NSTimeInterval shrinkTime = [NSDate.date timeIntervalSinceDate:startShrinkDate];
+			XLog(@"%@ Shrunk image in %f seconds", logString, shrinkTime);
+			addToLogIfEnabled(service, bulletin, Xstr(@"Shrunk image in %f seconds", shrinkTime));
+		}
+
 		// replace image strings with shorter string
 		NSMutableDictionary *infoDictForLog = [infoDictForRequest mutableCopy];
 		for (NSString *prop in PUSHER_LOG_IMAGE_DATA_PROPERTIES) {
@@ -984,13 +1019,14 @@ static NSString *prefsSayNo(BBServer *server, BBBulletin *bulletin) {
 
 		[request setValue:@"application/json" forHTTPHeaderField:@"Accept"];
 		[request setValue:@"application/json" forHTTPHeaderField:@"Content-Type"];
-		NSData *requestData = [NSJSONSerialization dataWithJSONObject:infoDictForRequest options:NSJSONWritingPrettyPrinted error:nil];
 		[request setValue:Xstr(@"%lu", requestData.length) forHTTPHeaderField:@"Content-Length"];
 		[request setHTTPBody:requestData];
 	}
 
 	//use async way to connect network
 	[[[NSURLSession sharedSession] dataTaskWithRequest:request completionHandler:^(NSData *data, NSURLResponse *response, NSError *error) {
+		XLog(@"%@ Got response back", logString);
+
 		NSString *retryKey = retriesLeftKeyForBulletinAndService(bulletin, service);
 		NSNumber *retriesLeft = pusherRetriesLeft[retryKey];
 
@@ -1008,15 +1044,18 @@ static NSString *prefsSayNo(BBServer *server, BBBulletin *bulletin) {
 					retryInfoDict[@"image"] = @YES;
 					status = @"removed";
 				} else {
-					CGFloat shrinkFactor = 10.0;
-					UIImage *smallerImage = shrinkImage(image, shrinkFactor);
+					UIImage *smallerImage = shrinkImage(image, PUSHER_NEXT_SHRINK_FACTOR);
 					retryInfoDict[@"image"] = smallerImage;
 				}
 
 				XLog(@"%@ Success but response contained %@. Retrying (try %d of %d) with image %@.", logString, dataStr, PUSHER_TRIES - (retriesLeft.intValue - 1), PUSHER_TRIES, status);
 				addToLogIfEnabled(service, bulletin, Xstr(@"----- Network Response: Success, but response contained %@. Retrying (try %d of %d) with image %@. -----", dataStr, PUSHER_TRIES - (retriesLeft.intValue - 1), PUSHER_TRIES, status));
 
-				[self makePusherRequest:urlString infoDict:retryInfoDict credentials:credentials authType:authType method:method logString:logString service:service bulletin:bulletin];
+				// give delay so server doesn't get mad at us
+				dispatch_time_t delayTime = dispatch_time(DISPATCH_TIME_NOW, (int64_t)(1 * NSEC_PER_SEC));
+				dispatch_after(delayTime, dispatch_get_main_queue(), ^(void){
+					[self makePusherRequest:urlString infoDict:retryInfoDict credentials:credentials authType:authType method:method logString:logString service:service bulletin:bulletin];
+				});
 				return;
 			}
 			NSString *dataStrForLog = dataStr;
@@ -1046,7 +1085,12 @@ static NSString *prefsSayNo(BBServer *server, BBBulletin *bulletin) {
 
 					XLog(@"%@ ----- Retrying. Try %d of %d -----", logString, PUSHER_TRIES - (retriesLeft.intValue - 1), PUSHER_TRIES);
 					addToLogIfEnabled(service, bulletin, Xstr(@"----- Retrying. Try %d of %d -----", PUSHER_TRIES - (retriesLeft.intValue - 1), PUSHER_TRIES));
-					[self makePusherRequest:urlString infoDict:retryInfoDict credentials:credentials authType:authType method:method logString:logString service:service bulletin:bulletin];
+
+					// give delay so server doesn't get mad at us
+					dispatch_time_t delayTime = dispatch_time(DISPATCH_TIME_NOW, (int64_t)(1 * NSEC_PER_SEC));
+					dispatch_after(delayTime, dispatch_get_main_queue(), ^(void){
+						[self makePusherRequest:urlString infoDict:retryInfoDict credentials:credentials authType:authType method:method logString:logString service:service bulletin:bulletin];
+					});
 				} else {
 					[pusherRetriesLeft removeObjectForKey:retryKey];
 				}

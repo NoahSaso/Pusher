@@ -21,14 +21,15 @@
 	[_headerContainer addSubview:_headerImageView];
 
 	// Update header image
-	CGFloat paneWidth = UIScreen.mainScreen.bounds.size.width;
-	if (UI_USER_INTERFACE_IDIOM() == UIUserInterfaceIdiomPad) {
-		paneWidth = self.rootController.view.frame.size.width;
-	}
-	[self updateHeader:paneWidth];
+	[self updateHeader];
 }
 
-- (void)updateHeader:(CGFloat)width {
+- (void)updateHeader {
+	CGFloat width = UIScreen.mainScreen.bounds.size.width;
+	if (UI_USER_INTERFACE_IDIOM() == UIUserInterfaceIdiomPad) {
+		width = self.rootController.view.frame.size.width;
+	}
+
 	// Resize frame to fit
 	CGRect newFrame = _headerImageView.frame;
 	CGFloat ratio = width / newFrame.size.width;
@@ -51,7 +52,7 @@
 
 - (void)viewWillTransitionToSize:(CGSize)size withTransitionCoordinator:(id)coordinator {
 	[super viewWillTransitionToSize:size withTransitionCoordinator:coordinator];
-	[self updateHeader:size.width];
+	[self updateHeader];
 }
 
 - (void)viewWillAppear:(BOOL)animated {

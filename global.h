@@ -12,6 +12,8 @@
 #define PUSHER_LOG_MAX_STRING_LENGTH 50
 #define PUSHER_LOG_IMAGE_DATA_PROPERTIES @[@"icon", @"image"] // properties to replace with PUSHER_LOG_IMAGE_DATA_REPLACEMENT in the log
 #define PUSHER_LOG_IMAGE_DATA_REPLACEMENT @"[Base64 Image String]"
+#define PUSHER_INITIAL_SHRINK_FACTOR 2.0
+#define PUSHER_NEXT_SHRINK_FACTOR 1.1
 
 #import <rocketbootstrap/rocketbootstrap.h>
 #import <AppSupport/CPDistributedMessagingCenter.h>
