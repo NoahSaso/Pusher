@@ -850,6 +850,7 @@ static NSString *prefsSayNo(BBServer *server, BBBulletin *bulletin) {
 	}
 
 	// ifttt, pusher receiver, and custom services
+
 	BBBulletin *bulletin = dictionary[@"bulletin"];
 	// date
 	NSDateFormatter *dateFormatter = [NSDateFormatter new];
@@ -858,6 +859,7 @@ static NSString *prefsSayNo(BBServer *server, BBBulletin *bulletin) {
 	[dateFormatter release];
 
 	NSMutableDictionary *data = [@{
+		@"deviceName": UIDevice.currentDevice.name,
 		@"appName": dictionary[@"appName"] ?: @"",
 		@"appID": bulletin.sectionID ?: @"",
 		@"title": bulletin.title ?: @"",
@@ -946,8 +948,8 @@ static NSString *prefsSayNo(BBServer *server, BBBulletin *bulletin) {
 		};
 	} else if (dictionary[@"headerName"] && ((NSString *) dictionary[@"headerName"]).length > 0) {
 		return @{
-			@"key": dictionary[@"key"],
-			@"headerName": dictionary[@"headerName"]
+			@"headerName": dictionary[@"headerName"],
+			@"value": dictionary[@"key"]
 		};
 	}
 
@@ -1039,21 +1041,22 @@ static NSString *prefsSayNo(BBServer *server, BBBulletin *bulletin) {
 				NSMutableDictionary *retryInfoDict = [infoDict mutableCopy];
 
 				CGFloat imageShrinkFactor = ((NSNumber *) infoDict[@"imageShrinkFactor"] ?: @(PUSHER_DEFAULT_SHRINK_FACTOR)).floatValue;
-				NSString *status = @"shrunk";
+				NSString *status = @"unchanged (your shrink factor may be less than 1.0)";
 				// if last retry and has image, set image property to true instead of image base64
 				if (((NSNumber *) pusherRetriesLeft[retryKey]).intValue == 0) {
-					retryInfoDict[@"image"] = @YES;
 					status = @"removed";
+					retryInfoDict[@"image"] = @YES;
 				} else if (imageShrinkFactor > 1.0) {
+					status = @"shrunk";
 					UIImage *smallerImage = shrinkImage(image, imageShrinkFactor);
 					retryInfoDict[@"image"] = smallerImage;
 				}
 
-				XLog(@"%@ Success but response contained %@. Retrying (try %d of %d) with image %@.", logString, dataStr, PUSHER_TRIES - (retriesLeft.intValue - 1), PUSHER_TRIES, status);
-				addToLogIfEnabled(service, bulletin, Xstr(@"----- Network Response: Success, but response contained %@. Retrying (try %d of %d) with image %@. -----", dataStr, PUSHER_TRIES - (retriesLeft.intValue - 1), PUSHER_TRIES, status));
+				XLog(@"%@ Success but response contained %@. Retrying (try %d of %d) with image %@ (size: %@).", logString, dataStr, PUSHER_TRIES - (retriesLeft.intValue - 1), PUSHER_TRIES, status, NSStringFromCGSize(((UIImage *) retryInfoDict[@"image"]).size));
+				addToLogIfEnabled(service, bulletin, Xstr(@"----- Network Response: Success, but response contained %@. Retrying (try %d of %d) with image %@ (size: %@). -----", dataStr, PUSHER_TRIES - (retriesLeft.intValue - 1), PUSHER_TRIES, status, NSStringFromCGSize(((UIImage *) retryInfoDict[@"image"]).size)));
 
 				// give delay so server doesn't get mad at us
-				dispatch_time_t delayTime = dispatch_time(DISPATCH_TIME_NOW, (int64_t)(1 * NSEC_PER_SEC));
+				dispatch_time_t delayTime = dispatch_time(DISPATCH_TIME_NOW, (int64_t)(PUSHER_DELAY_BETWEEN_RETRIES * NSEC_PER_SEC));
 				dispatch_after(delayTime, dispatch_get_main_queue(), ^(void){
 					[self makePusherRequest:urlString infoDict:retryInfoDict credentials:credentials authType:authType method:method logString:logString service:service bulletin:bulletin];
 				});

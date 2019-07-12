@@ -27,6 +27,6 @@
 	<key>NSPrincipalClass</key>
 	<string>PusherSwitch</string>
 	<key>alternate-action-url</key>
-	<string>prefs:</string>
+	<string>prefs:root=Pusher</string>
 </dict>
 </plist>

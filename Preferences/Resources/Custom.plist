@@ -175,7 +175,7 @@
 
 The following properties will be passed to the URL endpoint (via GET or POST parameters) specified above (property names in parentheses) [Must Turn on "Include Icon" and "Include Image" switches above in order to get the corresponding properties below]:
 
-App Name (appName), App Bundle ID (appID), Title (title), Subtitle (subtitle), Message (message), Date (date), Base64 Encoded PNG Icon 58x58 (icon), Base64 Encoded Image (image)</string>
+Device Name (deviceName), App Name (appName), App Bundle ID (appID), Title (title), Subtitle (subtitle), Message (message), Date (date), Base64 Encoded PNG Icon 58x58 (icon), Base64 Encoded Image (image)</string>
 		</dict>
 
 		<!-- Date Format -->

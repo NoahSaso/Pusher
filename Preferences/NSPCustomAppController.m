@@ -11,7 +11,7 @@
 	if (self = [super init]) {
 		_service = service;
 		_appID = appID;
-		_appTitle = appTitle;
+		_appTitle = [appTitle copy];
 		_isCustomService = isCustomService;
 	}
 	return self;
@@ -19,7 +19,7 @@
 
 - (void)viewDidLoad {
 	[super viewDidLoad];
-	// self.navigationItem.title = _appTitle;
+	self.navigationItem.title = _appTitle;
 }
 
 - (NSArray *)specifiers {

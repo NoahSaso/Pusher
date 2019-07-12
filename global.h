@@ -14,6 +14,7 @@
 #define PUSHER_LOG_IMAGE_DATA_REPLACEMENT @"[Base64 Image String]"
 #define PUSHER_DEFAULT_MAX_SIZE 1000.0
 #define PUSHER_DEFAULT_SHRINK_FACTOR 2.5
+#define PUSHER_DELAY_BETWEEN_RETRIES 3
 
 #import <rocketbootstrap/rocketbootstrap.h>
 #import <AppSupport/CPDistributedMessagingCenter.h>

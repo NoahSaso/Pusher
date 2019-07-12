@@ -117,7 +117,7 @@ The "Value1" ingredient is set to the title (which includes app name), "Value2" 
 
 If Curate Request Data is disabled:
 The following properties will be passed to the webhook trigger under the "Value1" ingredient (property names in parentheses) [Must Turn on "Include Icon" switch above in order to get the icon property]:
-App Name (appName), App Bundle ID (appID), Title (title), Subtitle (subtitle), Message (message), Date (date), Base64 Encoded PNG Icon 58x58 (icon)</string>
+Device Name (deviceName), App Name (appName), App Bundle ID (appID), Title (title), Subtitle (subtitle), Message (message), Date (date), Base64 Encoded PNG Icon 58x58 (icon)</string>
 		</dict>
 
 		<!-- Date Format -->
