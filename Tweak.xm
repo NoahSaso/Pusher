@@ -862,6 +862,10 @@ static NSString *prefsSayNo(BBServer *server, BBBulletin *bulletin) {
 			if (URL) {
 				UIImage *image = [UIImage imageWithContentsOfFile:URL.path];
 				if (image) {
+					// FOR PUSHER RECEIVER: initial shrink down to 1000 pixel width
+					if (Xeq(service, PUSHER_SERVICE_PUSHER_RECEIVER) && image.size.width > 1000.0) {
+						image = shrinkImage(image, image.size.width / 1000.0);
+					}
 					data[@"image"] = image;
 				}
 			}
@@ -980,36 +984,6 @@ static NSString *prefsSayNo(BBServer *server, BBBulletin *bulletin) {
 	}
 
 	if (Xeq(method, @"POST")) {
-		NSData *requestData = [NSJSONSerialization dataWithJSONObject:infoDictForRequest options:NSJSONWritingPrettyPrinted error:nil];
-
-		// FOR PUSHER RECEIVER: shrink image until character limit is under 102400
-		if (Xeq(service, PUSHER_SERVICE_PUSHER_RECEIVER) && infoDict[@"image"] && [infoDict[@"image"] isKindOfClass:UIImage.class] && requestData.length > 102400) {
-			NSDate *startShrinkDate = NSDate.date;
-
-			UIImage *image = shrinkImage(infoDict[@"image"], 1.0);
-			// initial shrink down to 1000 pixel width
-			if (image.size.width > 1000.0) {
-				image = shrinkImage(image, image.size.width / 1000.0);
-				infoDictForRequest[@"image"] = base64RepresentationForImage(image);
-				requestData = [NSJSONSerialization dataWithJSONObject:infoDictForRequest options:NSJSONWritingPrettyPrinted error:nil];
-			}
-
-			while (requestData.length > 102400) {
-				image = shrinkImage(image, PUSHER_INITIAL_SHRINK_FACTOR);
-				infoDictForRequest[@"image"] = base64RepresentationForImage(image);
-				requestData = [NSJSONSerialization dataWithJSONObject:infoDictForRequest options:NSJSONWritingPrettyPrinted error:nil];
-			}
-
-			NSMutableDictionary *infoDictMutable = [infoDict mutableCopy];
-			[infoDict release];
-			infoDictMutable[@"image"] = image;
-			infoDict = infoDictMutable;
-
-			NSTimeInterval shrinkTime = [NSDate.date timeIntervalSinceDate:startShrinkDate];
-			XLog(@"%@ Shrunk image in %f seconds", logString, shrinkTime);
-			addToLogIfEnabled(service, bulletin, Xstr(@"Shrunk image in %f seconds", shrinkTime));
-		}
-
 		// replace image strings with shorter string
 		NSMutableDictionary *infoDictForLog = [infoDictForRequest mutableCopy];
 		for (NSString *prop in PUSHER_LOG_IMAGE_DATA_PROPERTIES) {
@@ -1019,6 +993,8 @@ static NSString *prefsSayNo(BBServer *server, BBBulletin *bulletin) {
 
 		[request setValue:@"application/json" forHTTPHeaderField:@"Accept"];
 		[request setValue:@"application/json" forHTTPHeaderField:@"Content-Type"];
+
+		NSData *requestData = [NSJSONSerialization dataWithJSONObject:infoDictForRequest options:NSJSONWritingPrettyPrinted error:nil];
 		[request setValue:Xstr(@"%lu", requestData.length) forHTTPHeaderField:@"Content-Length"];
 		[request setHTTPBody:requestData];
 	}
@@ -1044,7 +1020,7 @@ static NSString *prefsSayNo(BBServer *server, BBBulletin *bulletin) {
 					retryInfoDict[@"image"] = @YES;
 					status = @"removed";
 				} else {
-					UIImage *smallerImage = shrinkImage(image, (Xeq(service, PUSHER_SERVICE_PUSHER_RECEIVER) ? PUSHER_RECEIVER_NEXT_SHRINK_FACTOR : PUSHER_NEXT_SHRINK_FACTOR));
+					UIImage *smallerImage = shrinkImage(image, PUSHER_SHRINK_FACTOR);
 					retryInfoDict[@"image"] = smallerImage;
 				}
 
