@@ -12,7 +12,8 @@
 #define PUSHER_LOG_MAX_STRING_LENGTH 50
 #define PUSHER_LOG_IMAGE_DATA_PROPERTIES @[@"icon", @"image"] // properties to replace with PUSHER_LOG_IMAGE_DATA_REPLACEMENT in the log
 #define PUSHER_LOG_IMAGE_DATA_REPLACEMENT @"[Base64 Image String]"
-#define PUSHER_SHRINK_FACTOR 8.0
+#define PUSHER_DEFAULT_MAX_SIZE 1000.0
+#define PUSHER_DEFAULT_SHRINK_FACTOR 2.5
 
 #import <rocketbootstrap/rocketbootstrap.h>
 #import <AppSupport/CPDistributedMessagingCenter.h>
@@ -110,6 +111,8 @@ typedef enum {
 #define NSPPreferencePusherReceiverCustomAppsKey @"Pusher ReceiverCustomApps"
 #define NSPPreferencePusherReceiverIncludeIconKey @"Pusher ReceiverIncludeIcon"
 #define NSPPreferencePusherReceiverIncludeImageKey @"Pusher ReceiverIncludeImage"
+#define NSPPreferencePusherReceiverImageMaxSizeKey @"Pusher ReceiverImageMaxSize"
+#define NSPPreferencePusherReceiverImageShrinkFactorKey @"Pusher ReceiverImageShrinkFactor"
 
 #define BUILTIN_PUSHER_SERVICES @[ PUSHER_SERVICE_PUSHOVER, PUSHER_SERVICE_PUSHBULLET, PUSHER_SERVICE_IFTTT, PUSHER_SERVICE_PUSHER_RECEIVER ]
 

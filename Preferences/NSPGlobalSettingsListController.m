@@ -19,7 +19,7 @@ static int countAppIDsWithPrefix(NSDictionary *prefs, NSString *prefix) {
 
 - (NSArray *)specifiers {
 	if (!_specifiers) {
-		_specifiers = [[[self loadSpecifiersFromPlistName:@"GlobalAppList" target:self] arrayByAddingObjectsFromArray:[self loadSpecifiersFromPlistName:@"GlobalAndServices" target:self]] retain];
+		_specifiers = [[[[self loadSpecifiersFromPlistName:@"GlobalAppList" target:self] arrayByAddingObjectsFromArray:[self loadSpecifiersFromPlistName:@"GlobalAndServices" target:self]] mutableCopy] retain];
 
 		// Get preferences for counting
 		CFPreferencesSynchronize(PUSHER_APP_ID, kCFPreferencesCurrentUser, kCFPreferencesAnyHost);

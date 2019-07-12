@@ -424,6 +424,12 @@ static void pusherPrefsChanged() {
 
 			NSString *includeImageKey = Xstr(@"%@IncludeImage", service);
 			servicePrefs[@"includeImage"] = prefs[includeImageKey] ?: @YES;
+
+			NSString *imageMaxSizeKey = Xstr(@"%@ImageMaxSize", service);
+			servicePrefs[@"imageMaxSize"] = prefs[imageMaxSizeKey] ?: @(PUSHER_DEFAULT_MAX_SIZE);
+
+			NSString *imageShrinkFactorKey = Xstr(@"%@ImageShrinkFactor", service);
+			servicePrefs[@"imageShrinkFactor"] = prefs[imageShrinkFactorKey] ?: @(PUSHER_DEFAULT_SHRINK_FACTOR);
 		}
 
 		// devices
@@ -489,6 +495,8 @@ static void pusherPrefsChanged() {
 			if (Xeq(service, PUSHER_SERVICE_PUSHER_RECEIVER)) {
 				customAppIDPref[@"includeIcon"] = customAppPrefs[@"includeIcon"] ?: @YES;
 				customAppIDPref[@"includeImage"] = customAppPrefs[@"includeImage"] ?: @YES;
+				customAppIDPref[@"imageMaxSize"] = customAppPrefs[@"imageMaxSize"] ?: @(PUSHER_DEFAULT_MAX_SIZE);
+				customAppIDPref[@"imageShrinkFactor"] = customAppPrefs[@"imageShrinkFactor"] ?: @(PUSHER_DEFAULT_SHRINK_FACTOR);
 			}
 
 			if (Xeq(service, PUSHER_SERVICE_IFTTT)) {
@@ -764,13 +772,18 @@ static NSString *prefsSayNo(BBServer *server, BBBulletin *bulletin) {
 	NSNumber *includeIcon = servicePrefs[@"includeIcon"] ?: @NO; // default NO for custom services, default check for built in services done earlier so should never get to this NO
 	NSNumber *includeImage = servicePrefs[@"includeImage"] ?: @NO; // default NO for custom services, default check for built in services done earlier so should never get to this NO
 	NSNumber *curateData = servicePrefs[@"curateData"] ?: @YES;
+	NSNumber *imageMaxSize = servicePrefs[@"imageMaxSize"] ?: @(PUSHER_DEFAULT_MAX_SIZE);
+	NSNumber *imageShrinkFactor = servicePrefs[@"imageShrinkFactor"] ?: @(PUSHER_DEFAULT_SHRINK_FACTOR);
 	if ([customApps.allKeys containsObject:appID]) {
-		devices = customApps[appID][@"devices"] ?: devices;
-		sounds = customApps[appID][@"sounds"] ?: sounds;
-		url = customApps[appID][@"url"] ?: url;
-		includeIcon = customApps[appID][@"includeIcon"] ?: includeIcon;
-		includeImage = customApps[appID][@"includeImage"] ?: includeImage;
-		curateData = customApps[appID][@"curateData"] ?: curateData;
+		NSDictionary *customAppPref = customApps[appID];
+		devices = customAppPref[@"devices"] ?: devices;
+		sounds = customAppPref[@"sounds"] ?: sounds;
+		url = customAppPref[@"url"] ?: url;
+		includeIcon = customAppPref[@"includeIcon"] ?: includeIcon;
+		includeImage = customAppPref[@"includeImage"] ?: includeImage;
+		curateData = customAppPref[@"curateData"] ?: curateData;
+		imageMaxSize = customAppPref[@"imageMaxSize"] ?: imageMaxSize;
+		imageShrinkFactor = customAppPref[@"imageShrinkFactor"] ?: imageShrinkFactor;
 	}
 	// Send
 	PusherAuthorizationType authType = getServiceAuthType(service, servicePrefs);
@@ -785,6 +798,8 @@ static NSString *prefsSayNo(BBServer *server, BBBulletin *bulletin) {
 		@"includeIcon": includeIcon,
 		@"includeImage": includeImage,
 		@"curateData": curateData,
+		@"imageMaxSize": imageMaxSize,
+		@"imageShrinkFactor": imageShrinkFactor
 	}];
 	NSDictionary *credentials = [self getPusherCredentialsForService:service withDictionary:@{
 		@"token": servicePrefs[@"token"] ?: @"",
@@ -862,9 +877,13 @@ static NSString *prefsSayNo(BBServer *server, BBBulletin *bulletin) {
 			if (URL) {
 				UIImage *image = [UIImage imageWithContentsOfFile:URL.path];
 				if (image) {
-					// FOR PUSHER RECEIVER: initial shrink down to 1000 pixel width
-					if (Xeq(service, PUSHER_SERVICE_PUSHER_RECEIVER) && image.size.width > 1000.0) {
-						image = shrinkImage(image, image.size.width / 1000.0);
+					NSNumber *imageMaxSize = dictionary[@"imageMaxSize"];
+					NSNumber *imageShrinkFactor = dictionary[@"imageShrinkFactor"];
+					if (imageMaxSize && imageMaxSize.floatValue > 0.0 && image.size.width > imageMaxSize.floatValue) {
+						image = shrinkImage(image, image.size.width / imageMaxSize.floatValue);
+					}
+					if (imageShrinkFactor) {
+						data[@"imageShrinkFactor"] = imageShrinkFactor;
 					}
 					data[@"image"] = image;
 				}
@@ -939,7 +958,12 @@ static NSString *prefsSayNo(BBServer *server, BBBulletin *bulletin) {
 
 %new
 - (void)makePusherRequest:(NSString *)urlString infoDict:(NSDictionary *)infoDict credentials:(NSDictionary *)credentials authType:(PusherAuthorizationType)authType method:(NSString *)method logString:(NSString *)logString service:(NSString *)service bulletin:(BBBulletin *)bulletin {
+
 	NSMutableDictionary *infoDictForRequest = [infoDict mutableCopy];
+	if (infoDictForRequest[@"imageShrinkFactor"]) {
+		[infoDictForRequest removeObjectForKey:@"imageShrinkFactor"];
+	}
+
 	if (authType == PusherAuthorizationTypeCredentials) {
 		[infoDictForRequest addEntriesFromDictionary:credentials];
 	}
@@ -1014,13 +1038,14 @@ static NSString *prefsSayNo(BBServer *server, BBBulletin *bulletin) {
 				pusherRetriesLeft[retryKey] = @(retriesLeft.intValue - 1);
 				NSMutableDictionary *retryInfoDict = [infoDict mutableCopy];
 
+				CGFloat imageShrinkFactor = ((NSNumber *) infoDict[@"imageShrinkFactor"] ?: @(PUSHER_DEFAULT_SHRINK_FACTOR)).floatValue;
 				NSString *status = @"shrunk";
 				// if last retry and has image, set image property to true instead of image base64
 				if (((NSNumber *) pusherRetriesLeft[retryKey]).intValue == 0) {
 					retryInfoDict[@"image"] = @YES;
 					status = @"removed";
-				} else {
-					UIImage *smallerImage = shrinkImage(image, PUSHER_SHRINK_FACTOR);
+				} else if (imageShrinkFactor > 1.0) {
+					UIImage *smallerImage = shrinkImage(image, imageShrinkFactor);
 					retryInfoDict[@"image"] = smallerImage;
 				}
 

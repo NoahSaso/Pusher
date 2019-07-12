@@ -19,17 +19,12 @@
 
 - (void)viewDidLoad {
 	[super viewDidLoad];
-	self.navigationItem.title = _appTitle;
+	// self.navigationItem.title = _appTitle;
 }
 
 - (NSArray *)specifiers {
 	if (!_specifiers) {
-		NSMutableArray *allSpecifiers = [NSMutableArray new];
-
-		[allSpecifiers addObject:[PSSpecifier groupSpecifierWithName:@"Customize"]];
-		[allSpecifiers addObjectsFromArray:[NSPSharedSpecifiers get:_service withAppID:_appID isCustomService:_isCustomService]];
-
-		_specifiers = [allSpecifiers copy];
+		_specifiers = [[[@[[PSSpecifier groupSpecifierWithName:@"Customize"]] arrayByAddingObjectsFromArray:[NSPSharedSpecifiers get:_service withAppID:_appID isCustomService:_isCustomService]] mutableCopy] retain];
 	}
 
 	return _specifiers;

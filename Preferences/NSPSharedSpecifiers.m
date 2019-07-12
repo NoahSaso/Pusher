@@ -85,12 +85,30 @@ static void setPreference(CFStringRef keyRef, CFPropertyListRef val, BOOL should
   [includeImage setProperty:@(isCustomApp) forKey:@"isCustomApp"];
   [includeImage setProperty:service forKey:@"service"];
 
+  PSSpecifier *imageMaxSize = [PSSpecifier preferenceSpecifierNamed:@"Maximum Image Width (pixels)" target:self set:@selector(setPreferenceValue:forCustomSpecifier:) get:@selector(readCustomPreferenceValue:) detail:nil cell:PSEditTextCell edit:nil];
+  [imageMaxSize setProperty:@"imageMaxSize" forKey:@"key"];
+  [imageMaxSize setProperty:@YES forKey:@"enabled"];
+  [imageMaxSize setProperty:@YES forKey:@"isDecimalPad"];
+  [imageMaxSize setProperty:@(PUSHER_DEFAULT_MAX_SIZE) forKey:@"default"];
+  [imageMaxSize setProperty:@(isCustomApp) forKey:@"isCustomApp"];
+  [imageMaxSize setProperty:service forKey:@"service"];
+
+  PSSpecifier *imageShrinkFactor = [PSSpecifier preferenceSpecifierNamed:@"Image Shrink Factor Upon Retry" target:self set:@selector(setPreferenceValue:forCustomSpecifier:) get:@selector(readCustomPreferenceValue:) detail:nil cell:PSEditTextCell edit:nil];
+  [imageShrinkFactor setProperty:@"imageShrinkFactor" forKey:@"key"];
+  [imageShrinkFactor setProperty:@YES forKey:@"enabled"];
+  [imageShrinkFactor setProperty:@YES forKey:@"isDecimalPad"];
+  [imageShrinkFactor setProperty:@(PUSHER_DEFAULT_SHRINK_FACTOR) forKey:@"default"];
+  [imageShrinkFactor setProperty:@(isCustomApp) forKey:@"isCustomApp"];
+  [imageShrinkFactor setProperty:service forKey:@"service"];
+
   if (isCustomApp) {
     [includeIcon setProperty:appID forKey:@"customAppID"];
     [includeImage setProperty:appID forKey:@"customAppID"];
+    [imageMaxSize setProperty:appID forKey:@"customAppID"];
+    [imageShrinkFactor setProperty:appID forKey:@"customAppID"];
   }
 
-  return @[includeIcon, includeImage];
+  return @[includeIcon, includeImage, imageMaxSize, imageShrinkFactor];
 }
 
 + (NSArray *)getCustomShared:(NSString *)service {
@@ -187,12 +205,32 @@ static void setPreference(CFStringRef keyRef, CFPropertyListRef val, BOOL should
   [includeImage setProperty:NSPPreferencePusherReceiverCustomAppsKey forKey:@"customAppsKey"];
   [includeImage setProperty:@"includeImage" forKey:@"customAppsPrefsKey"];
 
+  PSSpecifier *imageMaxSize = [PSSpecifier preferenceSpecifierNamed:@"Maximum Image Width (pixels)" target:self set:@selector(setPreferenceValue:forBuiltInServiceSpecifier:) get:@selector(readBuiltInServicePreferenceValue:) detail:nil cell:PSEditTextCell edit:nil];
+  [imageMaxSize setProperty:NSPPreferencePusherReceiverImageMaxSizeKey forKey:@"key"];
+  [imageMaxSize setProperty:@YES forKey:@"enabled"];
+  [imageMaxSize setProperty:@YES forKey:@"isDecimalPad"];
+  [imageMaxSize setProperty:@(PUSHER_DEFAULT_MAX_SIZE) forKey:@"default"];
+  [imageMaxSize setProperty:@(isCustomApp) forKey:@"isCustomApp"];
+  [imageMaxSize setProperty:NSPPreferencePusherReceiverCustomAppsKey forKey:@"customAppsKey"];
+  [imageMaxSize setProperty:@"imageMaxSize" forKey:@"customAppsPrefsKey"];
+
+  PSSpecifier *imageShrinkFactor = [PSSpecifier preferenceSpecifierNamed:@"Image Shrink Factor Upon Retry" target:self set:@selector(setPreferenceValue:forBuiltInServiceSpecifier:) get:@selector(readBuiltInServicePreferenceValue:) detail:nil cell:PSEditTextCell edit:nil];
+  [imageShrinkFactor setProperty:NSPPreferencePusherReceiverImageShrinkFactorKey forKey:@"key"];
+  [imageShrinkFactor setProperty:@YES forKey:@"enabled"];
+  [imageShrinkFactor setProperty:@YES forKey:@"isDecimalPad"];
+  [imageShrinkFactor setProperty:@(PUSHER_DEFAULT_SHRINK_FACTOR) forKey:@"default"];
+  [imageShrinkFactor setProperty:@(isCustomApp) forKey:@"isCustomApp"];
+  [imageShrinkFactor setProperty:NSPPreferencePusherReceiverCustomAppsKey forKey:@"customAppsKey"];
+  [imageShrinkFactor setProperty:@"imageShrinkFactor" forKey:@"customAppsPrefsKey"];
+
   if (isCustomApp) {
     [includeIcon setProperty:appID forKey:@"customAppID"];
     [includeImage setProperty:appID forKey:@"customAppID"];
+    [imageMaxSize setProperty:appID forKey:@"customAppID"];
+    [imageShrinkFactor setProperty:appID forKey:@"customAppID"];
   }
 
-  return @[includeIcon, includeImage];
+  return @[includeIcon, includeImage, imageMaxSize, imageShrinkFactor];
 }
 
 + (void)setPreferenceValue:(id)value forBuiltInServiceSpecifier:(PSSpecifier *)specifier {
