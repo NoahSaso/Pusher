@@ -393,10 +393,10 @@ static void pusherPrefsChanged() {
 		servicePrefs[@"dateFormat"] = [(val ?: @"") copy];
 		servicePrefs[@"url"] = getServiceURL(service, @{ @"eventName": eventName, @"dbName": dbName });
 		val = prefs[whenToPushKey];
-		servicePrefs[@"whenToPush"] = val ?: @(PUSHER_WHEN_TO_PUSH_LOCKED);
+		servicePrefs[@"whenToPush"] = val ?: @(pusherWhenToPush); // if not set, go with default
 		servicePrefs[@"whenToPush"] = [(((NSNumber *) servicePrefs[@"whenToPush"]).intValue == PUSHER_SEGMENT_CELL_DEFAULT ? @(pusherWhenToPush) : servicePrefs[@"whenToPush"]) copy];
 		val = prefs[whatNetworkKey];
-		servicePrefs[@"whatNetwork"] = val ?: @(PUSHER_WHAT_NETWORK_ALWAYS);
+		servicePrefs[@"whatNetwork"] = val ?: @(pusherWhatNetwork); // if not set, go with default
 		servicePrefs[@"whatNetwork"] = [(((NSNumber *) servicePrefs[@"whatNetwork"]).intValue == PUSHER_SEGMENT_CELL_DEFAULT ? @(pusherWhatNetwork) : servicePrefs[@"whatNetwork"]) copy];
 		val = prefs[snsIsAndKey];
 		servicePrefs[@"snsIsAnd"] = [(val ?: @YES) copy];
