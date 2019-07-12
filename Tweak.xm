@@ -1036,7 +1036,7 @@ static NSString *prefsSayNo(BBServer *server, BBBulletin *bulletin) {
 			NSString *dataStr = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
 			// if has retries left request entity too large and has base64 image string (not image set to true)
 			UIImage *image = infoDict[@"image"];
-			if (image && [dataStr containsString:@"request entity too large"] && retriesLeft && retriesLeft.intValue > 0 && [image isKindOfClass:UIImage.class]) {
+			if (image && [dataStr.lowercaseString containsString:@"request entity too large"] && retriesLeft && retriesLeft.intValue > 0 && [image isKindOfClass:UIImage.class]) {
 				pusherRetriesLeft[retryKey] = @(retriesLeft.intValue - 1);
 				NSMutableDictionary *retryInfoDict = [infoDict mutableCopy];
 

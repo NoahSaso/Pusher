@@ -171,7 +171,7 @@
 			<key>label</key>
 			<string>Options</string>
 			<key>footerText</key>
-			<string>The server may reject the request if the data is too large, which is usually a result of the image being high resolution. Pusher will try to forward the notification 5 times, shrinking the image each time by the factor you specify. If by the last retry the image is too large, it will remove the image but set the "image" property to a 1 to indicate that an image is attached. The image will initially be resized to fit the maximum width unless it is already smaller. The image shrink factor must be greater than 1.0 to work since it is division (a factor of 2 means it will divide the image dimensions in half).
+			<string>The server may reject the request if the data is too large, which is usually a result of the image being high resolution. Pusher will try to forward the notification 5 times, shrinking the image each time by the factor you specify (if the body is too large). If by the last retry the image is too large, it will remove the image but set the "image" property to a 1 to indicate that an image is attached. The image will initially be resized to fit the maximum width unless it is already smaller. The image shrink factor must be greater than 1.0 to work since it is division (a factor of 2 means it will divide the image dimensions in half).
 
 The following properties will be passed to the URL endpoint (via GET or POST parameters) specified above (property names in parentheses) [Must Turn on "Include Icon" and "Include Image" switches above in order to get the corresponding properties below]:
 
