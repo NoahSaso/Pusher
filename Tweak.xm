@@ -28,7 +28,7 @@
 @end
 
 static BOOL pusherEnabled = NO;
-static int pusherWhenToPush = PUSHER_WHEN_TO_PUSH_LOCKED;
+static int pusherWhenToPush = PUSHER_WHEN_TO_PUSH_EITHER;
 static NSArray *pusherSNS = nil;
 static BOOL pusherSNSIsAnd = YES;
 static BOOL pusherSNSRequireANWithOR = YES;
@@ -48,7 +48,7 @@ static NSString *retriesLeftKeyForBulletinAndService(BBBulletin *bulletin, NSStr
 	return Xstr(@"%@_%@_%@", bulletin.bulletinID ?: @"empty_bulletin_id", bulletin.sectionID, service);
 }
 
-static NSString *stringForObject(id object, NSString *prefix) {
+static NSString *stringForObject(id object, NSString *prefix, BOOL dontTruncate) {
 	NSString *str = @"";
 	if (!object) {
 		str = Xstr(@"%@nil", prefix);
@@ -56,14 +56,14 @@ static NSString *stringForObject(id object, NSString *prefix) {
 		NSArray *array = (NSArray *) object;
 		str = @"[";
 		for (id val in array) {
-			str = Xstr(@"%@\n%@\t%@", str, prefix, stringForObject(val, Xstr(@"%@\t", prefix)));
+			str = Xstr(@"%@\n%@\t%@", str, prefix, stringForObject(val, Xstr(@"%@\t", prefix), dontTruncate));
 		}
 		str = Xstr(@"%@\n%@]", str, prefix);
 	} else if ([object isKindOfClass:NSDictionary.class]) {
 		NSDictionary *dict = (NSDictionary *) object;
 		str = @"{";
 		for (id key in dict.allKeys) {
-			str = Xstr(@"%@\n%@\t%@: %@", str, prefix, key, stringForObject(dict[key], Xstr(@"%@\t", prefix)));
+			str = Xstr(@"%@\n%@\t%@: %@", str, prefix, key, stringForObject(dict[key], Xstr(@"%@\t", prefix), dontTruncate));
 		}
 		str = Xstr(@"%@\n%@}", str, prefix);
 	} else {
@@ -75,11 +75,11 @@ static NSString *stringForObject(id object, NSString *prefix) {
 	return str;
 }
 
-static NSString *stringForObject(id object) {
-	return stringForObject(object, @"");
+static NSString *stringForObject(id object, BOOL dontTruncate) {
+	return stringForObject(object, @"", dontTruncate);
 }
 
-static void addToLogIfEnabled(NSString *service, BBBulletin *bulletin, NSString *label, id object) {
+static void addToLogIfEnabled(NSString *service, BBBulletin *bulletin, NSString *label, id object, BOOL dontTruncate) {
 	// allow global service which is @"" so empty
 	if (!XIS_EMPTY(service) && pusherEnabledLogs && ![pusherEnabledLogs containsObject:service]) {
 		XLog(@"[S:%@] Log Disabled", service);
@@ -133,9 +133,9 @@ static void addToLogIfEnabled(NSString *service, BBBulletin *bulletin, NSString 
 	NSString *logItem = nil;
 	// if only one passed, only do one of them
 	if ((label && !object) || (!label && object)) {
-		logItem = label ?: stringForObject(object);
+		logItem = label ?: stringForObject(object, dontTruncate);
 	} else {
-		logItem = Xstr(@"%@: %@", label, stringForObject(object));
+		logItem = Xstr(@"%@: %@", label, stringForObject(object, dontTruncate));
 	}
 	[logs addObject:logItem];
 
@@ -158,8 +158,12 @@ static void addToLogIfEnabled(NSString *service, BBBulletin *bulletin, NSString 
 	// XLog(@"[S:%@] Saved log!", service);
 }
 
+static void addToLogIfEnabled(NSString *service, BBBulletin *bulletin, NSString *label, id object) {
+	addToLogIfEnabled(service, bulletin, label, object, NO);
+}
+
 static void addToLogIfEnabled(NSString *service, BBBulletin *bulletin, NSString *label) {
-	addToLogIfEnabled(service, bulletin, label, nil);
+	addToLogIfEnabled(service, bulletin, label, nil, NO);
 }
 
 // returns array of all lowercase keys that begin with the given prefix that have a boolean value of true in the dictionary
@@ -283,7 +287,7 @@ static void pusherPrefsChanged() {
 	id val = prefs[@"Enabled"];
 	pusherEnabled = val ? ((NSNumber *) val).boolValue : YES;
 	val = prefs[@"WhenToPush"];
-	pusherWhenToPush = val ? ((NSNumber *) val).intValue : PUSHER_WHEN_TO_PUSH_LOCKED;
+	pusherWhenToPush = val ? ((NSNumber *) val).intValue : PUSHER_WHEN_TO_PUSH_EITHER;
 	val = prefs[@"WhatNetwork"];
 	pusherWhatNetwork = val ? ((NSNumber *) val).intValue : PUSHER_WHAT_NETWORK_ALWAYS;
 	val = prefs[@"GlobalAppListIsBlacklist"];
@@ -581,7 +585,7 @@ static NSString *deviceConditionsSayNo(int whenToPush, int whatNetwork) {
 	}
 	if ((whenToPush == PUSHER_WHEN_TO_PUSH_LOCKED && !deviceIsLocked)
 			|| (whenToPush == PUSHER_WHEN_TO_PUSH_UNLOCKED && deviceIsLocked)) {
-		return Xstr(@"When to Push set to %@ but device %@locked", (whenToPush == PUSHER_WHEN_TO_PUSH_LOCKED ? @"Locked" : (whenToPush == PUSHER_WHEN_TO_PUSH_UNLOCKED ? @"Unlocked" : @"Always")), deviceIsLocked ? @"" : @"un");
+		return Xstr(@"When to Push set to %@ but device %@locked", (whenToPush == PUSHER_WHEN_TO_PUSH_LOCKED ? @"Locked" : (whenToPush == PUSHER_WHEN_TO_PUSH_UNLOCKED ? @"Unlocked" : @"Either")), deviceIsLocked ? @"" : @"un");
 	}
 	return nil;
 }
@@ -1090,16 +1094,12 @@ static NSString *prefsSayNo(BBServer *server, BBBulletin *bulletin) {
 				});
 				return;
 			}
-			NSString *dataStrForLog = dataStr;
-			if (dataStrForLog.length > PUSHER_LOG_MAX_STRING_LENGTH) {
-				dataStrForLog = Xstr(@"%@...", [dataStrForLog substringToIndex:PUSHER_LOG_MAX_STRING_LENGTH]);
-			}
-			addToLogIfEnabled(service, bulletin, @"Network Response: Success", dataStrForLog);
+			addToLogIfEnabled(service, bulletin, @"Network Response: Success", dataStr);
 			XLog(@"%@ Success: %@", logString, dataStr);
 			[pusherRetriesLeft removeObjectForKey:retryKey];
 		} else {
 			if (error) {
-				addToLogIfEnabled(service, bulletin, @"Network Response: Error", error.description);
+				addToLogIfEnabled(service, bulletin, @"Network Response: Error", error.description, YES);
 				XLog(@"%@ Error: %@", logString, error);
 			} else {
 				addToLogIfEnabled(service, bulletin, @"Network Response: No Data");
