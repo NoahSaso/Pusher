@@ -1,11 +1,11 @@
-ARCHS = arm64 arm64e
+ARCHS = armv7 armv7s arm64 arm64e
 
 include $(THEOS)/makefiles/common.mk
 
 BUNDLE_NAME = Pusher
 Pusher_FILES = NSPRootListController.m NSPDeviceListController.m NSPServiceListController.m NSPServiceController.m NSPSharedSpecifiers.m NSPCustomAppController.m NSPCustomizeAppsController.m NSPAppSelectionController.m NSPSoundListController.m NSPSNSListController.m CCLocalMaximum.m CCColorCube.m NSPPSViewControllerWithColoredUI.m NSPPSListControllerWithColoredUI.m NSPAppListController.m NSPLogController.m ../UIImage+ReplaceColor.m NSPusherManager.m NSPGlobalSettingsListController.m
 Pusher_INSTALL_PATH = /Library/PreferenceBundles
-Pusher_FRAMEWORKS = UIKit
+Pusher_FRAMEWORKS = UIKit Foundation
 Pusher_PRIVATE_FRAMEWORKS = Preferences AppSupport
 Pusher_LIBRARIES = AppList rocketbootstrap
 
