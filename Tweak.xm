@@ -67,7 +67,7 @@ static NSString *stringForObject(id object, NSString *prefix, BOOL dontTruncate)
 		}
 		str = Xstr(@"%@\n%@}", str, prefix);
 	} else {
-		if ([object isKindOfClass:NSString.class] && ((NSString *) object).length > PUSHER_LOG_MAX_STRING_LENGTH) {
+		if (!dontTruncate && [object isKindOfClass:NSString.class] && ((NSString *) object).length > PUSHER_LOG_MAX_STRING_LENGTH) {
 			object = Xstr(@"%@...", [(NSString *)object substringToIndex:PUSHER_LOG_MAX_STRING_LENGTH]);
 		}
 		str = Xstr(@"%@%@", prefix, object);
