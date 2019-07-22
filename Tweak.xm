@@ -425,8 +425,11 @@ static void pusherPrefsChanged() {
 			NSString *includeImageKey = Xstr(@"%@IncludeImage", service);
 			servicePrefs[@"includeImage"] = prefs[includeImageKey] ?: @YES;
 
-			NSString *imageMaxSizeKey = Xstr(@"%@ImageMaxSize", service);
-			servicePrefs[@"imageMaxSize"] = prefs[imageMaxSizeKey] ?: @(PUSHER_DEFAULT_MAX_SIZE);
+			NSString *imageMaxWidthKey = Xstr(@"%@ImageMaxWidth", service);
+			servicePrefs[@"imageMaxWidth"] = prefs[imageMaxWidthKey] ?: @(PUSHER_DEFAULT_MAX_WIDTH);
+
+			NSString *imageMaxHeightKey = Xstr(@"%@ImageMaxHeight", service);
+			servicePrefs[@"imageMaxHeight"] = prefs[imageMaxHeightKey] ?: @(PUSHER_DEFAULT_MAX_HEIGHT);
 
 			NSString *imageShrinkFactorKey = Xstr(@"%@ImageShrinkFactor", service);
 			servicePrefs[@"imageShrinkFactor"] = prefs[imageShrinkFactorKey] ?: @(PUSHER_DEFAULT_SHRINK_FACTOR);
@@ -495,7 +498,8 @@ static void pusherPrefsChanged() {
 			if (Xeq(service, PUSHER_SERVICE_PUSHER_RECEIVER)) {
 				customAppIDPref[@"includeIcon"] = customAppPrefs[@"includeIcon"] ?: @YES;
 				customAppIDPref[@"includeImage"] = customAppPrefs[@"includeImage"] ?: @YES;
-				customAppIDPref[@"imageMaxSize"] = customAppPrefs[@"imageMaxSize"] ?: @(PUSHER_DEFAULT_MAX_SIZE);
+				customAppIDPref[@"imageMaxWidth"] = customAppPrefs[@"imageMaxWidth"] ?: @(PUSHER_DEFAULT_MAX_WIDTH);
+				customAppIDPref[@"imageMaxHeight"] = customAppPrefs[@"imageMaxHeight"] ?: @(PUSHER_DEFAULT_MAX_HEIGHT);
 				customAppIDPref[@"imageShrinkFactor"] = customAppPrefs[@"imageShrinkFactor"] ?: @(PUSHER_DEFAULT_SHRINK_FACTOR);
 			}
 
@@ -772,7 +776,8 @@ static NSString *prefsSayNo(BBServer *server, BBBulletin *bulletin) {
 	NSNumber *includeIcon = servicePrefs[@"includeIcon"] ?: @NO; // default NO for custom services, default check for built in services done earlier so should never get to this NO
 	NSNumber *includeImage = servicePrefs[@"includeImage"] ?: @NO; // default NO for custom services, default check for built in services done earlier so should never get to this NO
 	NSNumber *curateData = servicePrefs[@"curateData"] ?: @YES;
-	NSNumber *imageMaxSize = servicePrefs[@"imageMaxSize"] ?: @(PUSHER_DEFAULT_MAX_SIZE);
+	NSNumber *imageMaxWidth = servicePrefs[@"imageMaxWidth"] ?: @(PUSHER_DEFAULT_MAX_WIDTH);
+	NSNumber *imageMaxHeight = servicePrefs[@"imageMaxHeight"] ?: @(PUSHER_DEFAULT_MAX_HEIGHT);
 	NSNumber *imageShrinkFactor = servicePrefs[@"imageShrinkFactor"] ?: @(PUSHER_DEFAULT_SHRINK_FACTOR);
 	if ([customApps.allKeys containsObject:appID]) {
 		NSDictionary *customAppPref = customApps[appID];
@@ -782,7 +787,8 @@ static NSString *prefsSayNo(BBServer *server, BBBulletin *bulletin) {
 		includeIcon = customAppPref[@"includeIcon"] ?: includeIcon;
 		includeImage = customAppPref[@"includeImage"] ?: includeImage;
 		curateData = customAppPref[@"curateData"] ?: curateData;
-		imageMaxSize = customAppPref[@"imageMaxSize"] ?: imageMaxSize;
+		imageMaxWidth = customAppPref[@"imageMaxWidth"] ?: imageMaxWidth;
+		imageMaxHeight = customAppPref[@"imageMaxHeight"] ?: imageMaxHeight;
 		imageShrinkFactor = customAppPref[@"imageShrinkFactor"] ?: imageShrinkFactor;
 	}
 	// Send
@@ -798,7 +804,8 @@ static NSString *prefsSayNo(BBServer *server, BBBulletin *bulletin) {
 		@"includeIcon": includeIcon,
 		@"includeImage": includeImage,
 		@"curateData": curateData,
-		@"imageMaxSize": imageMaxSize,
+		@"imageMaxWidth": imageMaxWidth,
+		@"imageMaxHeight": imageMaxHeight,
 		@"imageShrinkFactor": imageShrinkFactor
 	}];
 	NSDictionary *credentials = [self getPusherCredentialsForService:service withDictionary:@{
@@ -879,14 +886,30 @@ static NSString *prefsSayNo(BBServer *server, BBBulletin *bulletin) {
 			if (URL) {
 				UIImage *image = [UIImage imageWithContentsOfFile:URL.path];
 				if (image) {
-					NSNumber *imageMaxSize = dictionary[@"imageMaxSize"];
 					NSNumber *imageShrinkFactor = dictionary[@"imageShrinkFactor"];
-					if (imageMaxSize && imageMaxSize.floatValue > 0.0 && image.size.width > imageMaxSize.floatValue) {
-						image = shrinkImage(image, image.size.width / imageMaxSize.floatValue);
-					}
 					if (imageShrinkFactor) {
 						data[@"imageShrinkFactor"] = imageShrinkFactor;
 					}
+
+					NSNumber *imageMaxWidth = dictionary[@"imageMaxWidth"];
+					NSNumber *imageMaxHeight = dictionary[@"imageMaxHeight"];
+					CGFloat widthShrinkFactor = 0.0;
+					CGFloat heightShrinkFactor = 0.0;
+
+					if (imageMaxWidth && imageMaxWidth.floatValue > 0.0 && image.size.width > imageMaxWidth.floatValue) {
+						widthShrinkFactor = image.size.width / imageMaxWidth.floatValue;
+					}
+					if (imageMaxHeight && imageMaxHeight.floatValue > 0.0 && image.size.height > imageMaxHeight.floatValue) {
+						heightShrinkFactor = image.size.height / imageMaxHeight.floatValue;
+					}
+
+					// if either has a value, shrink image
+					if (widthShrinkFactor + heightShrinkFactor > 0.0) {
+						// shrink with the largest factor
+						CGFloat shrinkFactor = widthShrinkFactor > heightShrinkFactor ? widthShrinkFactor : heightShrinkFactor;
+						image = shrinkImage(image, shrinkFactor);
+					}
+
 					data[@"image"] = image;
 				}
 			}

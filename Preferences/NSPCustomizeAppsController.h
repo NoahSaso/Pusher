@@ -17,7 +17,8 @@
   NSString *_defaultEventName;
   NSNumber *_defaultIncludeIcon;
   NSNumber *_defaultIncludeImage;
-  NSNumber *_defaultImageMaxSize;
+  NSNumber *_defaultImageMaxWidth;
+  NSNumber *_defaultImageMaxHeight;
   NSNumber *_defaultImageShrinkFactor;
   NSNumber *_defaultCurateData;
 

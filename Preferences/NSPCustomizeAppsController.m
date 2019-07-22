@@ -39,7 +39,8 @@ static void setPreference(CFStringRef keyRef, CFPropertyListRef val, BOOL should
 		}
 		if (_isCustomService || Xeq(_service, PUSHER_SERVICE_PUSHER_RECEIVER)) {
 			defaultDict[@"includeImage"] = _defaultIncludeImage;
-			defaultDict[@"imageMaxSize"] = _defaultImageMaxSize;
+			defaultDict[@"imageMaxWidth"] = _defaultImageMaxWidth;
+			defaultDict[@"imageMaxHeight"] = _defaultImageMaxHeight;
 			defaultDict[@"imageShrinkFactor"] = _defaultImageShrinkFactor;
 		}
 		if (_isCustomService || Xeq(_service, PUSHER_SERVICE_IFTTT)) {
@@ -137,14 +138,16 @@ static void setPreference(CFStringRef keyRef, CFPropertyListRef val, BOOL should
 	if (Xeq(_service, PUSHER_SERVICE_PUSHER_RECEIVER)) {
 		_defaultIncludeIcon = [(prefs[[self.specifier propertyForKey:@"defaultIncludeIconKey"]] ?: @YES) copy];
 		_defaultIncludeImage = [(prefs[[self.specifier propertyForKey:@"defaultIncludeImageKey"]] ?: @YES) copy];
-		_defaultImageMaxSize = [(prefs[[self.specifier propertyForKey:@"defaultImageMaxSizeKey"]] ?: @(PUSHER_DEFAULT_MAX_SIZE)) copy];
+		_defaultImageMaxWidth = [(prefs[[self.specifier propertyForKey:@"defaultImageMaxWidthKey"]] ?: @(PUSHER_DEFAULT_MAX_WIDTH)) copy];
+		_defaultImageMaxHeight = [(prefs[[self.specifier propertyForKey:@"defaultImageMaxHeightKey"]] ?: @(PUSHER_DEFAULT_MAX_HEIGHT)) copy];
 		_defaultImageShrinkFactor = [(prefs[[self.specifier propertyForKey:@"defaultImageShrinkFactorKey"]] ?: @(PUSHER_DEFAULT_SHRINK_FACTOR)) copy];
 	}
 	if (_isCustomService) {
 		NSDictionary *customService = (prefs[NSPPreferenceCustomServicesKey] ?: @{})[_service] ?: @{};
 		_defaultIncludeIcon = [(customService[[self.specifier propertyForKey:@"defaultIncludeIconKey"]] ?: @NO) copy];
 		_defaultIncludeImage = [(customService[[self.specifier propertyForKey:@"defaultIncludeImageKey"]] ?: @NO) copy];
-		_defaultImageMaxSize = [(customService[[self.specifier propertyForKey:@"defaultImageMaxSizeKey"]] ?: @(PUSHER_DEFAULT_MAX_SIZE)) copy];
+		_defaultImageMaxWidth = [(customService[[self.specifier propertyForKey:@"defaultImageMaxWidthKey"]] ?: @(PUSHER_DEFAULT_MAX_WIDTH)) copy];
+		_defaultImageMaxHeight = [(customService[[self.specifier propertyForKey:@"defaultImageMaxHeightKey"]] ?: @(PUSHER_DEFAULT_MAX_HEIGHT)) copy];
 		_defaultImageShrinkFactor = [(customService[[self.specifier propertyForKey:@"defaultImageShrinkFactorKey"]] ?: @(PUSHER_DEFAULT_SHRINK_FACTOR)) copy];
 	}
 
