@@ -1084,8 +1084,8 @@ static NSString *prefsSayNo(BBServer *server, BBBulletin *bulletin) {
 					sizeString = Xstr(@" (size: %@)", NSStringFromCGSize(((UIImage *) retryInfoDict[@"image"]).size));
 				}
 
-				XLog(@"%@ Success but response contained %@. Retrying (try %d of %d) with image %@%@.", logString, dataStr, PUSHER_TRIES - (retriesLeft.intValue - 1), PUSHER_TRIES, status, sizeString);
-				addToLogIfEnabled(service, bulletin, Xstr(@"----- Network Response: Success, but response contained %@. Retrying (try %d of %d) with image %@%@. -----", dataStr, PUSHER_TRIES - (retriesLeft.intValue - 1), PUSHER_TRIES, status, sizeString));
+				XLog(@"%@ Retrying. Try %d of %d with image %@%@. Success but response was %@.", logString, PUSHER_TRIES - (retriesLeft.intValue - 1), PUSHER_TRIES, status, sizeString, dataStr);
+				addToLogIfEnabled(service, bulletin, Xstr(@"----- Retrying. Try %d of %d with image %@%@. Network Response: Success, but response was %@. -----", PUSHER_TRIES - (retriesLeft.intValue - 1), PUSHER_TRIES, status, sizeString, dataStr));
 
 				// give delay so server doesn't get mad at us
 				dispatch_time_t delayTime = dispatch_time(DISPATCH_TIME_NOW, (int64_t)(PUSHER_DELAY_BETWEEN_RETRIES * NSEC_PER_SEC));
