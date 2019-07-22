@@ -28,5 +28,7 @@
 	<string>PusherSwitch</string>
 	<key>alternate-action-url</key>
 	<string>prefs:root=Pusher</string>
+	<key>primary-color</key>
+	<string>#00b14f</string>
 </dict>
 </plist>
