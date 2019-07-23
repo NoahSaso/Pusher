@@ -32,7 +32,7 @@ static int pusherWhenToPush = PUSHER_WHEN_TO_PUSH_EITHER;
 static NSArray *pusherSNS = nil;
 static BOOL pusherSNSIsAnd = YES;
 static BOOL pusherSNSRequireANWithOR = YES;
-static int pusherWhatNetwork = PUSHER_WHAT_NETWORK_ALWAYS;
+static int pusherWhatNetwork = PUSHER_WHAT_NETWORK_ANY;
 static BOOL globalAppListIsBlacklist = YES;
 static NSArray *globalAppList = nil;
 static NSMutableDictionary *pusherEnabledServices = nil;
@@ -289,7 +289,7 @@ static void pusherPrefsChanged() {
 	val = prefs[@"WhenToPush"];
 	pusherWhenToPush = val ? ((NSNumber *) val).intValue : PUSHER_WHEN_TO_PUSH_EITHER;
 	val = prefs[@"WhatNetwork"];
-	pusherWhatNetwork = val ? ((NSNumber *) val).intValue : PUSHER_WHAT_NETWORK_ALWAYS;
+	pusherWhatNetwork = val ? ((NSNumber *) val).intValue : PUSHER_WHAT_NETWORK_ANY;
 	val = prefs[@"GlobalAppListIsBlacklist"];
 	globalAppListIsBlacklist = val ? ((NSNumber *) val).boolValue : YES;
 	val = prefs[@"SufficientNotificationSettingsIsAnd"];
@@ -580,8 +580,9 @@ static NSString *deviceConditionsSayNo(int whenToPush, int whatNetwork) {
 	BOOL deviceIsLocked = ((SBLockScreenManager *) [%c(SBLockScreenManager) sharedInstance]).isUILocked;
 	NSString *wifiName = [[%c(SBWiFiManager) sharedInstance] currentNetworkName];
 	BOOL onWiFi = wifiName != nil;
-	if (whatNetwork == PUSHER_WHAT_NETWORK_WIFI_ONLY && !onWiFi) {
-		return @"What Network set to WiFi Only but not on WiFi";
+	if ((whatNetwork == PUSHER_WHAT_NETWORK_WIFI_ONLY && !onWiFi)
+			|| (whatNetwork == PUSHER_WHAT_NETWORK_OFF_WIFI_ONLY && onWiFi)) {
+		return Xstr(@"What Network set to %@ but %@on WiFi", (whatNetwork == PUSHER_WHAT_NETWORK_WIFI_ONLY ? @"WiFi Only" : (whatNetwork == PUSHER_WHAT_NETWORK_OFF_WIFI_ONLY ? @"Off WiFi Only" : @"Any Network")), onWiFi ? @"" : @"not ");
 	}
 	if ((whenToPush == PUSHER_WHEN_TO_PUSH_LOCKED && !deviceIsLocked)
 			|| (whenToPush == PUSHER_WHEN_TO_PUSH_UNLOCKED && deviceIsLocked)) {
