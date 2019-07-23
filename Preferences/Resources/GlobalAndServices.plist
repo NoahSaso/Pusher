@@ -58,7 +58,7 @@
 			<array>
 				<string>Any Network</string>
 				<string>WiFi Only</string>
-				<string>Off WiFi Only</string>
+				<string>Cellular Only</string>
 			</array>
 			<key>validValues</key>
 			<array>

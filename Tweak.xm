@@ -582,7 +582,7 @@ static NSString *deviceConditionsSayNo(int whenToPush, int whatNetwork) {
 	BOOL onWiFi = wifiName != nil;
 	if ((whatNetwork == PUSHER_WHAT_NETWORK_WIFI_ONLY && !onWiFi)
 			|| (whatNetwork == PUSHER_WHAT_NETWORK_OFF_WIFI_ONLY && onWiFi)) {
-		return Xstr(@"What Network set to %@ but %@on WiFi", (whatNetwork == PUSHER_WHAT_NETWORK_WIFI_ONLY ? @"WiFi Only" : (whatNetwork == PUSHER_WHAT_NETWORK_OFF_WIFI_ONLY ? @"Off WiFi Only" : @"Any Network")), onWiFi ? @"" : @"not ");
+		return Xstr(@"What Network set to %@ but %@on WiFi", (whatNetwork == PUSHER_WHAT_NETWORK_WIFI_ONLY ? @"WiFi Only" : (whatNetwork == PUSHER_WHAT_NETWORK_OFF_WIFI_ONLY ? @"Cellular Only" : @"Any Network")), onWiFi ? @"" : @"not ");
 	}
 	if ((whenToPush == PUSHER_WHEN_TO_PUSH_LOCKED && !deviceIsLocked)
 			|| (whenToPush == PUSHER_WHEN_TO_PUSH_UNLOCKED && deviceIsLocked)) {
