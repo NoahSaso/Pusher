@@ -19,6 +19,8 @@
 	[UISwitch appearanceWhenContainedInInstancesOfClasses:@[self.class]].onTintColor = color;
 	[UISegmentedControl appearanceWhenContainedInInstancesOfClasses:@[self.class]].tintColor = color;
 	[UISlider appearanceWhenContainedInInstancesOfClasses:@[self.class]].tintColor = color;
+
+	[self.table reloadData];
 }
 
 - (void)scrollViewWillBeginDragging:(UIScrollView *)scrollView {

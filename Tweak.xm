@@ -1048,7 +1048,7 @@ static NSString *prefsSayNo(BBServer *server, BBBulletin *bulletin) {
 		[request setValue:@"application/json" forHTTPHeaderField:@"Content-Type"];
 
 		NSData *requestData = [NSJSONSerialization dataWithJSONObject:infoDictForRequest options:NSJSONWritingPrettyPrinted error:nil];
-		[request setValue:Xstr(@"%lu", requestData.length) forHTTPHeaderField:@"Content-Length"];
+		[request setValue:Xstr(@"%d", (int) requestData.length) forHTTPHeaderField:@"Content-Length"];
 		[request setHTTPBody:requestData];
 	}
 
