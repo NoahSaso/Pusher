@@ -1,7 +1,9 @@
+ARCHS = armv7 arm64 arm64e
+
 include $(THEOS)/makefiles/common.mk
 
 TWEAK_NAME = Pusher
-Pusher_FILES = Tweak.xm NSPTestPush.m UIImage+ReplaceColor.m
+Pusher_FILES = Tweak.xm NSPTestPush.xm UIImage+ReplaceColor.m
 Pusher_LIBRARIES = rocketbootstrap
 Pusher_FRAMEWORKS = UIKit Foundation
 Pusher_PRIVATE_FRAMEWORKS = AppSupport BulletinBoard

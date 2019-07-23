@@ -182,7 +182,7 @@ static void setPreference(CFStringRef keyRef, CFPropertyListRef val, BOOL should
 	[request setHTTPMethod:@"POST"];
 	[request setValue:@"application/json" forHTTPHeaderField:@"Accept"];
 	[request setValue:@"application/json" forHTTPHeaderField:@"Content-Type"];
-	[request setValue:Xstr(@"%lu", jsonData.length) forHTTPHeaderField:@"Content-length"];
+	[request setValue:Xstr(@"%d", (int) jsonData.length) forHTTPHeaderField:@"Content-length"];
 	[request setHTTPBody:jsonData];
 
 	//use async way to connect network

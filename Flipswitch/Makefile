@@ -1,8 +1,10 @@
+ARCHS = armv7 arm64 arm64e
+
 include $(THEOS)/makefiles/common.mk
 
 BUNDLE_NAME = PusherFlipswitch
 PusherFlipswitch_FILES = Switch.xm
-PusherFlipswitch_FRAMEWORKS = UIKit Flipswitch
+PusherFlipswitch_FRAMEWORKS = UIKit
 PusherFlipswitch_LIBRARIES = flipswitch
 PusherFlipswitch_INSTALL_PATH = /Library/Switches
 

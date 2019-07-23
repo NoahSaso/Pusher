@@ -104,7 +104,7 @@ static int countAppIDsWithPrefix(NSDictionary *prefs, NSString *prefix) {
 				} else if (Xeq(specifier.name, @"App Customization")) {
 					NSString *prefsKey = _isCustom ? NSPPreferenceCustomServiceCustomAppsKey(_service) : NSPPreferenceBuiltInServiceCustomAppsKey(_service);
 					NSArray *customApps = (NSArray *) prefs[prefsKey];
-					specifier.name = Xstr(@"%@ (%lu total)", specifier.name, customApps ? customApps.count : 0);
+					specifier.name = Xstr(@"%@ (%d total)", specifier.name, customApps ? (int) customApps.count : 0);
 					[specifier setProperty:self forKey:@"psListRef"];
 				}
 			}

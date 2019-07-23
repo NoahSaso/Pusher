@@ -165,7 +165,7 @@ static void setPreference(CFStringRef keyRef, CFPropertyListRef val, BOOL should
 }
 
 - (void)updateTitle {
-	self.specifier.name = Xstr(@"%@ (%lu total)", _label, _customApps.count);
+	self.specifier.name = Xstr(@"%@ (%d total)", _label, (int) _customApps.count);
 	PSListController *listController = (PSListController *)[self.specifier propertyForKey:@"psListRef"];
 	if (listController) {
 		[listController reloadSpecifier:self.specifier];

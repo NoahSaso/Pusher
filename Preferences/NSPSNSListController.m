@@ -39,10 +39,10 @@ static id getPreference(CFStringRef keyRef) {
 				if (_isCustomService) {
 					NSDictionary *customServices = getPreference((__bridge CFStringRef) NSPPreferenceCustomServicesKey) ?: @{};
 					if (customServices[_service]) {
-						foundTruthy = customServices[_service][[specifier propertyForKey:@"key"]];
+						foundTruthy = customServices[_service][[specifier propertyForKey:@"key"]] != nil;
 					}
 				} else {
-					foundTruthy = getPreference((__bridge CFStringRef) [specifier propertyForKey:@"key"]);
+					foundTruthy = getPreference((__bridge CFStringRef) [specifier propertyForKey:@"key"]) != nil;
 				}
 				synchronizedWithGlobal = !foundTruthy;
 			}

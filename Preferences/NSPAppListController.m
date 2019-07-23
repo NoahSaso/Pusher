@@ -90,7 +90,7 @@ static void setPreference(CFStringRef keyRef, CFPropertyListRef val, BOOL should
 }
 
 - (void)updateTitle {
-	self.navigationItem.title = Xstr(@"%@ (%lu total)", _label, self.selectedAppIDs.count);
+	self.navigationItem.title = Xstr(@"%@ (%d total)", _label, (int) self.selectedAppIDs.count);
 	self.specifier.name = self.navigationItem.title;
 	PSListController *listController = (PSListController *)[self.specifier propertyForKey:@"psListRef"];
 	if (listController) {
