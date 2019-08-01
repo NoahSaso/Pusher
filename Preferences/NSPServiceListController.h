@@ -4,6 +4,7 @@
 #import <notify.h>
 
 #define DEFAULT_SERVICE_IMAGE_NAME @"DefaultService"
+#define DEFAULT_IMAGE [UIImage imageNamed:DEFAULT_SERVICE_IMAGE_NAME inBundle:PUSHER_BUNDLE]
 
 @interface NSPServiceListController : NSPPSViewControllerWithColoredUI <UITableViewDelegate, UITableViewDataSource> {
   NSDictionary *_prefs;

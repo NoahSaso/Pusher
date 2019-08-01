@@ -69,8 +69,8 @@ static void setPreference(CFStringRef keyRef, CFPropertyListRef val, BOOL should
 	_services = [BUILTIN_PUSHER_SERVICES retain];
 	_customServices = [(NSDictionary *)(_prefs[NSPPreferenceCustomServicesKey] ?: @{}) mutableCopy];
 
-	_defaultImage = [UIImage imageNamed:DEFAULT_SERVICE_IMAGE_NAME inBundle:PUSHER_BUNDLE];
-	_serviceImages = [NSMutableDictionary new];
+	_defaultImage = [DEFAULT_IMAGE retain];
+	_serviceImages = [[NSMutableDictionary new] retain];
 
 	for (NSString *service in _services) {
 		NSString *enabledKey = Xstr(@"%@Enabled", service);
@@ -184,12 +184,22 @@ static void setPreference(CFStringRef keyRef, CFPropertyListRef val, BOOL should
 	}];
 	[alert addAction:[UIAlertAction actionWithTitle:@"Cancel" style:UIAlertActionStyleCancel handler:nil]];
 	id handler = ^(UIAlertAction *action) {
-		UITextField *textField = alert.textFields[0];
-		if (!textField || !textField.text) {
+		if (!alert || !alert.textFields || ![alert.textFields isKindOfClass:NSArray.class]) {
+			XLog(@"alert or alert.textFields nil: %@ %@", alert, alert ? alert.textFields : nil);
 			return;
 		}
-		NSString *newServiceName = [textField.text stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
+		if (alert.textFields.count == 0) {
+			XLog(@"No text fields found");
+			return;
+		}
+		UITextField *textField = alert.textFields[0];
+		if (!textField || !textField.text || ![textField.text isKindOfClass:NSString.class]) {
+			XLog(@"textField or textField.text nil: %@ %@", textField, textField ? textField.text : nil);
+			return;
+		}
+		NSString *newServiceName = [[textField.text stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]] retain];
 		if (newServiceName.length < 1) {
+			XLog(@"newServiceName empty");
 			return;
 		}
 		if ([_customServices.allKeys containsObject:newServiceName] || [_services containsObject:newServiceName]) {
@@ -199,6 +209,7 @@ static void setPreference(CFStringRef keyRef, CFPropertyListRef val, BOOL should
 			UIAlertController *existsAlert = XalertWTitle(@"Error", @"A service with that name already exists.");
 			[existsAlert addAction:XalertBtnWHandler(@"Ok", existsHandler)];
 			[self presentViewController:existsAlert animated:YES completion:nil];
+			XLog(@"newServiceName already exists");
 			return;
 		}
 		_customServices[newServiceName] = [@{
@@ -206,7 +217,14 @@ static void setPreference(CFStringRef keyRef, CFPropertyListRef val, BOOL should
 		} mutableCopy];
 		[_data[@"Disabled"] addObject:newServiceName];
 	  [_data[@"Disabled"] sortUsingSelector:@selector(localizedCaseInsensitiveCompare:)];
-		_serviceImages[newServiceName] = [UIImage imageNamed:Xstr(@"CustomService_%@", newServiceName) inBundle:PUSHER_BUNDLE] ?: _defaultImage;
+
+		UIImage *defaultImage = _defaultImage;
+		if (!defaultImage || ![defaultImage isKindOfClass:UIImage.class]) {
+			defaultImage = DEFAULT_IMAGE;
+		}
+
+		NSString *imageName = Xstr(@"CustomService_%@", newServiceName);
+		_serviceImages[newServiceName] = [UIImage imageNamed:imageName inBundle:PUSHER_BUNDLE] ?: defaultImage;
 		[_table reloadSections:[NSIndexSet indexSetWithIndex:1] withRowAnimation:UITableViewRowAnimationAutomatic];
 		[self saveCustomServices];
 	};
