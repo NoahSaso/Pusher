@@ -109,7 +109,7 @@ static void setPreference(CFStringRef keyRef, CFPropertyListRef val, BOOL should
 		for (NSDictionary *sectionDescriptor in sectionDescriptors) {
 			NSMutableDictionary *filteredSectionDescriptor = [sectionDescriptor mutableCopy];
 			filteredSectionDescriptor[ALSectionDescriptorPredicateKey] = Xstr(@"%@ AND displayName CONTAINS[cd] '%@'", filteredSectionDescriptor[ALSectionDescriptorPredicateKey], filter);
-			XLog(@"filteredSectionDescriptor[ALSectionDescriptorPredicateKey] = %@", filteredSectionDescriptor[ALSectionDescriptorPredicateKey]);
+			// XLog(@"filteredSectionDescriptor[ALSectionDescriptorPredicateKey] = %@", filteredSectionDescriptor[ALSectionDescriptorPredicateKey]);
 			[filteredSectionDescriptors addObject:filteredSectionDescriptor];
 		}
 		_appListDataSource.sectionDescriptors = filteredSectionDescriptors;
