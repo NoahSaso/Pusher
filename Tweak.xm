@@ -944,7 +944,19 @@ static NSString *prefsSayNo(BBServer *server, BBBulletin *bulletin) {
 %new
 - (NSString *)base64IconDataForBundleID:(NSString *)bundleID {
 	SBApplicationIcon *icon = [((SBIconController *)[%c(SBIconController) sharedInstance]).model expectedIconForDisplayIdentifier:bundleID];
-	return base64RepresentationForImage([icon generateIconImage:2]);
+	UIImage *image = nil;
+
+	if (SYSTEM_VERSION_LESS_THAN(@"13.0")) {
+		image = [icon generateIconImage:2];
+	} else {
+		struct SBIconImageInfo imageInfo;
+		imageInfo.size = CGSizeMake(60, 60);
+		imageInfo.scale = [UIScreen mainScreen].scale;
+		imageInfo.continuousCornerRadius = 12;
+		image = [icon generateIconImageWithInfo:imageInfo];
+	}
+
+	return base64RepresentationForImage(image);
 }
 
 %new

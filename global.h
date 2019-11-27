@@ -167,8 +167,18 @@ typedef enum {
 - (NSString *)base64IconDataForBundleID:(NSString *)bundleID;
 @end
 
+// iOS 13
+struct SBIconImageInfo {
+	CGSize size;
+	CGFloat scale;
+	CGFloat continuousCornerRadius;
+};
+
 @interface SBApplicationIcon : NSObject
+// iOS 12 and below
 - (UIImage *)generateIconImage:(int)arg1;
+// iOS 13
+- (id)generateIconImageWithInfo:(SBIconImageInfo)arg1;
 @end
 
 @interface SBIconModel : NSObject
