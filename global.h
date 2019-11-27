@@ -168,11 +168,11 @@ typedef enum {
 @end
 
 // iOS 13
-struct SBIconImageInfo {
+typedef struct SBIconImageInfo {
 	CGSize size;
 	CGFloat scale;
 	CGFloat continuousCornerRadius;
-};
+} SBIconImageInfo;
 
 @interface SBApplicationIcon : NSObject
 // iOS 12 and below
