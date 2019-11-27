@@ -3,6 +3,7 @@
 #import "NSPTestPush.h"
 #import <SystemConfiguration/CaptiveNetwork.h>
 #import <notify.h>
+#import "iOSVersion.m"
 // #import <MetalKit/MTKTextureLoader.h>
 
 #define isBundle(z) [[[NSBundle mainBundle] bundleIdentifier] isEqualToString:z]
@@ -1132,24 +1133,41 @@ static NSString *prefsSayNo(BBServer *server, BBBulletin *bulletin) {
 	}] resume];
 }
 
-// iOS 10 & 11
+%end // %hook BBServer
+%end // %group SB
+
+%group iOS10And11
+%hook BBServer
 - (void)publishBulletin:(BBBulletin *)bulletin destinations:(unsigned long long)arg2 alwaysToLockScreen:(BOOL)arg3 {
 	%orig;
 	if ([self respondsToSelector:@selector(sendBulletinToPusher:)]) {
 		[self sendBulletinToPusher:bulletin];
 	}
 }
+%end // %hook BBServer
+%end // %group iOS10And11
 
-// iOS 12
+%group iOS12
+%hook BBServer
 - (void)publishBulletin:(BBBulletin *)bulletin destinations:(unsigned long long)arg2 {
 	%orig;
 	if ([self respondsToSelector:@selector(sendBulletinToPusher:)]) {
 		[self sendBulletinToPusher:bulletin];
 	}
 }
-
 %end // %hook BBServer
-%end // %group SB
+%end // %group iOS12
+
+%group iOS13
+%hook BBServer
+- (void)publishBulletinRequest:(BBBulletin *)bulletin destinations:(unsigned long long)arg2 {
+	%orig;
+	if ([self respondsToSelector:@selector(sendBulletinToPusher:)]) {
+		[self sendBulletinToPusher:bulletin];
+	}
+}
+%end // %hook BBServer
+%end // %group iOS13
 
 %group Preferences
 %hook PSTableCell
@@ -1171,6 +1189,15 @@ static NSString *prefsSayNo(BBServer *server, BBBulletin *bulletin) {
 
 %ctor {
 	if (isBundle(@"com.apple.springboard")) {
+
+		if (SYSTEM_VERSION_LESS_THAN(@"12.0")) {
+			%init(iOS10And11);
+		} else if (SYSTEM_VERSION_LESS_THAN(@"13.0")) {
+			%init(iOS12);
+		} else if (SYSTEM_VERSION_LESS_THAN(@"14.0")) {
+			%init(iOS13);
+		}
+
 		CFPreferencesSynchronize(PUSHER_APP_ID, kCFPreferencesCurrentUser, kCFPreferencesAnyHost);
 		CFNotificationCenterAddObserver(CFNotificationCenterGetDarwinNotifyCenter(), NULL, (CFNotificationCallback)pusherPrefsChanged, CFSTR(PUSHER_PREFS_NOTIFICATION), NULL, CFNotificationSuspensionBehaviorCoalesce);
 		pusherPrefsChanged();
