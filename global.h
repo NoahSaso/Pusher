@@ -123,6 +123,7 @@ typedef enum {
 #import <Preferences/PSSpecifier.h>
 #import <BulletinBoard/BBBulletin.h>
 #import <BulletinBoard/BBSectionInfo.h> // imports BBSectionInfoSettings
+#import <UserNotifications/UserNotifications.h>
 #import <SpringBoard/SBApplication.h>
 #import <SpringBoard/SBApplicationController.h>
 #import <Preferences/PSTableCell.h>

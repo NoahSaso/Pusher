@@ -888,37 +888,71 @@ static NSString *prefsSayNo(BBServer *server, BBBulletin *bulletin) {
 	if (dictionary[@"includeImage"] && ((NSNumber *) dictionary[@"includeImage"]).boolValue) {
 		BBAttachmentMetadata *metadata = bulletin.primaryAttachment;
 		if (metadata && metadata.type == 1) { // I assume image type is 1
+            UIImage *image = nil;
 			NSURL *URL = metadata.URL;
 			if (URL) {
-				UIImage *image = [UIImage imageWithContentsOfFile:URL.path];
-				if (image) {
-					NSNumber *imageShrinkFactor = dictionary[@"imageShrinkFactor"];
-					if (imageShrinkFactor) {
-						data[@"imageShrinkFactor"] = imageShrinkFactor;
-					}
-
-					NSNumber *imageMaxWidth = dictionary[@"imageMaxWidth"];
-					NSNumber *imageMaxHeight = dictionary[@"imageMaxHeight"];
-					CGFloat widthShrinkFactor = 0.0;
-					CGFloat heightShrinkFactor = 0.0;
-
-					if (imageMaxWidth && imageMaxWidth.floatValue > 0.0 && image.size.width > imageMaxWidth.floatValue) {
-						widthShrinkFactor = image.size.width / imageMaxWidth.floatValue;
-					}
-					if (imageMaxHeight && imageMaxHeight.floatValue > 0.0 && image.size.height > imageMaxHeight.floatValue) {
-						heightShrinkFactor = image.size.height / imageMaxHeight.floatValue;
-					}
-
-					// if either has a value, shrink image
-					if (widthShrinkFactor + heightShrinkFactor > 0.0) {
-						// shrink with the largest factor
-						CGFloat shrinkFactor = widthShrinkFactor > heightShrinkFactor ? widthShrinkFactor : heightShrinkFactor;
-						image = shrinkImage(image, shrinkFactor);
-					}
-
-					data[@"image"] = image;
-				}
+				image = [UIImage imageWithContentsOfFile:URL.path];
 			}
+   
+            //Fixing WhatsApp's lowres image by waiting WhatsApp to decrypt the high res image
+            if ([bulletin.sectionID isEqualToString:@"net.whatsapp.WhatsApp"]) {
+                NSData* archivedNotification = bulletin.context[@"UNBulletinContextArchivedUserNotification"];
+                if (archivedNotification) {
+                    UNNotification* notification = (UNNotification*) [NSKeyedUnarchiver unarchiveTopLevelObjectWithData:archivedNotification error:nil];
+                    if (notification && notification.request && notification.request.content && notification.request.content.userInfo) {
+                        
+                        NSString* path = notification.request.content.userInfo[@"WAMessageNotificationMainAppPath"];
+                        if (path) {
+                            NSURL * highresURL = [NSURL fileURLWithPath:path];
+                            
+                            //ignore mp4, gif, webp
+                            if ( Xeq([[highresURL pathExtension] lowercaseString], @"jpg") || Xeq([[highresURL pathExtension] lowercaseString], @"jpeg") || Xeq([[highresURL pathExtension] lowercaseString], @"png") ) {
+                                
+                                //Takes 0.5 second on iPhone 5s to decrypt the image, let's wait for 2 seconds?
+                                int retries = 20;
+                                for(int i = 0; i < retries; i++){
+                                    if ([[NSFileManager defaultManager] fileExistsAtPath:path]){
+                                        break;
+                                    }
+                                    [NSThread sleepForTimeInterval:0.1];
+                                }
+                                UIImage* highresImage = [UIImage imageWithContentsOfFile:path];
+                                
+                                if (highresImage) {
+                                    image = highresImage;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            if (image) {
+                NSNumber *imageShrinkFactor = dictionary[@"imageShrinkFactor"];
+                if (imageShrinkFactor) {
+                    data[@"imageShrinkFactor"] = imageShrinkFactor;
+                }
+
+                NSNumber *imageMaxWidth = dictionary[@"imageMaxWidth"];
+                NSNumber *imageMaxHeight = dictionary[@"imageMaxHeight"];
+                CGFloat widthShrinkFactor = 0.0;
+                CGFloat heightShrinkFactor = 0.0;
+
+                if (imageMaxWidth && imageMaxWidth.floatValue > 0.0 && image.size.width > imageMaxWidth.floatValue) {
+                    widthShrinkFactor = image.size.width / imageMaxWidth.floatValue;
+                }
+                if (imageMaxHeight && imageMaxHeight.floatValue > 0.0 && image.size.height > imageMaxHeight.floatValue) {
+                    heightShrinkFactor = image.size.height / imageMaxHeight.floatValue;
+                }
+
+                // if either has a value, shrink image
+                if (widthShrinkFactor + heightShrinkFactor > 0.0) {
+                    // shrink with the largest factor
+                    CGFloat shrinkFactor = widthShrinkFactor > heightShrinkFactor ? widthShrinkFactor : heightShrinkFactor;
+                    image = shrinkImage(image, shrinkFactor);
+                }
+
+                data[@"image"] = image;
+            }
 			// give true value so even if can't figure out how to send image, can still tell that there is one
 			if (!data[@"image"]) {
 				data[@"image"] = @YES;
