@@ -138,13 +138,52 @@ static void setPreference(CFStringRef keyRef, CFPropertyListRef val, BOOL should
 
   [devices setProperty:@(isCustomApp) forKey:@"isCustomApp"];
   [sounds setProperty:@(isCustomApp) forKey:@"isCustomApp"];
+    
+  PSSpecifier *includeImage = [PSSpecifier preferenceSpecifierNamed:@"Include Image" target:self set:@selector(setPreferenceValue:forBuiltInServiceSpecifier:) get:@selector(readBuiltInServicePreferenceValue:) detail:nil cell:PSSwitchCell edit:nil];
+  [includeImage setProperty:NSPPreferencePushoverIncludeImageKey forKey:@"key"];
+  [includeImage setProperty:@YES forKey:@"enabled"];
+  [includeImage setProperty:@YES forKey:@"default"];
+  [includeImage setProperty:@(isCustomApp) forKey:@"isCustomApp"];
+  [includeImage setProperty:NSPPreferencePushoverCustomAppsKey forKey:@"customAppsKey"];
+  [includeImage setProperty:@"includeImage" forKey:@"customAppsPrefsKey"];
+
+  PSSpecifier *imageMaxWidth = [PSSpecifier preferenceSpecifierNamed:@"Maximum Image Width (pixels)" target:self set:@selector(setPreferenceValue:forBuiltInServiceSpecifier:) get:@selector(readBuiltInServicePreferenceValue:) detail:nil cell:PSEditTextCell edit:nil];
+  [imageMaxWidth setProperty:NSPPreferencePushoverImageMaxWidthKey forKey:@"key"];
+  [imageMaxWidth setProperty:@YES forKey:@"enabled"];
+  [imageMaxWidth setProperty:@YES forKey:@"isDecimalPad"];
+  [imageMaxWidth setProperty:@(PUSHER_DEFAULT_MAX_WIDTH) forKey:@"default"];
+  [imageMaxWidth setProperty:@(isCustomApp) forKey:@"isCustomApp"];
+  [imageMaxWidth setProperty:NSPPreferencePushoverCustomAppsKey forKey:@"customAppsKey"];
+  [imageMaxWidth setProperty:@"imageMaxWidth" forKey:@"customAppsPrefsKey"];
+
+  PSSpecifier *imageMaxHeight = [PSSpecifier preferenceSpecifierNamed:@"Maximum Image Height (pixels)" target:self set:@selector(setPreferenceValue:forBuiltInServiceSpecifier:) get:@selector(readBuiltInServicePreferenceValue:) detail:nil cell:PSEditTextCell edit:nil];
+  [imageMaxHeight setProperty:NSPPreferencePushoverImageMaxHeightKey forKey:@"key"];
+  [imageMaxHeight setProperty:@YES forKey:@"enabled"];
+  [imageMaxHeight setProperty:@YES forKey:@"isDecimalPad"];
+  [imageMaxHeight setProperty:@(PUSHER_DEFAULT_MAX_HEIGHT) forKey:@"default"];
+  [imageMaxHeight setProperty:@(isCustomApp) forKey:@"isCustomApp"];
+  [imageMaxHeight setProperty:NSPPreferencePushoverCustomAppsKey forKey:@"customAppsKey"];
+  [imageMaxHeight setProperty:@"imageMaxHeight" forKey:@"customAppsPrefsKey"];
+
+  PSSpecifier *imageShrinkFactor = [PSSpecifier preferenceSpecifierNamed:@"Image Shrink Factor Upon Retry" target:self set:@selector(setPreferenceValue:forBuiltInServiceSpecifier:) get:@selector(readBuiltInServicePreferenceValue:) detail:nil cell:PSEditTextCell edit:nil];
+  [imageShrinkFactor setProperty:NSPPreferencePushoverImageShrinkFactorKey forKey:@"key"];
+  [imageShrinkFactor setProperty:@YES forKey:@"enabled"];
+  [imageShrinkFactor setProperty:@YES forKey:@"isDecimalPad"];
+  [imageShrinkFactor setProperty:@(PUSHER_DEFAULT_SHRINK_FACTOR) forKey:@"default"];
+  [imageShrinkFactor setProperty:@(isCustomApp) forKey:@"isCustomApp"];
+  [imageShrinkFactor setProperty:NSPPreferencePushoverCustomAppsKey forKey:@"customAppsKey"];
+  [imageShrinkFactor setProperty:@"imageShrinkFactor" forKey:@"customAppsPrefsKey"];
 
   if (isCustomApp) {
     [devices setProperty:appID forKey:@"customAppIDKey"];
     [sounds setProperty:appID forKey:@"customAppIDKey"];
+    [includeImage setProperty:appID forKey:@"customAppID"];
+    [imageMaxWidth setProperty:appID forKey:@"customAppID"];
+    [imageMaxHeight setProperty:appID forKey:@"customAppID"];
+    [imageShrinkFactor setProperty:appID forKey:@"customAppID"];
   }
 
-  return @[devices, sounds];
+  return @[devices, sounds, includeImage, imageMaxWidth, imageMaxHeight, imageShrinkFactor];
 }
 
 + (NSArray *)pushbullet:(NSString *)appID {

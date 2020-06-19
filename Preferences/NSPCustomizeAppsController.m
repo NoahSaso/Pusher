@@ -37,7 +37,7 @@ static void setPreference(CFStringRef keyRef, CFPropertyListRef val, BOOL should
 		if (_isCustomService || Xeq(_service, PUSHER_SERVICE_IFTTT) || Xeq(_service, PUSHER_SERVICE_PUSHER_RECEIVER)) {
 			defaultDict[@"includeIcon"] = _defaultIncludeIcon;
 		}
-		if (_isCustomService || Xeq(_service, PUSHER_SERVICE_PUSHER_RECEIVER)) {
+		if (_isCustomService || Xeq(_service, PUSHER_SERVICE_PUSHER_RECEIVER) || Xeq(_service, PUSHER_SERVICE_PUSHOVER)) {
 			defaultDict[@"includeImage"] = _defaultIncludeImage;
 			defaultDict[@"imageMaxWidth"] = _defaultImageMaxWidth;
 			defaultDict[@"imageMaxHeight"] = _defaultImageMaxHeight;
@@ -129,6 +129,10 @@ static void setPreference(CFStringRef keyRef, CFPropertyListRef val, BOOL should
 	}
 	if (Xeq(_service, PUSHER_SERVICE_PUSHOVER)) {
 		_defaultSounds = [(prefs[[self.specifier propertyForKey:@"defaultSoundsKey"]] ?: @[]) copy];
+        _defaultIncludeImage = [(prefs[[self.specifier propertyForKey:@"defaultIncludeImageKey"]] ?: @YES) copy];
+        _defaultImageMaxWidth = [(prefs[[self.specifier propertyForKey:@"defaultImageMaxWidthKey"]] ?: @(PUSHER_DEFAULT_MAX_WIDTH)) copy];
+        _defaultImageMaxHeight = [(prefs[[self.specifier propertyForKey:@"defaultImageMaxHeightKey"]] ?: @(PUSHER_DEFAULT_MAX_HEIGHT)) copy];
+        _defaultImageShrinkFactor = [(prefs[[self.specifier propertyForKey:@"defaultImageShrinkFactorKey"]] ?: @(PUSHER_DEFAULT_SHRINK_FACTOR)) copy];
 	}
 	if (Xeq(_service, PUSHER_SERVICE_IFTTT)) {
 		_defaultEventName = [(prefs[[self.specifier propertyForKey:@"defaultEventNameKey"]] ?: @"") copy];

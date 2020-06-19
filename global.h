@@ -83,6 +83,10 @@ typedef enum {
 #define NSPPreferencePushoverSoundsKey @"PushoverSounds"
 #define NSPPreferencePushoverBLPrefix @"PushoverBL-"
 #define NSPPreferencePushoverCustomAppsKey @"PushoverCustomApps"
+#define NSPPreferencePushoverIncludeImageKey @"PushoverIncludeImage"
+#define NSPPreferencePushoverImageMaxWidthKey @"PushoverImageMaxWidth"
+#define NSPPreferencePushoverImageMaxHeightKey @"PushoverImageMaxHeight"
+#define NSPPreferencePushoverImageShrinkFactorKey @"PushoverImageShrinkFactor"
 
 // All keys MUST HAVE the prefix equal to the name of the service
 #define PUSHER_SERVICE_PUSHBULLET @"Pushbullet"
