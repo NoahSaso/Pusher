@@ -39,7 +39,12 @@
 	bulletin.sectionID = PUSHER_TEST_NOTIFICATION_SECTION_ID;
 
 	NSURL *attachmentURL = [NSURL fileURLWithPath:Xstr(@"%@/icon@3x.png", PUSHER_BUNDLE_PATH)];
-	BBAttachmentMetadata *attachment = [[%c(BBAttachmentMetadata) alloc] _initWithUUID:@"TestImage" type:1 URL:attachmentURL];
+	BBAttachmentMetadata *attachment;
+	// // iOS 14
+	// if ([%c(BBAttachmentMetadata) respondsToSelector:@selector(_initWithType:URL:identifier:uniformType:thumbnailGeneratorUserInfo:thumbnailHidden:hiddenFromDefaultExpandedView:)])
+	// 	attachment = [[%c(BBAttachmentMetadata) alloc] _initWithType:1 URL:attachmentURL identifier: uniformType: thumbnailGeneratorUserInfo:thumbnailHidden: hiddenFromDefaultExpandedView: ];
+	// else
+		attachment = [[%c(BBAttachmentMetadata) alloc] _initWithUUID:@"TestImage" type:1 URL:attachmentURL];
 	[bulletin setPrimaryAttachment:attachment];
 
 	[bbServer sendToPusherService:service bulletin:bulletin appID:bulletin.sectionID appName:PUSHER_TEST_NOTIFICATION_APP_NAME title:bulletin.title message:Xstr(@"%@\n%@", bulletin.subtitle, bulletin.message) isTest:YES];
