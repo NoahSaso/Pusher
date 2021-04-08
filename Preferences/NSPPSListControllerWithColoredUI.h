@@ -1,6 +1,6 @@
 #import <Preferences/PSListController.h>
 #import "../global.h"
-#import <Custom/defines.h>
+#import "../helpers.h"
 
 @interface NSPPSListControllerWithColoredUI : PSListController
 - (void)tintUIToPusherColor;
