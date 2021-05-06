@@ -1,10 +1,10 @@
 Package: com.noahsaso.pusher
 Name: Pusher
 Depends: mobilesubstrate, applist, com.rpetrich.rocketbootstrap
-Version: 1.2
+Version: 1.3
 Architecture: iphoneos-arm
 Description: Push notifications to other devices
-Maintainer: Noah Saso <noahsaso@gmail.com>
+Maintainer: Noah Saso <noahsaso@gmail.com> / EVAN <215288968@qq.com>
 Author: Noah Saso <noahsaso@gmail.com>
 Section: Tweaks
 Depiction: https://beta.noahsaso.com/depiction.php?pkg=pusher

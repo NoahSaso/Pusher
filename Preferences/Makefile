@@ -7,7 +7,8 @@ Pusher_FILES = NSPRootListController.m NSPDeviceListController.m NSPServiceListC
 Pusher_INSTALL_PATH = /Library/PreferenceBundles
 Pusher_FRAMEWORKS = UIKit Foundation
 Pusher_PRIVATE_FRAMEWORKS = Preferences AppSupport
-Pusher_LIBRARIES = AppList rocketbootstrap
+Pusher_LIBRARIES = applist rocketbootstrap
+Pusher_CFLAGS = -Wno-deprecated-declarations
 
 include $(THEOS_MAKE_PATH)/bundle.mk
 

@@ -683,9 +683,9 @@ static NSString *snsSaysNo(NSArray *sns, BBSectionInfo *sectionInfo, BOOL isAnd,
 
 static NSString *deviceConditionsSayNo(int whenToPush, int whatNetwork) {
   BOOL deviceIsLocked =
-      ((SBLockScreenManager *)[% c(SBLockScreenManager) sharedInstance])
+      ((SBLockScreenManager *)[%c(SBLockScreenManager) sharedInstance])
           .isUILocked;
-  NSString *wifiName = [[% c(SBWiFiManager) sharedInstance] currentNetworkName];
+  NSString *wifiName = [[%c(SBWiFiManager) sharedInstance] currentNetworkName];
   BOOL onWiFi = wifiName != nil;
   if ((whatNetwork == PUSHER_WHAT_NETWORK_WIFI_ONLY && !onWiFi) ||
       (whatNetwork == PUSHER_WHAT_NETWORK_OFF_WIFI_ONLY && onWiFi)) {
@@ -752,19 +752,20 @@ static NSString *prefsSayNo(BBServer *server, BBBulletin *bulletin) {
   return nil;
 }
 
-% group SB % hook BBServer
-
-        % new +
-    (BBServer *)pusherSharedInstance {
+%group SB
+%hook BBServer
+%new
++ (BBServer *)pusherSharedInstance {
   return bbServerInstance;
 }
 
 - (void)_addObserver:(id)arg1 {
   bbServerInstance = self;
-  % orig;
+  %orig;
 }
 
-% new - (void)sendBulletinToPusher : (BBBulletin *)bulletin {
+%new 
+- (void)sendBulletinToPusher : (BBBulletin *)bulletin {
   if (!bulletin) {
     XLog(@"Bulletin nil");
     return;
@@ -786,7 +787,7 @@ static NSString *prefsSayNo(BBServer *server, BBBulletin *bulletin) {
   }
 
   if (!NSClassFromString(@"SBApplicationController") ||
-      ![% c(SBApplicationController) sharedInstance]) {
+      ![%c(SBApplicationController) sharedInstance]) {
     XLog(@"SpringBoard not ready");
     addToLogIfEnabled(@"", bulletin, @"SpringBoard not ready");
     return;
@@ -805,7 +806,7 @@ static NSString *prefsSayNo(BBServer *server, BBBulletin *bulletin) {
   // }
 
   NSString *appID = bulletin.sectionID;
-  SBApplication *app = [[% c(SBApplicationController) sharedInstance]
+  SBApplication *app = [[%c(SBApplicationController) sharedInstance]
       applicationWithBundleIdentifier:appID];
   NSString *appName = app && app.displayName && app.displayName.length > 0
                           ? app.displayName
@@ -878,7 +879,8 @@ static NSString *prefsSayNo(BBServer *server, BBBulletin *bulletin) {
   }
 }
 
-% new - (void)sendToPusherService : (NSString *)service bulletin
+%new
+- (void)sendToPusherService : (NSString *)service bulletin
     : (BBBulletin *)bulletin appID : (NSString *)appID appName
     : (NSString *)appName title : (NSString *)title message
     : (NSString *)message isTest : (BOOL)isTest {
@@ -1030,7 +1032,8 @@ static NSString *prefsSayNo(BBServer *server, BBBulletin *bulletin) {
   }
 }
 
-% new - (NSDictionary *)getPusherInfoDictionaryForService
+%new
+- (NSDictionary *)getPusherInfoDictionaryForService
     : (NSString *)service withDictionary : (NSDictionary *)dictionary {
   NSMutableArray *deviceIDs = [NSMutableArray new];
   for (NSDictionary *device in dictionary[@"devices"]) {
@@ -1155,9 +1158,10 @@ static NSString *prefsSayNo(BBServer *server, BBBulletin *bulletin) {
   return data;
 }
 
-% new - (NSString *)base64IconDataForBundleID : (NSString *)bundleID {
+%new
+- (NSString *)base64IconDataForBundleID : (NSString *)bundleID {
   SBApplicationIcon *icon =
-      [((SBIconController *)[% c(SBIconController) sharedInstance]).model
+      [((SBIconController *)[%c(SBIconController) sharedInstance]).model
           expectedIconForDisplayIdentifier:bundleID];
   UIImage *image = nil;
 
@@ -1174,7 +1178,8 @@ static NSString *prefsSayNo(BBServer *server, BBBulletin *bulletin) {
   return base64RepresentationForImage(image);
 }
 
-% new - (NSDictionary *)getPusherCredentialsForService
+%new
+- (NSDictionary *)getPusherCredentialsForService
     : (NSString *)service withDictionary : (NSDictionary *)dictionary {
   if (XEq(service, PUSHER_SERVICE_PUSHOVER)) {
     return @{@"token" : dictionary[@"token"], @"user" : dictionary[@"user"]};
@@ -1201,7 +1206,8 @@ static NSString *prefsSayNo(BBServer *server, BBBulletin *bulletin) {
   return @{@"key" : dictionary[@"key"]};
 }
 
-% new - (void)makePusherRequest : (NSString *)urlString infoDict
+%new
+- (void)makePusherRequest : (NSString *)urlString infoDict
     : (NSDictionary *)infoDict credentials
     : (NSDictionary *)credentials authType
     : (PusherAuthorizationType)authType method : (NSString *)method logString
@@ -1438,76 +1444,93 @@ static NSString *prefsSayNo(BBServer *server, BBBulletin *bulletin) {
         }] resume];
 }
 
-% end         // %hook BBServer
-        % end // %group SB
+%end         // %hook BBServer
+%end // %group SB
 
-        % group iOS10And11 % hook BBServer -
-    (void)publishBulletin : (BBBulletin *)bulletin destinations
+%group iOS10And11
+%hook BBServer
+-(void)publishBulletin : (BBBulletin *)bulletin destinations
     : (unsigned long long)arg2 alwaysToLockScreen : (BOOL)arg3 {
-  % orig;
+  %orig;
   if ([self respondsToSelector:@selector(sendBulletinToPusher:)]) {
     [self sendBulletinToPusher:bulletin];
   }
 }
-% end         // %hook BBServer
-        % end // %group iOS10And11
+%end         // %hook BBServer
+%end // %group iOS10And11
 
-        % group iOS12 % hook BBServer -
-    (void)publishBulletin : (BBBulletin *)bulletin destinations
+%group iOS12 
+%hook BBServer 
+- (void)publishBulletin : (BBBulletin *)bulletin destinations
     : (unsigned long long)arg2 {
-  % orig;
+  %orig;
   if ([self respondsToSelector:@selector(sendBulletinToPusher:)]) {
     [self sendBulletinToPusher:bulletin];
   }
 }
-% end         // %hook BBServer
-        % end // %group iOS12
+%end         // %hook BBServer
+%end // %group iOS12
 
-        % group iOS13 % hook BBServer -
-    (void)publishBulletinRequest : (BBBulletin *)bulletin destinations
+%group iOS13
+%hook BBServer 
+- (void)publishBulletinRequest : (BBBulletin *)bulletin destinations
     : (unsigned long long)arg2 {
-  % orig;
+  %orig;
   if ([self respondsToSelector:@selector(sendBulletinToPusher:)]) {
     [self sendBulletinToPusher:bulletin];
   }
 }
-% end         // %hook BBServer
-        % end // %group iOS13
+%end         // %hook BBServer
+%end // %group iOS13
 
-        % group Preferences % hook PSTableCell
+%group iOS14
+%hook BBServer 
+- (void)publishBulletinRequest : (BBBulletin *)bulletin destinations
+    : (unsigned long long)arg2 {
+  %orig;
+  if ([self respondsToSelector:@selector(sendBulletinToPusher:)]) {
+    [self sendBulletinToPusher:bulletin];
+  }
+}
+%end         // %hook BBServer
+%end // %group iOS14
 
-    - (void)setIcon : (UIImage *)icon {
+%group Preferences 
+%hook PSTableCell
+- (void)setIcon : (UIImage *)icon {
   if (icon && self.superview &&
       [self.superview isKindOfClass:UITableView.class] &&
       self.superview.superview &&
       [self.superview.superview respondsToSelector:@selector(_viewDelegate)] &&
       ([self.superview.superview._viewDelegate
-           isKindOfClass: % c(NSPPSListControllerWithColoredUI)] ||
+           isKindOfClass: %c(NSPPSListControllerWithColoredUI)] ||
        [self.superview.superview._viewDelegate
-           isKindOfClass: % c(NSPPSViewControllerWithColoredUI)])) {
+           isKindOfClass: %c(NSPPSViewControllerWithColoredUI)])) {
     UIImage *newIcon =
         [icon imageByReplacingColor:PUSHER_COLOR
-                          withColor:((NSPusherManager *)[% c(NSPusherManager)
+                          withColor:((NSPusherManager *)[%c(NSPusherManager)
                                          sharedController])
                                         .activeTintColor];
-    % orig(newIcon);
+    %orig(newIcon);
   } else {
-    % orig;
+    %orig;
   }
 }
 
-% end     // %hook PSTableCell
-    % end // %group Preferences
+%end     // %hook PSTableCell
+%end // %group Preferences
 
-    % ctor {
+%ctor {
   if (isBundle(@"com.apple.springboard")) {
 
     if (SYSTEM_VERSION_LESS_THAN(@"12.0")) {
-      % init(iOS10And11);
+      %init(iOS10And11);
     } else if (SYSTEM_VERSION_LESS_THAN(@"13.0")) {
-      % init(iOS12);
+      %init(iOS12);
     } else if (SYSTEM_VERSION_LESS_THAN(@"14.0")) {
-      % init(iOS13);
+      %init(iOS13);
+    } else if (SYSTEM_VERSION_LESS_THAN(@"15.0")) {
+      %init(iOS14);
     }
 
     CFPreferencesSynchronize(PUSHER_APP_ID, kCFPreferencesCurrentUser,
@@ -1519,8 +1542,8 @@ static NSString *prefsSayNo(BBServer *server, BBBulletin *bulletin) {
                                     CFNotificationSuspensionBehaviorCoalesce);
     pusherPrefsChanged();
     [NSPTestPush load];
-    % init(SB);
+    %init(SB);
   } else if (isBundle(@"com.apple.Preferences")) {
-    % init(Preferences);
+    %init(Preferences);
   }
 }

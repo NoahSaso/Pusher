@@ -148,6 +148,7 @@ typedef enum {
 @property (nonatomic, readonly) long long type;
 @property (nonatomic, copy, readonly) NSURL *URL;
 - (id)_initWithUUID:(id)arg1 type:(long long)arg2 URL:(id)arg3;
+- (id)_initWithType:(long long)arg1 URL:(id)arg2 identifier:(id)arg3 uniformType:(id)arg4 thumbnailGeneratorUserInfo:(id)arg5 thumbnailHidden:(BOOL)arg6 hiddenFromDefaultExpandedView:(BOOL)arg7;
 @end
 
 @interface BBBulletin (Pusher)
