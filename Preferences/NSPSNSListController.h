@@ -1,6 +1,6 @@
 #import "NSPPSListControllerWithColoredUI.h"
 #import "../global.h"
-#import <Custom/defines.h>
+#import "../helpers.h"
 
 @interface NSPSNSListController : NSPPSListControllerWithColoredUI {
   NSString *_service;

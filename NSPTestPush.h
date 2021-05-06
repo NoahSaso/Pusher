@@ -1,5 +1,5 @@
 #import "global.h"
-#import <Custom/defines.h>
+#import "helpers.h"
 
 @interface NSPTestPush : NSObject
 @end

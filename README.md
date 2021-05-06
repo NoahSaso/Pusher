@@ -1,2 +1,7 @@
 # Pusher
-Forward push notifications from iOS device to various services (Pushover, Pushbullet, IFTTT, etc.) [Jailbreak App]
+
+Jailbreak tweak to forward push notifications from iOS devices to various services / APIs (Pushover, Pushbullet, IFTTT, etc.)
+
+## iOS 14
+
+I want to update Pusher for iOS 14 but don't have the time at the moment! Contributions are welcome :)

@@ -38,4 +38,8 @@
 -(long long)type;
 -(id)mutableCopyWithZone:(NSZone*)arg1 ;
 -(NSURL *)URL;
+
+// iOS 14
+-(id)_initWithType:(long long)arg1 URL:(id)arg2 identifier:(id)arg3 uniformType:(id)arg4 thumbnailGeneratorUserInfo:(id)arg5 thumbnailHidden:(BOOL)arg6 hiddenFromDefaultExpandedView:(BOOL)arg7;
+
 @end

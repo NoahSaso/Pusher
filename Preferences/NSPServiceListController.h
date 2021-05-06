@@ -1,6 +1,6 @@
 #import "NSPPSViewControllerWithColoredUI.h"
 #import "../global.h"
-#import <Custom/defines.h>
+#import "../helpers.h"
 #import <notify.h>
 
 #define DEFAULT_SERVICE_IMAGE_NAME @"DefaultService"

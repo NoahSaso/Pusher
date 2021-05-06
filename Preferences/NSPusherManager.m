@@ -1,5 +1,5 @@
 #import "../global.h"
-#import <Custom/defines.h>
+#import "../helpers.h"
 
 @implementation NSPusherManager : NSObject
 
@@ -22,13 +22,14 @@
 }
 
 - (void)openTwitter:(NSString *)username {
-	NSString *appLink = Xstr(@"twitter://user?screen_name=%@", username);
-	NSString *webLink = Xstr(@"https://twitter.com/%@", username);
-	if ([[UIApplication sharedApplication] canOpenURL:[NSURL URLWithString:appLink]]) {
-		Xurl(appLink);
-	} else {
-		Xurl(webLink);
-	}
+  NSString *appLink = XStr(@"twitter://user?screen_name=%@", username);
+  NSString *webLink = XStr(@"https://twitter.com/%@", username);
+  if ([[UIApplication sharedApplication]
+          canOpenURL:[NSURL URLWithString:appLink]]) {
+    XUrl(appLink);
+  } else {
+    XUrl(webLink);
+  }
 }
 
 @end

@@ -60,11 +60,11 @@ typedef NS_OPTIONS(NSUInteger, BBActualSectionInfoPushSettings) {
 #define PUSHER_SNS_KEYS @{ PUSHER_SUFFICIENT_ALLOW_NOTIFICATIONS_KEY: @YES, PUSHER_SUFFICIENT_LOCK_SCREEN_KEY: @NO, PUSHER_SUFFICIENT_NOTIFICATION_CENTER_KEY: @NO, PUSHER_SUFFICIENT_BANNERS_KEY: @NO, PUSHER_SUFFICIENT_BADGES_KEY: @NO, PUSHER_SUFFICIENT_SHOWS_PREVIEWS_KEY: @NO }
 
 #define NSPPreferenceCustomServicesKey @"CustomServices"
-#define NSPPreferenceCustomServiceCustomAppsKey(service) Xstr(@"CustomService_%@_CustomApps", service)
-#define NSPPreferenceCustomServiceBLPrefix(service) Xstr(@"CustomServiceBL_%@-", service)
+#define NSPPreferenceCustomServiceCustomAppsKey(service) XStr(@"CustomService_%@_CustomApps", service)
+#define NSPPreferenceCustomServiceBLPrefix(service) XStr(@"CustomServiceBL_%@-", service)
 // IF ADDING MORE CUSTOM SERVICE KEY CALCULATORS, REMEMBER TO RENAME THEM UPON CUSTOM SERVICE RENAME IN SERVICE LIST
 
-#define NSPPreferenceBuiltInServiceCustomAppsKey(service) Xstr(@"%@CustomApps", service)
+#define NSPPreferenceBuiltInServiceCustomAppsKey(service) XStr(@"%@CustomApps", service)
 
 typedef enum {
 	PusherAuthorizationTypeNone,
