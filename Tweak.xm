@@ -436,6 +436,7 @@ static void pusherPrefsChanged() {
     NSString *tokenKey = XStr(@"%@Token", service);
     NSString *userKey = XStr(@"%@User", service);
     NSString *keyKey = XStr(@"%@Key", service);
+    NSString *bodyKey = XStr(@"%@Body", service);
     NSString *devicesKey = XStr(@"%@Devices", service);
     NSString *soundsKey = XStr(@"%@Sounds", service);
     NSString *eventNameKey = XStr(@"%@EventName", service);
@@ -461,6 +462,8 @@ static void pusherPrefsChanged() {
     servicePrefs[@"user"] = [(val ?: @"") copy];
     val = prefs[keyKey];
     servicePrefs[@"key"] = [(val ?: @"") copy];
+    val = prefs[bodyKey];
+    servicePrefs[@"body"] = [(val ?: @"") copy];
     val = prefs[eventNameKey];
     NSString *eventName = [(val ?: @"") copy];
     val = prefs[dbNameKey];
@@ -951,6 +954,7 @@ static NSString *prefsSayNo(BBServer *server, BBBulletin *bulletin) {
   NSArray *devices = servicePrefs[@"devices"];
   NSArray *sounds = servicePrefs[@"sounds"];
   NSString *url = servicePrefs[@"url"];
+  NSString *body = servicePrefs[@"body"];
   NSNumber *includeIcon =
       servicePrefs[@"includeIcon"]
           ?: @NO; // default NO for custom services, default check for built in
@@ -997,7 +1001,8 @@ static NSString *prefsSayNo(BBServer *server, BBBulletin *bulletin) {
                            @"curateData" : curateData,
                            @"imageMaxWidth" : imageMaxWidth,
                            @"imageMaxHeight" : imageMaxHeight,
-                           @"imageShrinkFactor" : imageShrinkFactor
+                           @"imageShrinkFactor" : imageShrinkFactor,
+                           @"body": body
                          }];
   NSDictionary *credentials = [self
       getPusherCredentialsForService:service
@@ -1153,6 +1158,20 @@ static NSString *prefsSayNo(BBServer *server, BBBulletin *bulletin) {
                                    encoding:NSUTF8StringEncoding];
     }
     return @{@"value1" : json};
+  }
+
+  if (![dictionary[@"body"] isEqualToString:@""]) {
+    NSString *body = dictionary[@"body"];
+    body = [body stringByReplacingOccurrencesOfString:@"%%deviceName%%" withString:UIDevice.currentDevice.name];
+    body = [body stringByReplacingOccurrencesOfString:@"%%appName%%" withString:dictionary[@"appName"] ?: @""];
+    body = [body stringByReplacingOccurrencesOfString:@"%%title%%" withString:dictionary[@"title"] ?: @""];
+    body = [body stringByReplacingOccurrencesOfString:@"%%subtitle%%" withString:dictionary[@"subtitle"] ?: @""];
+    body = [body stringByReplacingOccurrencesOfString:@"%%message%%" withString:dictionary[@"message"] ?: @""];
+    NSData *jsonData = [body dataUsingEncoding:NSUTF8StringEncoding];
+    NSDictionary *dic = [NSJSONSerialization JSONObjectWithData:jsonData
+                                                       options:NSJSONReadingMutableContainers
+                                                         error:nil];
+    return dic;
   }
 
   return data;
