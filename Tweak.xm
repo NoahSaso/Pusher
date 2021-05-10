@@ -44,7 +44,7 @@ static NSMutableArray *pusherEnabledLogs = nil;
 
 static BBServer *bbServerInstance = nil;
 
-static NSMutableArray *recentNotificationTitles = [NSMutableArray new];
+static NSMutableArray *recentNotifications = [NSMutableArray new];
 static NSMutableDictionary *pusherRetriesLeft = [NSMutableDictionary new];
 
 static NSString *retriesLeftKeyForBulletinAndService(BBBulletin *bulletin,
@@ -849,22 +849,24 @@ static NSString *prefsSayNo(BBServer *server, BBBulletin *bulletin) {
            ? @"\n"
            : @""),
       bulletin.message ? bulletin.message : @"");
+  
+  NSString *notification = XStr(@"%@ %@", title, message);
 
-  for (NSString *recentNotificationTitle in recentNotificationTitles) {
+  for (NSString *recentNotification in recentNotifications) {
     // prevent looping by checking if this title contains any recent titles in
     // format of "App [Previous Title]"
-    if (XEq(title, XStr(@"%@: %@", appName, recentNotificationTitle))) {
-      XLog(@"Prevented loop");
+    if (XEq(notification, recentNotification)) {
+      XLog(@"Prevented loop : %@", notification);
       addToLogIfEnabled(@"", bulletin, @"Prevented loop");
       return;
     }
   }
   // keep array small, looping shouldn't happen after 50 notifications have
   // already passed
-  if (recentNotificationTitles.count >= 50) {
-    [recentNotificationTitles removeAllObjects];
+  if (recentNotifications.count >= 50) {
+    [recentNotifications removeObjectAtIndex:0];
   }
-  [recentNotificationTitles addObject:title];
+  [recentNotifications addObject:notification];
 
   if (pusherEnabledServices.count == 0) {
     XLog(@"No services enabled!");
