@@ -207,3 +207,7 @@ typedef struct SBIconImageInfo {
 @interface UIImage (Pusher)
 + (UIImage *)imageNamed:(NSString *)name inBundle:(NSBundle *)bundle;
 @end
+
+@interface NotiXInterface : NSObject
++ (BOOL)isSPAM:(BBBulletin *)bulletin;
+@end

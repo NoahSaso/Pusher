@@ -755,6 +755,16 @@ static NSString *prefsSayNo(BBServer *server, BBBulletin *bulletin) {
   return nil;
 }
 
+static NSString *notixSayNo(BBBulletin *bulletin) {
+  if (%c(NotiXInterface)) {
+    if ([%c(NotiXInterface) isSPAM:bulletin]) {
+      return @"NotiX isSPAM";;
+    }
+    return nil;
+  }
+  return nil;
+}
+
 %group SB
 %hook BBServer
 %new
@@ -819,6 +829,13 @@ static NSString *prefsSayNo(BBServer *server, BBBulletin *bulletin) {
   if (prefsResponse) {
     XLog(@"Prefs say no: %@", prefsResponse);
     addToLogIfEnabled(@"", bulletin, XStr(@"Global prefs: %@", prefsResponse));
+    return;
+  }
+
+  NSString *notixResponse = notixSayNo(bulletin);
+  if (notixResponse) {
+    XLog(@"NotiX say no: %@", notixResponse);
+    addToLogIfEnabled(@"", bulletin, XStr(@"NotiX : %@", notixResponse));
     return;
   }
 
