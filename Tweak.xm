@@ -1462,7 +1462,7 @@ static NSString *prefsSayNo(BBServer *server, BBBulletin *bulletin) {
 %end // %hook BBServer
 %end // %group iOS12
 
-%group iOS13
+%group iOS13And14
 %hook BBServer
 - (void)publishBulletinRequest:(BBBulletin *)bulletin destinations:(unsigned long long)arg2 {
   %orig;
@@ -1506,8 +1506,8 @@ static NSString *prefsSayNo(BBServer *server, BBBulletin *bulletin) {
       %init(iOS10And11);
     } else if (SYSTEM_VERSION_LESS_THAN(@"13.0")) {
       %init(iOS12);
-    } else if (SYSTEM_VERSION_LESS_THAN(@"14.0")) {
-      %init(iOS13);
+    } else if (SYSTEM_VERSION_LESS_THAN(@"15.0")) {
+      %init(iOS13And14);
     }
 
     CFPreferencesSynchronize(PUSHER_APP_ID, kCFPreferencesCurrentUser,
