@@ -55,7 +55,7 @@
   // URL:attachmentURL identifier: uniformType:
   // thumbnailGeneratorUserInfo:thumbnailHidden: hiddenFromDefaultExpandedView:
   // ]; else
-  attachment = [[% c(BBAttachmentMetadata)
+  attachment = [[%c(BBAttachmentMetadata)
       alloc] _initWithUUID:@"TestImage" type:1 URL:attachmentURL];
   [bulletin setPrimaryAttachment:attachment];
 

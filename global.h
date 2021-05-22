@@ -1,3 +1,5 @@
+#import <Foundation/Foundation.h>
+
 #define kName @"Pusher"
 
 #define PUSHER_PREFS_FILE @"/var/mobile/Library/Preferences/com.noahsaso.pusher.plist"
