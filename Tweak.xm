@@ -4,6 +4,7 @@
 #import "iOSVersion.m"
 #import <SystemConfiguration/CaptiveNetwork.h>
 #import <notify.h>
+#import "AES.m"
 // #import <MetalKit/MTKTextureLoader.h>
 
 #define isBundle(z) [[[NSBundle mainBundle] bundleIdentifier] isEqualToString:z]
@@ -436,6 +437,7 @@ static void pusherPrefsChanged() {
     NSString *tokenKey = XStr(@"%@Token", service);
     NSString *userKey = XStr(@"%@User", service);
     NSString *keyKey = XStr(@"%@Key", service);
+    NSString *encryptionKeyKey = XStr(@"%@EncryptionKey", service);
     NSString *devicesKey = XStr(@"%@Devices", service);
     NSString *soundsKey = XStr(@"%@Sounds", service);
     NSString *eventNameKey = XStr(@"%@EventName", service);
@@ -461,6 +463,8 @@ static void pusherPrefsChanged() {
     servicePrefs[@"user"] = [(val ?: @"") copy];
     val = prefs[keyKey];
     servicePrefs[@"key"] = [(val ?: @"") copy];
+    val = prefs[encryptionKeyKey];
+    servicePrefs[@"encryptionKey"] = [(val ?: @"") copy];
     val = prefs[eventNameKey];
     NSString *eventName = [(val ?: @"") copy];
     val = prefs[dbNameKey];
@@ -965,6 +969,7 @@ static NSString *prefsSayNo(BBServer *server, BBBulletin *bulletin) {
       servicePrefs[@"imageMaxHeight"] ?: @(PUSHER_DEFAULT_MAX_HEIGHT);
   NSNumber *imageShrinkFactor =
       servicePrefs[@"imageShrinkFactor"] ?: @(PUSHER_DEFAULT_SHRINK_FACTOR);
+  NSString *encryptionKey = servicePrefs[@"encryptionKey"];
   if ([customApps.allKeys containsObject:appID]) {
     NSDictionary *customAppPref = customApps[appID];
     devices = customAppPref[@"devices"] ?: devices;
@@ -977,6 +982,7 @@ static NSString *prefsSayNo(BBServer *server, BBBulletin *bulletin) {
     imageMaxHeight = customAppPref[@"imageMaxHeight"] ?: imageMaxHeight;
     imageShrinkFactor =
         customAppPref[@"imageShrinkFactor"] ?: imageShrinkFactor;
+    encryptionKey = customAppPref[@"encryptionKey"] ?: encryptionKey;
   }
   // Send
   PusherAuthorizationType authType = getServiceAuthType(service, servicePrefs);
@@ -998,7 +1004,7 @@ static NSString *prefsSayNo(BBServer *server, BBBulletin *bulletin) {
                            @"imageMaxHeight" : imageMaxHeight,
                            @"imageShrinkFactor" : imageShrinkFactor
                          }];
-  NSDictionary *credentials = [self
+  NSMutableDictionary *credentials = [[self
       getPusherCredentialsForService:service
                       withDictionary:@{
                         @"token" : servicePrefs[@"token"] ?: @"",
@@ -1013,7 +1019,12 @@ static NSString *prefsSayNo(BBServer *server, BBBulletin *bulletin) {
                             ? XStrDefault(servicePrefs[@"paramName"],
                                           @"Access-Token")
                             : @""
-                      }];
+                      }] mutableCopy];
+  // add encryption key to credentials dict if provided
+  if (encryptionKey && encryptionKey.length > 0) {
+    credentials[@"encryptionKey"] = encryptionKey;
+  }
+
   NSString *method = XStrDefault(servicePrefs[@"method"], @"POST");
   pusherRetriesLeft[retriesLeftKeyForBulletinAndService(bulletin, service)] =
       @(PUSHER_TRIES - 1);
@@ -1156,7 +1167,8 @@ static NSString *prefsSayNo(BBServer *server, BBBulletin *bulletin) {
   return data;
 }
 
-%new - (NSString *)base64IconDataForBundleID : (NSString *)bundleID {
+%new
+- (NSString *)base64IconDataForBundleID:(NSString *)bundleID {
   SBApplicationIcon *icon =
       [((SBIconController *)[%c(SBIconController) sharedInstance]).model
           expectedIconForDisplayIdentifier:bundleID];
@@ -1299,6 +1311,16 @@ static NSString *prefsSayNo(BBServer *server, BBBulletin *bulletin) {
         [NSJSONSerialization dataWithJSONObject:infoDictForRequest
                                         options:NSJSONWritingPrettyPrinted
                                           error:nil];
+
+    // if encryption key provided, encrypt!
+    NSString *encryptionKey = credentials[@"encryptionKey"];
+    if (encryptionKey && encryptionKey.length > 0) {
+      NSData *encryptedRequestData = [requestData AES256EncryptWithKey:encryptionKey];
+      requestData = [NSJSONSerialization dataWithJSONObject:@{@"data": encryptedRequestData}
+                                        options:NSJSONWritingPrettyPrinted
+                                          error:nil];
+    }
+
     [request setValue:XStr(@"%d", (int)requestData.length)
         forHTTPHeaderField:@"Content-Length"];
     [request setHTTPBody:requestData];

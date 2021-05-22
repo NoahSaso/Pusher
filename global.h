@@ -111,6 +111,7 @@ typedef enum {
 #define PUSHER_SERVICE_PUSHER_RECEIVER_URL @"https://REPLACE_DB_NAME.restdb.io/rest/notifications"
 #define NSPPreferencePusherReceiverDBNameKey @"Pusher ReceiverDBName"
 #define NSPPreferencePusherReceiverAPIKeyKey @"Pusher ReceiverKey"
+#define NSPPreferencePusherReceiverEncryptionKeyKey @"Pusher ReceiverEncryptionKey"
 #define NSPPreferencePusherReceiverDateFormatKey @"Pusher ReceiverDateFormat"
 #define NSPPreferencePusherReceiverBLPrefix @"Pusher ReceiverBL-"
 #define NSPPreferencePusherReceiverCustomAppsKey @"Pusher ReceiverCustomApps"

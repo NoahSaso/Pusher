@@ -89,6 +89,20 @@
 			<key>label</key>
 			<string>API Key:</string>
 		</dict>
+		<dict>
+			<key>cell</key>
+			<string>PSEditTextCell</string>
+			<key>detail</key>
+			<string>PSDetailController</string>
+			<key>defaults</key>
+			<string>com.noahsaso.pusher</string>
+			<key>PostNotification</key>
+			<string>com.noahsaso.pusher/prefs</string>
+			<key>key</key>
+			<string>Pusher ReceiverEncryptionKey</string>
+			<key>label</key>
+			<string>End-to-end Encryption Key:</string>
+		</dict>
 
 		<!-- App List -->
 		<dict>
