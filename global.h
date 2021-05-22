@@ -122,7 +122,7 @@ typedef enum {
 
 #define BUILTIN_PUSHER_SERVICES @[ PUSHER_SERVICE_PUSHOVER, PUSHER_SERVICE_PUSHBULLET, PUSHER_SERVICE_IFTTT, PUSHER_SERVICE_PUSHER_RECEIVER ]
 
-#import <Preferences/PSSpecifier.h>
+#import "PSSpecifier.h"
 #import <BulletinBoard/BBBulletin.h>
 #import <BulletinBoard/BBSectionInfo.h> // imports BBSectionInfoSettings
 #import <SpringBoard/SBApplication.h>

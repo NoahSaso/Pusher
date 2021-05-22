@@ -1,4 +1,4 @@
-#import <Preferences/PSSpecifier.h>
+#import "../PSSpecifier.h"
 #import <Preferences/PSListController.h>
 
 @interface NSPSharedSpecifiers : NSObject
