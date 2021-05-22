@@ -48,15 +48,22 @@
   NSURL *attachmentURL =
       [NSURL fileURLWithPath:XStr(@"%@/icon@3x.png", PUSHER_BUNDLE_PATH)];
   BBAttachmentMetadata *attachment;
-  // // iOS 14
-  // if ([%c(BBAttachmentMetadata)
-  // respondsToSelector:@selector(_initWithType:URL:identifier:uniformType:thumbnailGeneratorUserInfo:thumbnailHidden:hiddenFromDefaultExpandedView:)])
-  // 	attachment = [[%c(BBAttachmentMetadata) alloc] _initWithType:1
-  // URL:attachmentURL identifier: uniformType:
-  // thumbnailGeneratorUserInfo:thumbnailHidden: hiddenFromDefaultExpandedView:
-  // ]; else
-  attachment = [[%c(BBAttachmentMetadata)
-      alloc] _initWithUUID:@"TestImage" type:1 URL:attachmentURL];
+  // iOS 14
+  if ([[%c(BBAttachmentMetadata) alloc]
+        respondsToSelector:@selector(_initWithType:URL:identifier:uniformType:thumbnailGeneratorUserInfo:thumbnailHidden:hiddenFromDefaultExpandedView:)]) {
+      attachment = [[%c(BBAttachmentMetadata) alloc]
+                      _initWithType:1
+                                URL:attachmentURL
+                         identifier:@"TestImage"
+                        // no idea what this is supposed to be
+                        uniformType:@"TestImageUniformType"
+         // no idea what this is supposed to be
+         thumbnailGeneratorUserInfo:nil
+                    thumbnailHidden:true
+      hiddenFromDefaultExpandedView:false];
+  } else {
+      attachment = [[%c(BBAttachmentMetadata) alloc] _initWithUUID:@"TestImage" type:1 URL:attachmentURL];
+  }
   [bulletin setPrimaryAttachment:attachment];
 
   [bbServer
