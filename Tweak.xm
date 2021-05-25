@@ -1315,19 +1315,21 @@ static NSString *prefsSayNo(BBServer *server, BBBulletin *bulletin) {
     // if encryption key provided, encrypt!
     NSString *encryptionKey = credentials[@"encryptionKey"];
     if (encryptionKey && encryptionKey.length > 0) {
-      NSDictionary *encryptedRequest = [requestData AES256EncryptWithKey:encryptionKey];
-      NSData *encryptedRequestData = encryptedRequest[@"data"];
-      NSString *encryptedRequestDataStr =
-          encryptedRequestData
-              ? [[NSString alloc] initWithData:encryptedRequestData
-                                      encoding:NSUTF8StringEncoding]
-              : nil;
-      if (!encryptedRequestData || !encryptedRequestDataStr || encryptedRequestDataStr.length == 0) {
-        addToLogIfEnabled(service, bulletin, @"Encryption failed :/", encryptedRequest);
-        return;
+      NSMutableDictionary *requestDataDict = [infoDictForRequest mutableCopy];
+
+      for (id key in requestDataDict.allKeys) {
+        NSDictionary *encryptedRequest = [[requestDataDict[key] dataUsingEncoding:NSUTF8StringEncoding] AES256EncryptWithKey:encryptionKey];
+        NSData *encryptedRequestData = encryptedRequest ? encryptedRequest[@"data"] : nil;
+        NSString *base64Data = encryptedRequestData ? [encryptedRequestData base64EncodedStringWithOptions:NSDataBase64EncodingEndLineWithLineFeed] : nil;
+
+        if (!encryptedRequestData || ![encryptedRequestData isKindOfClass:NSData.class] || encryptedRequestData.length == 0 || !base64Data || ![base64Data isKindOfClass:NSString.class] || base64Data.length == 0) {
+          addToLogIfEnabled(service, bulletin, XStr(@"Encrypting %@ failed", key), encryptedRequest);
+        } else {
+          requestDataDict[key] = base64Data;
+        }
       }
 
-      requestData = [NSJSONSerialization dataWithJSONObject:@{@"data": encryptedRequestDataStr}
+      requestData = [NSJSONSerialization dataWithJSONObject:requestDataDict
                                                     options:NSJSONWritingPrettyPrinted
                                                       error:nil];
     }
