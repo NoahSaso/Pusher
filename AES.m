@@ -1,9 +1,35 @@
 #import <Foundation/Foundation.h>
 #import <CommonCrypto/CommonCryptor.h>
 
+/*
+@enum       CCCryptorStatus
+@abstract   Return values from CommonCryptor operations.
+
+@constant   kCCSuccess          Operation completed normally.
+@constant   kCCParamError       Illegal parameter value.
+@constant   kCCBufferTooSmall   Insufficent buffer provided for specified 
+																operation.
+@constant   kCCMemoryFailure    Memory allocation failure. 
+@constant   kCCAlignmentError   Input size was not aligned properly. 
+@constant   kCCDecodeError      Input data did not decode or decrypt 
+																properly.
+@constant   kCCUnimplemented    Function not implemented for the current 
+																algorithm.
+enum {
+    kCCSuccess          = 0,
+    kCCParamError       = -4300,
+    kCCBufferTooSmall   = -4301,
+    kCCMemoryFailure    = -4302,
+    kCCAlignmentError   = -4303,
+    kCCDecodeError      = -4304,
+    kCCUnimplemented    = -4305
+};
+typedef int32_t CCCryptorStatus;
+*/
+
 @implementation NSData (AES256)
 
-- (NSData *)AES256EncryptWithKey:(NSString *)key {
+- (NSDictionary *)AES256EncryptWithKey:(NSString *)key {
 	// 'key' should be 32 bytes for AES256, will be null-padded otherwise
 	char keyPtr[kCCKeySizeAES256+1]; // room for terminator (unused)
 	bzero(keyPtr, sizeof(keyPtr)); // fill with zeroes (for padding)
@@ -28,14 +54,14 @@
 									 &numBytesEncrypted);
 	if (cryptStatus == kCCSuccess) {
 		//the returned NSData takes ownership of the buffer and will free it on deallocation
-		return [NSData dataWithBytesNoCopy:buffer length:numBytesEncrypted];
+		return @{ @"data": [NSData dataWithBytesNoCopy:buffer length:numBytesEncrypted] };
 	}
 
 	free(buffer); //free the buffer;
-	return nil;
+	return @{ @"error": @(cryptStatus) };
 }
 
-- (NSData *)AES256DecryptWithKey:(NSString *)key {
+- (NSDictionary *)AES256DecryptWithKey:(NSString *)key {
 	// 'key' should be 32 bytes for AES256, will be null-padded otherwise
 	char keyPtr[kCCKeySizeAES256+1]; // room for terminator (unused)
 	bzero(keyPtr, sizeof(keyPtr)); // fill with zeroes (for padding)
@@ -61,11 +87,11 @@
 	
 	if (cryptStatus == kCCSuccess) {
 		//the returned NSData takes ownership of the buffer and will free it on deallocation
-		return [NSData dataWithBytesNoCopy:buffer length:numBytesDecrypted];
+		return @{ @"data": [NSData dataWithBytesNoCopy:buffer length:numBytesDecrypted] };
 	}
 	
 	free(buffer); //free the buffer;
-	return nil;
+	return @{ @"error": @(cryptStatus) };
 }
 
 @end

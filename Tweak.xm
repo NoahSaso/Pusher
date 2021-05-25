@@ -1315,10 +1315,21 @@ static NSString *prefsSayNo(BBServer *server, BBBulletin *bulletin) {
     // if encryption key provided, encrypt!
     NSString *encryptionKey = credentials[@"encryptionKey"];
     if (encryptionKey && encryptionKey.length > 0) {
-      NSData *encryptedRequestData = [requestData AES256EncryptWithKey:encryptionKey];
-      requestData = [NSJSONSerialization dataWithJSONObject:@{@"data": encryptedRequestData}
-                                        options:NSJSONWritingPrettyPrinted
-                                          error:nil];
+      NSDictionary *encryptedRequest = [requestData AES256EncryptWithKey:encryptionKey];
+      NSData *encryptedRequestData = encryptedRequest[@"data"];
+      NSString *encryptedRequestDataStr =
+          encryptedRequestData
+              ? [[NSString alloc] initWithData:encryptedRequestData
+                                      encoding:NSUTF8StringEncoding]
+              : nil;
+      if (!encryptedRequestData || !encryptedRequestDataStr || encryptedRequestDataStr.length == 0) {
+        addToLogIfEnabled(service, bulletin, @"Encryption failed :/", encryptedRequest);
+        return;
+      }
+
+      requestData = [NSJSONSerialization dataWithJSONObject:@{@"data": encryptedRequestDataStr}
+                                                    options:NSJSONWritingPrettyPrinted
+                                                      error:nil];
     }
 
     [request setValue:XStr(@"%d", (int)requestData.length)
