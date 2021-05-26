@@ -1318,13 +1318,25 @@ static NSString *prefsSayNo(BBServer *server, BBBulletin *bulletin) {
       NSMutableDictionary *requestDataDict = [infoDictForRequest mutableCopy];
 
       for (id key in requestDataDict.allKeys) {
-        NSDictionary *encryptedRequest = [[requestDataDict[key] dataUsingEncoding:NSUTF8StringEncoding] AES256EncryptWithKey:encryptionKey];
-        NSData *encryptedRequestData = encryptedRequest ? encryptedRequest[@"data"] : nil;
-        NSString *base64Data = encryptedRequestData ? [encryptedRequestData base64EncodedStringWithOptions:NSDataBase64EncodingEndLineWithLineFeed] : nil;
+        NSData *requestDataDictKeyData = [requestDataDict[key] dataUsingEncoding:NSUTF8StringEncoding];
 
-        if (!encryptedRequestData || ![encryptedRequestData isKindOfClass:NSData.class] || encryptedRequestData.length == 0 || !base64Data || ![base64Data isKindOfClass:NSString.class] || base64Data.length == 0) {
+        char ivBytes[kCCBlockSizeAES128]; // 16
+        bzero(ivBytes, sizeof(ivBytes)); // fill with zeroes (for padding)
+        int result = SecRandomCopyBytes(kSecRandomDefault, sizeof(ivBytes), ivBytes);
+        // if failed to generate random IV, just use first bytes of value, zero-padded
+        if (result != errSecSuccess) {
+          [requestDataDictKeyData getBytes:ivBytes length:MIN(requestDataDictKeyData.length, sizeof(ivBytes))];
+        }
+
+        NSDictionary *encryptedRequest = [requestDataDictKeyData AES256EncryptWithKey:encryptionKey iv:ivBytes];
+        NSData *encryptedRequestData = encryptedRequest ? encryptedRequest[@"data"] : nil;
+
+        if (!encryptedRequestData || ![encryptedRequestData isKindOfClass:NSData.class] || encryptedRequestData.length == 0) {
           addToLogIfEnabled(service, bulletin, XStr(@"Encrypting %@ failed", key), encryptedRequest);
         } else {
+          NSMutableData *combinedData = [NSMutableData dataWithBytes:ivBytes length:sizeof(ivBytes)];
+          [combinedData appendData:encryptedRequestData];
+          NSString *base64Data = [combinedData base64EncodedStringWithOptions:NSDataBase64EncodingEndLineWithLineFeed];
           requestDataDict[key] = base64Data;
         }
       }

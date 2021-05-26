@@ -29,7 +29,7 @@ typedef int32_t CCCryptorStatus;
 
 @implementation NSData (AES256)
 
-- (NSDictionary *)AES256EncryptWithKey:(NSString *)key {
+- (NSDictionary *)AES256EncryptWithKey:(NSString *)key iv:(char*)iv {
 	// 'key' should be 32 bytes for AES256, will be null-padded otherwise
 	char keyPtr[kCCKeySizeAES256+1]; // room for terminator (unused)
 	bzero(keyPtr, sizeof(keyPtr)); // fill with zeroes (for padding)
@@ -48,7 +48,7 @@ typedef int32_t CCCryptorStatus;
 	size_t numBytesEncrypted = 0;
 	CCCryptorStatus cryptStatus = CCCrypt(kCCEncrypt, kCCAlgorithmAES128, kCCOptionPKCS7Padding,
 									 keyPtr, kCCKeySizeAES256,
-									 NULL /* initialization vector (optional) */,
+									 iv /* initialization vector (optional) */,
 									 [self bytes], dataLength, /* input */
 									 buffer, bufferSize, /* output */
 									 &numBytesEncrypted);
