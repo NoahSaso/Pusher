@@ -30,6 +30,21 @@
                                                format:(int)format;
 @end
 
+@interface UIImage (Alpha)
+- (BOOL)hasAlpha;
+@end
+
+@implementation UIImage (Alpha)
+// Returns true if the image has an alpha layer
+- (BOOL)hasAlpha {
+  CGImageAlphaInfo alpha = CGImageGetAlphaInfo(self.CGImage);
+  return (alpha == kCGImageAlphaFirst ||
+          alpha == kCGImageAlphaLast ||
+          alpha == kCGImageAlphaPremultipliedFirst ||
+          alpha == kCGImageAlphaPremultipliedLast);
+}
+@end
+
 static BOOL pusherEnabled = NO;
 static int pusherWhenToPush = PUSHER_WHEN_TO_PUSH_EITHER;
 static NSArray *pusherSNS = nil;
@@ -75,6 +90,9 @@ static NSString *stringForObject(id object, NSString *prefix,
                stringForObject(dict[key], XStr(@"%@\t", prefix), dontTruncate));
     }
     str = XStr(@"%@\n%@}", str, prefix);
+  } else if ([object isKindOfClass:NSData.class]) {
+    NSData *data = (NSData *) object;
+    str = XStr(@"%@%@", prefix, [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding]);
   } else {
     if (!dontTruncate && [object isKindOfClass:NSString.class] &&
         ((NSString *)object).length > PUSHER_LOG_MAX_STRING_LENGTH) {
@@ -307,7 +325,7 @@ static NSString *base64RepresentationForImage(UIImage *image) {
 static UIImage *shrinkImage(UIImage *image, CGFloat factor) {
   CGSize newSize =
       CGSizeMake(image.size.width / factor, image.size.height / factor);
-  UIGraphicsBeginImageContext(newSize);
+  UIGraphicsBeginImageContextWithOptions(newSize, !image.hasAlpha, 1.0);
   [image drawInRect:CGRectMake(0, 0, newSize.width, newSize.height)];
   UIImage *smallImage = UIGraphicsGetImageFromCurrentImageContext();
   UIGraphicsEndImageContext();
@@ -507,6 +525,20 @@ static void pusherPrefsChanged() {
 
       NSString *curateDataKey = XStr(@"%@CurateData", service);
       servicePrefs[@"curateData"] = prefs[curateDataKey] ?: @YES;
+    }
+    
+    if (XEq(service, PUSHER_SERVICE_PUSHOVER)) {
+      NSString *includeImageKey = XStr(@"%@IncludeImage", service);
+      servicePrefs[@"includeImage"] = prefs[includeImageKey] ?: @YES;
+
+      NSString *imageMaxWidthKey = XStr(@"%@ImageMaxWidth", service);
+      servicePrefs[@"imageMaxWidth"] = prefs[imageMaxWidthKey] ?: @(PUSHER_DEFAULT_MAX_WIDTH);
+
+      NSString *imageMaxHeightKey = XStr(@"%@ImageMaxHeight", service);
+      servicePrefs[@"imageMaxHeight"] = prefs[imageMaxHeightKey] ?: @(PUSHER_DEFAULT_MAX_HEIGHT);
+
+      NSString *imageShrinkFactorKey = XStr(@"%@ImageShrinkFactor", service);
+      servicePrefs[@"imageShrinkFactor"] = prefs[imageShrinkFactorKey] ?: @(PUSHER_DEFAULT_SHRINK_FACTOR);
     }
 
     if (XEq(service, PUSHER_SERVICE_PUSHER_RECEIVER)) {
@@ -1037,19 +1069,7 @@ static NSString *prefsSayNo(BBServer *server, BBBulletin *bulletin) {
   for (NSDictionary *device in dictionary[@"devices"]) {
     [deviceIDs addObject:device[@"id"]];
   }
-  if (XEq(service, PUSHER_SERVICE_PUSHOVER)) {
-    NSString *combinedDevices = [deviceIDs componentsJoinedByString:@","];
-    NSMutableDictionary *pushoverInfoDict = [@{
-      @"title" : dictionary[@"title"],
-      @"message" : dictionary[@"message"],
-      @"device" : combinedDevices
-    } mutableCopy];
-    NSString *firstSoundID = [dictionary[@"sounds"] firstObject];
-    if (firstSoundID) {
-      pushoverInfoDict[@"sound"] = firstSoundID;
-    }
-    return pushoverInfoDict;
-  } else if (XEq(service, PUSHER_SERVICE_PUSHBULLET)) {
+  if (XEq(service, PUSHER_SERVICE_PUSHBULLET)) {
     // should always only be one, but just in case
     NSString *firstDevice = [deviceIDs firstObject];
     NSMutableDictionary *pushbulletInfoDict = [@{
@@ -1133,8 +1153,16 @@ static NSString *prefsSayNo(BBServer *server, BBBulletin *bulletin) {
       }
     }
   }
-
-  if (XEq(service, PUSHER_SERVICE_IFTTT)) {
+  if (XEq(service, PUSHER_SERVICE_PUSHOVER)) {
+    NSString *combinedDevices = [deviceIDs componentsJoinedByString:@","];
+    data[@"device"] = combinedDevices;
+    data[@"title"] = dictionary[@"title"];
+    NSString *firstSoundID = [dictionary[@"sounds"] firstObject];
+    if (firstSoundID) {
+      data[@"sound"] = firstSoundID;
+    }
+    return data;
+  } else if (XEq(service, PUSHER_SERVICE_IFTTT)) {
     if (dictionary[@"curateData"] &&
         ((NSNumber *)dictionary[@"curateData"]).boolValue) {
       return @{
@@ -1224,10 +1252,12 @@ static NSString *prefsSayNo(BBServer *server, BBBulletin *bulletin) {
   }
 
   //! XEq(service, PUSHER_SERVICE_PUSHER_RECEIVER) &&
-  if (infoDictForRequest[@"image"] &&
-      [infoDictForRequest[@"image"] isKindOfClass:UIImage.class]) {
-    infoDictForRequest[@"image"] =
-        base64RepresentationForImage(infoDictForRequest[@"image"]);
+  if (!XEq(service, PUSHER_SERVICE_PUSHOVER)) {
+    if (infoDictForRequest[@"image"] &&
+        [infoDictForRequest[@"image"] isKindOfClass:UIImage.class]) {
+      infoDictForRequest[@"image"] =
+          base64RepresentationForImage(infoDictForRequest[@"image"]);
+    }
   }
 
   if (XEq(method, @"GET")) {
@@ -1282,26 +1312,82 @@ static NSString *prefsSayNo(BBServer *server, BBBulletin *bulletin) {
   }
 
   if (XEq(method, @"POST")) {
-    // replace image strings with shorter string
-    NSMutableDictionary *infoDictForLog = [infoDictForRequest mutableCopy];
-    for (NSString *prop in PUSHER_LOG_IMAGE_DATA_PROPERTIES) {
-      if (infoDictForLog[prop]) {
-        infoDictForLog[prop] = PUSHER_LOG_IMAGE_DATA_REPLACEMENT;
+    if (XEq(service, PUSHER_SERVICE_PUSHOVER)) {
+      NSString *boundary = @"---BoundaryPUSHOVER";
+      NSString *contentType = XStr(@"multipart/form-data; boundary=%@",boundary);
+      [request addValue:contentType forHTTPHeaderField: @"Content-Type"];
+      NSMutableData *body = [NSMutableData data];
+
+      NSDictionary *stringOnlyInfoDictForRequest = [infoDictForRequest dictionaryWithValuesForKeys:@[@"user", @"token", @"message", @"title", @"device"]];
+      [stringOnlyInfoDictForRequest enumerateKeysAndObjectsUsingBlock: ^(NSString *key, NSString *object, BOOL *stop) {
+        [body appendData:[XStr(@"--%@\r\n",boundary) dataUsingEncoding:NSUTF8StringEncoding]];
+        [body appendData:[XStr(@"Content-Disposition: form-data; name=\"%@\"\r\n\r\n",key) dataUsingEncoding:NSUTF8StringEncoding]];
+        [body appendData:[XStr(@"%@\r\n",object) dataUsingEncoding:NSUTF8StringEncoding]];
+      }];
+      NSMutableData *bodyForLog = [body mutableCopy];
+
+      if (infoDictForRequest[@"image"] && [infoDictForRequest[@"image"] isKindOfClass:UIImage.class]) {
+
+        UIImage* image = (UIImage*)infoDictForRequest[@"image"];
+
+        for( NSData* data in @[
+          [XStr(@"--%@\r\n",boundary) dataUsingEncoding:NSUTF8StringEncoding],
+          [XStr(@"Content-Disposition: form-data; name=\"attachment\"; filename=\"file.%@\"\r\n", image.hasAlpha ? @"png" : @"jpg") dataUsingEncoding:NSUTF8StringEncoding],
+          [XStr(@"Content-Type: image/%@\r\n\r\n", image.hasAlpha ? @"png" : @"jpeg") dataUsingEncoding:NSUTF8StringEncoding]
+        ] ){
+          [body appendData:data];
+          [bodyForLog appendData:data];
+        }
+
+
+        if ( image.hasAlpha ) {
+          [body appendData:UIImagePNGRepresentation(image)];
+        }else{
+          [body appendData:UIImageJPEGRepresentation(image, 1.0)];
+        }
+        [bodyForLog appendData:[PUSHER_LOG_IMAGE_DATA_REPLACEMENT dataUsingEncoding:NSUTF8StringEncoding]];
+
+
+        for( NSData* data in @[
+          [@"\r\n" dataUsingEncoding:NSUTF8StringEncoding]
+        ] ){
+          [body appendData:data];
+          [bodyForLog appendData:data];
+        }
       }
+
+      for( NSData* data in @[
+        [XStr(@"--%@--\r\n", boundary) dataUsingEncoding:NSUTF8StringEncoding]
+      ] ){
+        [body appendData:data];
+        [bodyForLog appendData:data];
+      }
+
+      [request setHTTPBody:body];
+      addToLogIfEnabled(service, bulletin, @"Request Body", bodyForLog);
+
+    } else {
+      // replace image strings with shorter string
+      NSMutableDictionary *infoDictForLog = [infoDictForRequest mutableCopy];
+      for (NSString *prop in PUSHER_LOG_IMAGE_DATA_PROPERTIES) {
+        if (infoDictForLog[prop]) {
+          infoDictForLog[prop] = PUSHER_LOG_IMAGE_DATA_REPLACEMENT;
+        }
+      }
+      addToLogIfEnabled(service, bulletin, @"Request Body Dictionary",
+                        infoDictForLog);
+
+      [request setValue:@"application/json" forHTTPHeaderField:@"Accept"];
+      [request setValue:@"application/json" forHTTPHeaderField:@"Content-Type"];
+
+      NSData *requestData =
+          [NSJSONSerialization dataWithJSONObject:infoDictForRequest
+                                          options:NSJSONWritingPrettyPrinted
+                                            error:nil];
+      [request setValue:XStr(@"%d", (int)requestData.length)
+          forHTTPHeaderField:@"Content-Length"];
+      [request setHTTPBody:requestData];
     }
-    addToLogIfEnabled(service, bulletin, @"Request Body Dictionary",
-                      infoDictForLog);
-
-    [request setValue:@"application/json" forHTTPHeaderField:@"Accept"];
-    [request setValue:@"application/json" forHTTPHeaderField:@"Content-Type"];
-
-    NSData *requestData =
-        [NSJSONSerialization dataWithJSONObject:infoDictForRequest
-                                        options:NSJSONWritingPrettyPrinted
-                                          error:nil];
-    [request setValue:XStr(@"%d", (int)requestData.length)
-        forHTTPHeaderField:@"Content-Length"];
-    [request setHTTPBody:requestData];
   }
 
   // use async way to connect network
